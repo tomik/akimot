@@ -6,23 +6,14 @@ CFLAGS += -Wall
 
 GPP    = g++ $(CFLAGS) 
 
-FILES  = Makefile board.cpp getMove.cpp search.cpp hash.cpp
+h_FILES   = board.h getMove.h engine.h utils.h
+H_FILES   = board.cpp getMove.cpp engine.cpp utils.cpp
+O_FILES   = board.o getMove.o engine.o utils.o
 
-all: akimot_debug
+all: akimot_debug 
 
-akimot_debug: $(FILES)
-	$(GPP) $(DEBUG) -o akimot_debug main.cpp
-
-akimot_opt:   $(FILES)
-	$(GPP) $(OPT)   -o akimot_opt   main.cpp
-
-akimot_asm:   $(FILES)
-	$(GPP) $(OPT)   -S -c        main.cpp
-
-akimot_prof:  $(FILES)
-	$(GPP) $(PROF)  -o akimot_prof  main.cpp
-
-
+akimot_debug: $(O_FILES)
+	$(GPP) $(DEBUG) -o akimot_debug getMove.o board.o engine.o utils.o
 
 .SUFFIXES: .cpp .o
 

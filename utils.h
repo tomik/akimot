@@ -1,7 +1,10 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <cassert>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -14,7 +17,8 @@ using namespace std;
 class Logger
 {
 	public:
-		stringstream log;
-};
+		ostream& operator()(unsigned int = 0);
+		//ostream& log(int=0 );
+}; 
 
 #endif

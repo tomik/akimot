@@ -1,10 +1,16 @@
-#ifndef __ENGINE_H__
-#define __ENGINE_H__
+#ifndef ENGINE_H
+#define ENGINE_H
+
+#include "utils.h"
+#include "board.h"
+
 
 class Engine
 {
+		Logger logger_;
 	public:
-		string do_search(Board&);		
+		string doSearch(Board&);		
+		string initialSetup(bool); 
 };
 
 #endif
