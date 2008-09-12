@@ -3,10 +3,12 @@
 
 #include <cassert>
 
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <bitset>
 
 #include <stdio.h>
 #include <stdlib.h>

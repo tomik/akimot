@@ -3,52 +3,89 @@
 
 #include "utils.h"
 
-#define EMPTY_SQUARE 0x0U
-#define EMPTY 0x0U
-#define OFF_BOARD_SQUARE 0x9FU
-#define OFF_BOARD 0x18U
-#define GOLD 0x10U
-#define SILVER 0x8U
-#define OFF_BOARD_PIECE 0x7U
-#define ELEPHANT_PIECE 0x6U
-#define CAMEL_PIECE 0x5U
-#define HORSE_PIECE 0x4U
-#define DOG_PIECE 0x3U
-#define CAT_PIECE 0x2U
-#define RABBIT_PIECE 0x1U
-#define EMPTY_PIECE 0x0U
-#define PIECE_MASK 0x7U
-#define OWNER_MASK 0x18U
-#define FLIP_SIDE GOLD^SILVER
-#define TRUE 1
-#define FALSE 0
+#define MAX_NUMBER_MOVES 100
 #define NORTH -10
 #define SOUTH 10
 #define EAST 1
 #define WEST -1
 
-typedef unsigned char square_t;
+//dailey 
+
+#define BIT_LEN     64
+typedef bitset<BIT_LEN> bit64;
+typedef unsigned long long u64;
+
+#define GOLD        0
+#define SILVER      1
+#define NO_COLOR    2
+
+#define EMPTY       0
+#define RABBIT      1
+#define CAT         2
+#define DOG         3
+#define HORSE       4
+#define CAMEL       5
+#define ELEPHANT    6
+
+#define NOT_A_FILE  0xfefefefefefefefeULL
+#define NOT_H_FILE  0x7f7f7f7f7f7f7f7fULL
+#define NOT_1_RANK  0x00ffffffffffffffULL
+#define NOT_8_RANK  0xffffffffffffff00ULL
+#define TRAPS       0x0000240000240000ULL
+
+#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
+#define FROM_LEFT(n) (BIT_LEN - n - 1)   //for accesing elemt from left in bitsets ( implicitly from right )
+
+
+namespace BitStuff { 
+  const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
+  const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
+  const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
+  const bit64 not8rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
+
+ // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
+}
+
+
+typedef unsigned int color_t;
 typedef unsigned int coord_t;
+typedef unsigned int piece_t;
+
+class Move
+{
+};
 
 class Board
 {
-		unsigned char board_[100];	
-		unsigned int  moveCnt_;
-		unsigned int  toMove_;
-		Logger        log_; 
 
-	public:
-		bool init(const char* fn); 
+    bit64         bitBoard_[2][7];
+    bit64         move_offset[2][7][64];     /* precomputed move offsets */
 
-		bool isEmpty();
-		bool isGoldMove();
+    unsigned int  moveCnt_;
+    unsigned int  toMove_;
+    Logger        log_; 
 
-		inline void setSquare(coord_t, square_t);
-		inline square_t getSquare(coord_t);
+  public:
+    bool init(const char* fn); 
 
-		void dump();
+    bool isEmpty();
+    bool isGoldMove();
 
-		
+    inline void setSquare(coord_t, color_t, piece_t);
+    inline piece_t getSquarePiece(coord_t);
+    inline color_t getSquareColor(coord_t);
+
+    int generateOneStepMoves(Move moveList[]);
+    int generatePushMoves(Move moveList[]);
+    int generatePullMoves(Move moveList[]);
+    int generateMoves(Move moveList[]);
+
+    void build_move_offsets();
+
+    void dump();
+
+    
 };
+
 
 #endif
