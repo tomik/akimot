@@ -13,19 +13,21 @@ void test(Board board)
 	//board.test();
 
   MoveList moveList;
+	int listCount;
   board.generateMoves(moveList);
 	//	logger() << "Potential one step moves from the position:" << endl;
 
   time_t now = time (NULL);
-	for ( int i = 0; i < 160000; i++){
-		moveList.clear();
-		board.generateMoves(moveList);
+	unsigned long long i=0;
+	while ( time(NULL) - now < 11 ) {
+		i++;
+		listCount = board.generateMoves(moveList);
 	}
-	logger()<< endl << "elapsed time in seconds: " << time(NULL) - now << endl;
+	logger()<< endl << "games per sec: " << i/1600 + i%1600 <<endl;
 		
 
-  for (MoveListIt it = moveList.begin(); it != moveList.end(); it++) 
-    (*it)->dump();
+  for (int i = 0; i < listCount; i++) 
+    moveList[i].dump();
 
 	logger() << endl;
 

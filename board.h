@@ -3,7 +3,8 @@
 
 #include "utils.h"
 
-#define MAX_NUMBER_MOVES 100
+#define MAX_MOVES 100
+
 #define NORTH -8
 #define SOUTH 8
 #define EAST 1
@@ -72,21 +73,20 @@ class Move
   public:
     void dump(); 
     const string getStepStr(color_t, piece_t, coord_t, coord_t);
-    Move(){};
-    Move( moveType_t, color_t, piece_t, coord_t, coord_t );
-    Move( moveType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+    inline void setValues( moveType_t, color_t, piece_t, coord_t, coord_t );
+    inline void setValues( moveType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
 
 };
 
-typedef list<Move*>           MoveList;
-typedef list<Move*>::iterator MoveListIt;
+typedef Move   MoveList [MAX_MOVES];			 // fixed array for performance reasons 
 
 class Board
 {
     Logger        log_; 
 
     bit64         bitBoard_[2][7];
-    bit64         moveOffset_[2][7][64];     /* precomputed move offsets */
+    bit64         moveOffset_[2][7][64];     // precomputed move offsets 
+
 
     unsigned int  moveCnt_;
     unsigned int  toMove_;
@@ -101,7 +101,7 @@ class Board
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
 
-    void generateMoves(MoveList&);
+    int generateMoves(MoveList&);
 
     void build_move_offsets();
 
