@@ -3,20 +3,6 @@
 
 using namespace BitStuff;
 
-unsigned int  find_first(bit64 b)
-{
-  int  i=0;
-
-  while (b.any())
-  {
-    if (b[0]) return(i);
-    b >>= 1;
-		i++;
-  }
-
-  return(-1);
-}
-
 bit64 getNeighbours(bit64 pieces)
   //Returns neighbors bitset for a bitset of pieces
 {
@@ -67,6 +53,7 @@ const string Move::getStepStr(color_t color, piece_t piece, coord_t from, coord_
 void Move::dump()
 {
 	
+	log_() << "(";
 	switch (moveType_) {
 		case MOVE_PASS: 
 			log_() << "pass";			
@@ -77,6 +64,7 @@ void Move::dump()
 		case MOVE_PUSH: 
 			log_() << getStepStr(1-color_, oppPiece_, oppFrom_, oppTo_)
 						 << getStepStr(color_, piece_, from_, to_ );
+			break;
 		case MOVE_PULL: 
 			log_() << getStepStr(color_, piece_, from_, to_ )
 						 << getStepStr(1-color_, oppPiece_, oppFrom_, oppTo_);
@@ -85,6 +73,7 @@ void Move::dump()
 			assert(false);
 
 	}
+	log_() << ") ";
 }
 
 void Board::test()
@@ -140,11 +129,6 @@ void Board::build_move_offsets()
           ts |= ((one << square) & notAfile) >> 1;  // west
           ts |= ((one << square) & not1rank) << 8;  // south
           ts |= ((one << square) & not8rank) >> 8;  // north
-    /*    ts |= (BIT_ON(square) & NOT_H_FILE) << 1;  // east
-          ts |= (BIT_ON(square) & NOT_A_FILE) >> 1;  // west
-          ts |= (BIT_ON(square) & NOT_1_RANK) << 8;  // south
-          ts |= (BIT_ON(square) & NOT_8_RANK) >> 8;  // north
-					*/
 
           moveOffset_[color][piece][square] = ts;
       }
@@ -161,57 +145,90 @@ bool Board::isGoldMove()
  return toMove_ == GOLD;
 }
 
-void Board::generatePushMoves(MoveList& moveList)
-{
-}
 
-void Board::generatePullMoves(MoveList& moveList)
+void Board::generateMoves(MoveList& moveList)
 {
-}
+  int tm = toMove_;																				//player to move
+  bit64		empty(~(bitBoard_[0][0] | bitBoard_[1][0]));		// mask of unoccupied squares    
+  bit64   notFrozenSquares;																// mask of friendly pieces which are not frozen
+  bit64   movablePieces;																	// mask of friendly pieces on notFrozenSquares
+  bit64		stronger (bitBoard_[1-tm][0]);                  // mask of stronger enemy pcs for movablePieces
+  bit64		weaker;																			 // weaker enemy pieces all over the board 
+	bit64		victims;																		 // weaker enemy pieces in adjacent squares
+	bit64		wherePush;																	 // where to push
+	bit64		wherePull;																	 // where to pull
+  bit64   whereMove;																	 // where to move    
 
+	//movements
+	//onestep: (piece) fromSquare-> toSquare 
+	//push: (piece) fromSquare->victimFromSquare, (victim) victimFromSquare->victimToSquare
+	//pull: (piece) fromSquare->toSquare, (victim) victimFromSquare->fromSquare
+	int fromSquare;
+	int toSquare;
+	int pullerToSquare;
+	int victimFromSquare;
+	int victimToSquare;														 
 
-void Board::generateOneStepMoves(MoveList& moveList)
-{
-  int tm = toMove_;                                    //player to move
-  bit64 empty(~(bitBoard_[0][0] | bitBoard_[1][0]));   // mask of unoccupied squares    
-  bit64   notFrozen;                                   // mask of pieces which are not frozen
-  bit64   potPieces;																	 // mask of potential pieces to move
-  bit64 stronger (bitBoard_[1-tm][0]);                 // mask of stronger enemy pcs for potPieces
+	assert(moveList.empty());
 
   for (int piece = 1; piece < 7; piece++) {
-    potPieces = bitBoard_[tm][piece];									// get all pieces of this type
-    stronger ^= bitBoard_[1-tm][piece];								// remove from consideration
-    notFrozen = getNeighbours(bitBoard_[tm][0]) | (~getNeighbours(stronger));
-    potPieces &= notFrozen;                           // bitmap of unfrozen pieces - potPiecess to move
+    movablePieces = bitBoard_[tm][piece];														// get all pieces of this type
+    stronger ^= bitBoard_[1-tm][piece];															// remove from consideration
+    notFrozenSquares = 
+			getNeighbours(bitBoard_[tm][0]) | (~getNeighbours(stronger)); //around is friendly piece or no stroger enemy piece 
+    movablePieces &= notFrozenSquares;															// pieces from slice on notFrozenSquares
 
-    while (potPieces.any()) {
-      bit64    potSquares;                            // potential squares to move to for a single item in potpieces     
-      int    fromSquare = find_first(potPieces);      // consider moves from this square next 
+		if (piece > RABBIT)
+			weaker |= bitBoard_[1-tm][piece-1];														// all pieces we can we can push/pull
 
-      potPieces.reset(fromSquare);                    // cancel out for next pass             
-      potSquares = empty & moveOffset_[tm][piece][fromSquare];
+		
+    fromSquare = movablePieces._Find_first();							// consider moves from this square next 
+    while (fromSquare != 64) {
 
-      while (potSquares.any()) {
-        int  toSquare = find_first(potSquares);       // get next potPieces move  
-        potSquares.reset(toSquare);                   // cancel out              
+      whereMove = empty & moveOffset_[tm][piece][fromSquare];
+      victims = weaker & moveOffset_[tm][piece][fromSquare];
+
+			//generate one step moves
+      toSquare = whereMove._Find_first();						 // get next whereMove move  
+      while (toSquare != 64) {
 
 				Move * move = new Move(MOVE_SINGLE, tm, piece, fromSquare, toSquare);
 				moveList.push_back(move);
+				toSquare = whereMove._Find_next(toSquare);						 // get next whereMove move  
       }
-    }
-  }
-}
 
-void Board::generateMoves(MoveList& moveList) 
-{
-	assert(moveList.empty());
+			//generate push/pull moves
+      victimFromSquare = victims._Find_first();												// get next victim 
+      while (victimFromSquare != 64) {
+				assert(piece != RABBIT );																			// rabbits can't have victims :)
+				wherePush = empty & moveOffset_[0][piece][victimFromSquare]; 
+				wherePull = empty & moveOffset_[0][piece][fromSquare];					// optimize: out of the while cycle
 
-  generatePullMoves(moveList);
-  generatePushMoves(moveList);
-  generateOneStepMoves(moveList);
-}
+				pullerToSquare = wherePull._Find_first();											// where our piece (puller) can retrieve
+				while (pullerToSquare != 64) {
 
+					Move * move = new Move(MOVE_PULL, tm, piece, fromSquare, toSquare, 
+																 getSquarePiece(victimFromSquare), victimFromSquare, fromSquare  );
+					moveList.push_back(move);
+					pullerToSquare = wherePull._Find_next(pullerToSquare);			 // where our piece (puller) can retrieve
+				}
 
+				victimToSquare = wherePush._Find_first();												// where victim can be pushed to
+				while (victimToSquare!=64) {
+					wherePush.reset(victimToSquare);
+
+					Move * move = new Move(MOVE_PUSH, tm, piece, fromSquare, victimFromSquare, 
+																 getSquarePiece(victimFromSquare), victimFromSquare, victimToSquare  );
+					moveList.push_back(move);
+					victimToSquare = wherePush._Find_next(victimToSquare);												// where victim can be pushed to
+				}
+      victimFromSquare = victims._Find_next(victimFromSquare);					// get next victim 
+			} //while victims
+    fromSquare = movablePieces._Find_next(fromSquare);							// consider moves from this square next 
+		} //while movablePieces any
+	} // for piece
+
+} //Board::generateMoves
 
 bool Board::init(const char* fn)
  /**
@@ -272,7 +289,7 @@ bool Board::init(const char* fn)
            case 'd' : setSquare(i*8+j, SILVER, DOG);   break;
            case 'c' : setSquare(i*8+j, SILVER, CAT);   break;
            case 'r' : setSquare(i*8+j, SILVER, RABBIT);  break;
-           case ' ' : case 'X' : break; //setSquare(i*10+j, NO_COLOR, EMPTY); break;
+					 case ' ' : case 'X' : case 'x': break; //setSquare(i*10+j, NO_COLOR, EMPTY); break;
            default :
            log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n";
            f.close();
@@ -325,7 +342,7 @@ void Board::dump()
 
 	//for (int color = 0; color < 2; color++)
 	//	for (int piece = 0; piece < 7; piece++) 
- 	//		log_() << bitBoard_[color][piece] << endl;
+	//		log_() << bitBoard_[color][piece] << endl;
   //log_() << "Hashkey: %#.8X%.8X\n",(unsigned long int)(bp->hashkey>>32),(unsigned long int)(bp->hashkey&0xFFFFFFFFULL);
 	
   } //Board::dump
@@ -344,14 +361,14 @@ void Board::setSquare(coord_t coord, color_t color, piece_t piece)
 piece_t Board::getSquarePiece(coord_t coord) 
 {
   if (bitBoard_[GOLD][0][coord])
-	  for (int i = 1; i < 7; i++ )
-	    if (bitBoard_[GOLD][i][coord])
-		    return i;
+		for (int i = 1; i < 7; i++ )
+			if (bitBoard_[GOLD][i][coord])
+				return i;
 
   if (bitBoard_[SILVER][0][coord])
     for (int i = 1; i < 7; i++ )
-	    if (bitBoard_[SILVER][i][coord])
-		    return i;
+			if (bitBoard_[SILVER][i][coord])
+				return i;
 
   return EMPTY;
 }
@@ -359,7 +376,7 @@ piece_t Board::getSquarePiece(coord_t coord)
 color_t Board::getSquareColor(coord_t coord) 
 {
   if (bitBoard_[GOLD][0][coord])
-  	return GOLD;
+		return GOLD;
 
   if (bitBoard_[SILVER][0][coord])
     return SILVER;

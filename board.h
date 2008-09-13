@@ -50,7 +50,6 @@ namespace BitStuff {
  // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
 }
 
-
 typedef unsigned int color_t;
 typedef unsigned int coord_t;
 typedef unsigned int piece_t;
@@ -102,9 +101,6 @@ class Board
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
 
-    void generateOneStepMoves(MoveList&);
-    void generatePushMoves(MoveList&);
-    void generatePullMoves(MoveList&);
     void generateMoves(MoveList&);
 
     void build_move_offsets();

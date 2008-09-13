@@ -10,10 +10,16 @@ h_FILES   = board.h getMove.h engine.h utils.h
 H_FILES   = board.cpp getMove.cpp engine.cpp utils.cpp
 O_FILES   = board.o getMove.o engine.o utils.o
 
-all: akimot_debug 
+all: debug 
 
-akimot_debug: $(O_FILES)
-	$(GPP) $(DEBUG) -o akimot_debug getMove.o board.o engine.o utils.o
+debug: $(O_FILES)
+	$(GPP) $(DEBUG) -o akimot getMove.o board.o engine.o utils.o
+
+opt: $(O_FILES)
+	$(GPP) $(OPT) -o akimot getMove.o board.o engine.o utils.o
+
+prof: $(O_FILES)
+	$(GPP) $(PROF) -o akimot getMove.o board.o engine.o utils.o
 
 .SUFFIXES: .cpp .o
 
@@ -22,7 +28,7 @@ akimot_debug: $(O_FILES)
 
 clean:
 	rm -f *.o
-	rm -f akimot_debug
+	rm -f akimot
 
 run:
-	./akimot_debug positions/startpos.txt
+	./akimot positions/startpos.txt

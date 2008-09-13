@@ -14,9 +14,19 @@ void test(Board board)
 
   MoveList moveList;
   board.generateMoves(moveList);
-	logger() << "Potential one step moves from the position:" << endl;
+	//	logger() << "Potential one step moves from the position:" << endl;
+
+  time_t now = time (NULL);
+	for ( int i = 0; i < 160000; i++){
+		moveList.clear();
+		board.generateMoves(moveList);
+	}
+	logger()<< endl << "elapsed time in seconds: " << time(NULL) - now << endl;
+		
+
   for (MoveListIt it = moveList.begin(); it != moveList.end(); it++) 
     (*it)->dump();
+
 	logger() << endl;
 
 }
