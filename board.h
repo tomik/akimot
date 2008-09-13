@@ -4,8 +4,8 @@
 #include "utils.h"
 
 #define MAX_NUMBER_MOVES 100
-#define NORTH -10
-#define SOUTH 10
+#define NORTH -8
+#define SOUTH 8
 #define EAST 1
 #define WEST -1
 
@@ -33,11 +33,15 @@ typedef unsigned long long u64;
 #define NOT_8_RANK  0xffffffffffffff00ULL
 #define TRAPS       0x0000240000240000ULL
 
-#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
-#define FROM_LEFT(n) (BIT_LEN - n - 1)   //for accesing elemt from left in bitsets ( implicitly from right )
+#define MOVE_PASS     0
+#define MOVE_SINGLE   1
+#define MOVE_PUSH     2
+#define MOVE_PULL     3
 
+#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
 
 namespace BitStuff { 
+  const bit64			 one(string("0000000000000000000000000000000000000000000000000000000000000001"));
   const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
   const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
   const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
@@ -50,20 +54,43 @@ namespace BitStuff {
 typedef unsigned int color_t;
 typedef unsigned int coord_t;
 typedef unsigned int piece_t;
+typedef unsigned int moveType_t;
 
 class Move
 {
+    Logger        log_; 
+
+    moveType_t    moveType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
+    color_t       color_;      
+    piece_t       piece_;  
+    coord_t       from_;     
+    coord_t       to_;        
+    piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
+    coord_t       oppFrom_;
+    coord_t       oppTo_;
+    
+    friend class  Board;
+  public:
+    void dump(); 
+    const string getStepStr(color_t, piece_t, coord_t, coord_t);
+    Move(){};
+    Move( moveType_t, color_t, piece_t, coord_t, coord_t );
+    Move( moveType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+
 };
+
+typedef list<Move*>           MoveList;
+typedef list<Move*>::iterator MoveListIt;
 
 class Board
 {
+    Logger        log_; 
 
     bit64         bitBoard_[2][7];
-    bit64         move_offset[2][7][64];     /* precomputed move offsets */
+    bit64         moveOffset_[2][7][64];     /* precomputed move offsets */
 
     unsigned int  moveCnt_;
     unsigned int  toMove_;
-    Logger        log_; 
 
   public:
     bool init(const char* fn); 
@@ -75,13 +102,14 @@ class Board
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
 
-    int generateOneStepMoves(Move moveList[]);
-    int generatePushMoves(Move moveList[]);
-    int generatePullMoves(Move moveList[]);
-    int generateMoves(Move moveList[]);
+    void generateOneStepMoves(MoveList&);
+    void generatePushMoves(MoveList&);
+    void generatePullMoves(MoveList&);
+    void generateMoves(MoveList&);
 
     void build_move_offsets();
 
+		void test();
     void dump();
 
     

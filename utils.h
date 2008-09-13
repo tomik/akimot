@@ -3,6 +3,7 @@
 
 #include <cassert>
 
+#include <list>
 
 #include <iostream>
 #include <fstream>

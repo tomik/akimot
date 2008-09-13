@@ -2,6 +2,25 @@
 #include "board.h"
 #include "engine.h"
 
+void test(Board board)
+{
+	Logger logger;
+
+  board.dump();
+//  Move move(MOVE_SINGLE, GOLD, ELEPHANT, 52, 44);
+//  move.dump();
+
+	//board.test();
+
+  MoveList moveList;
+  board.generateMoves(moveList);
+	logger() << "Potential one step moves from the position:" << endl;
+  for (MoveListIt it = moveList.begin(); it != moveList.end(); it++) 
+    (*it)->dump();
+	logger() << endl;
+
+}
+
 int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 {
 	Board board;
@@ -24,7 +43,9 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	}else {
 		cout << engine.doSearch(board) << endl;
 	}
-		board.dump();
+
+ test(board);
 	
 	return 0;
 }
+

@@ -21,7 +21,8 @@ akimot_debug: $(O_FILES)
 	$(GPP) -c $<
 
 clean:
-	rm -f *.s *.o .depend gmon.out core
-	rm -f akimot_debug akimot_opt akimot_prof
-	rm -f *~
-	rm -f *.orig
+	rm -f *.o
+	rm -f akimot_debug
+
+run:
+	./akimot_debug positions/startpos.txt
