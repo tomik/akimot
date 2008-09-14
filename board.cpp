@@ -16,19 +16,19 @@ bit64 getNeighbours(bit64 pieces)
   return(result);
 }
 
-void Move::setValues( moveType_t moveType, color_t color, piece_t piece, coord_t from, coord_t to)
+void Step::setValues( stepType_t stepType, color_t color, piece_t piece, coord_t from, coord_t to)
 {
-moveType_ = moveType;
+stepType_ = stepType;
 color_		= color;
 piece_		= piece;
 from_			= from;
 to_				= to;
 }
 
-void Move::setValues( moveType_t moveType, color_t color, piece_t piece, coord_t from, coord_t to, 
+void Step::setValues( stepType_t stepType, color_t color, piece_t piece, coord_t from, coord_t to, 
 						piece_t oppPiece, coord_t oppFrom, coord_t oppTo)
 {
-moveType_ = moveType;
+stepType_ = stepType;
 color_ = color;
 piece_ = piece;
 from_ = from;
@@ -38,7 +38,7 @@ oppFrom_ = oppFrom;
 oppTo_ = oppTo;
 
 }
-const string Move::getStepStr(color_t color, piece_t piece, coord_t from, coord_t to) 
+const string Step::getStepStr(color_t color, piece_t piece, coord_t from, coord_t to) 
 	//prints step string for given values
 {
 	stringstream s;
@@ -60,22 +60,22 @@ const string Move::getStepStr(color_t color, piece_t piece, coord_t from, coord_
 	
 }
 
-void Move::dump()
+void Step::dump()
 {
 	
 	log_() << "(";
-	switch (moveType_) {
-		case MOVE_PASS: 
+	switch (stepType_) {
+		case STEP_PASS: 
 			log_() << "pass";			
 			break;
-		case MOVE_SINGLE: 
+		case STEP_SINGLE: 
 			log_() << getStepStr(color_, piece_, from_, to_) ; 
 			break;
-		case MOVE_PUSH: 
+		case STEP_PUSH: 
 			log_() << getStepStr(OPP(color_), oppPiece_, oppFrom_, oppTo_)
 						 << getStepStr(color_, piece_, from_, to_ );
 			break;
-		case MOVE_PULL: 
+		case STEP_PULL: 
 			log_() << getStepStr(color_, piece_, from_, to_ )
 						 << getStepStr(OPP(color_), oppPiece_, oppFrom_, oppTo_);
 			break;
@@ -94,7 +94,7 @@ void Board::test()
 			for ( int j = 0; j < BIT_LEN; j ++ ) {
 				log_() << "position: " << j << endl;
 				for ( int i = 0; i < BIT_LEN; i ++ ){
-					log_() << moveOffset_[color][piece][j][i] ;
+					log_() << stepOffset_[color][piece][j][i] ;
 					if ( i% 8 == 7 )
 						log_() << endl;
 				}
@@ -102,9 +102,10 @@ void Board::test()
 		}
 }
 
-void Board::build_move_offsets()
+void Board::buildStepOffsets()
    //This table returns a bitmap of legal squares for a
    //given piece on a given color on a given square.
+	 //TODO: this might be simplified by having only RABBITS/OTHER "piece types"
 {
   int  color;
   int  piece;
@@ -125,7 +126,7 @@ void Board::build_move_offsets()
       else
         ts |= ((one << square) & not1rank) << 8;  // south
 
-      moveOffset_[color][RABBIT][square] = ts;    
+      stepOffset_[color][RABBIT][square] = ts;    
     }
 
   // Now do the rest
@@ -140,7 +141,7 @@ void Board::build_move_offsets()
           ts |= ((one << square) & not1rank) << 8;  // south
           ts |= ((one << square) & not8rank) >> 8;  // north
 
-          moveOffset_[color][piece][square] = ts;
+          stepOffset_[color][piece][square] = ts;
       }
 
 }
@@ -155,31 +156,31 @@ bool Board::isGoldMove()
  return toMove_ == GOLD;
 }
 
-void Board::makeMove(Move& move){
+void Board::makeStep(Step& step){
 
-		if (move.moveType_ == MOVE_PASS) 
+		if (step.stepType_ == STEP_PASS) 
 			return;
 
 		//update board
-    bitBoard_[move.color_][move.piece_].reset(move.from_);
-    bitBoard_[move.color_][move.piece_].set(move.to_);
-    bitBoard_[move.color_][0].reset(move.from_);
-    bitBoard_[move.color_][0].set(move.to_);
+    bitBoard_[step.color_][step.piece_].reset(step.from_);
+    bitBoard_[step.color_][step.piece_].set(step.to_);
+    bitBoard_[step.color_][0].reset(step.from_);
+    bitBoard_[step.color_][0].set(step.to_);
 
-		//handle push/pull moves
-		if (move.moveType_ != MOVE_SINGLE) {  
+		//handle push/pull steps
+		if (step.stepType_ != STEP_SINGLE) {  
 			assert( stepCount_ < 3 );	
-			bitBoard_[move.color_][move.oppPiece_].reset(move.oppFrom_);
-			bitBoard_[move.color_][move.oppPiece_].set(move.oppTo_);
-			bitBoard_[move.color_][0].reset(move.oppFrom_);
-			bitBoard_[move.color_][0].set(move.oppTo_);
+			bitBoard_[step.color_][step.oppPiece_].reset(step.oppFrom_);
+			bitBoard_[step.color_][step.oppPiece_].set(step.oppTo_);
+			bitBoard_[step.color_][0].reset(step.oppFrom_);
+			bitBoard_[step.color_][0].set(step.oppTo_);
 		}
 
     // update zobrist hash key 
     //nxt->signature ^= zobrist[ s.col ][ s.typ ][ s.fsq ];
     //nxt->signature ^= zobrist[ s.col ][ s.typ ][ s.tsq ];
 
-		//check traps (o) at most 2 traps "kill" after a push/pull move, otherwise just one
+		//check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
 		bit64 fullTraps;
 		int trap;
 		
@@ -216,14 +217,14 @@ int Board::checkGameEnd()
 }
 
 
-int Board::generateMoves(MoveList& moveList)
-	/*Crucial function generating moves from position for player to Move.
+int Board::generateSteps(StepList& stepList)
+	/*Crucial function generating steps from position for player to Step.
 	 *
-	 * returns number of generated moves saved in moveList array from index 0,
+	 * returns number of generated steps saved in stepList array from index 0,
 	 * fixed array is used as a datastructure for performance reasons ( instead of 
 	 * for instance dynamic list )*/
 {
-  int tm = toMove_;																				//player to move
+  int tm = toMove_;																				//player to step
 	int listCount = 0;
   bit64		empty(~(bitBoard_[0][0] | bitBoard_[1][0]));		// mask of unoccupied squares    
   bit64   notFrozenSquares;																// mask of friendly pieces which are not frozen
@@ -233,10 +234,10 @@ int Board::generateMoves(MoveList& moveList)
 	bit64		victims;																		 // weaker enemy pieces in adjacent squares
 	bit64		wherePush;																	 // where to push
 	bit64		wherePull;																	 // where to pull
-  bit64   whereMove;																	 // where to move    
+  bit64   whereStep;																	 // where to step    
 
-	//movements
-	//onestep: (piece) fromSquare-> toSquare 
+	//step posibilities
+	//single: (piece) fromSquare-> toSquare 
 	//push: (piece) fromSquare->victimFromSquare, (victim) victimFromSquare->victimToSquare
 	//pull: (piece) fromSquare->pullertoSquare, (victim) victimFromSquare->fromSquare
 	int fromSquare;
@@ -254,33 +255,33 @@ int Board::generateMoves(MoveList& moveList)
 
 		weaker |= bitBoard_[OPP(tm)][piece-1];														// all pieces we can we can push/pull
 		
-    fromSquare = movablePieces._Find_first();							// consider moves from this square next 
+    fromSquare = movablePieces._Find_first();							// consider steps from this square next 
     while (fromSquare != BIT_LEN) {
 
-      whereMove = empty & moveOffset_[tm][piece][fromSquare];
-      victims = weaker & moveOffset_[tm][piece][fromSquare];
+      whereStep = empty & stepOffset_[tm][piece][fromSquare];
+      victims = weaker & stepOffset_[tm][piece][fromSquare];
 
-			//generate one step moves
-      toSquare = whereMove._Find_first();						 // get next whereMove move  
+			//generate single steps
+      toSquare = whereStep._Find_first();						 // get next whereStep step  
       while (toSquare != BIT_LEN) {
 
-				moveList[listCount++].setValues(MOVE_SINGLE, tm, piece, fromSquare, toSquare);
+				stepList[listCount++].setValues(STEP_SINGLE, tm, piece, fromSquare, toSquare);
 
-				toSquare = whereMove._Find_next(toSquare);						 // get next whereMove move  
+				toSquare = whereStep._Find_next(toSquare);						 // get next whereStep step  
       }
 
 			if ( piece > RABBIT ) {
-				//generate push/pull moves
+				//generate push/pull steps
 				victimFromSquare = victims._Find_first();												// get next victim 
 				while (victimFromSquare != BIT_LEN) {
 					assert(piece != RABBIT );																			// rabbits can't have victims :)
-					wherePush = empty & moveOffset_[0][piece][victimFromSquare]; 
-					wherePull = empty & moveOffset_[0][piece][fromSquare];					// optimize: out of the while cycle
+					wherePush = empty & stepOffset_[0][piece][victimFromSquare]; 
+					wherePull = empty & stepOffset_[0][piece][fromSquare];					// optimize: out of the while cycle
 
 					pullerToSquare = wherePull._Find_first();											// where our piece (puller) can retrieve
 					while (pullerToSquare != BIT_LEN) {
 
-						moveList[listCount++].setValues(MOVE_PULL, tm, piece, fromSquare, pullerToSquare, 
+						stepList[listCount++].setValues(STEP_PULL, tm, piece, fromSquare, pullerToSquare, 
 																			getSquarePiece(victimFromSquare), victimFromSquare, fromSquare );	
 						pullerToSquare = wherePull._Find_next(pullerToSquare);			 // where our piece (puller) can retrieve
 					}
@@ -288,19 +289,19 @@ int Board::generateMoves(MoveList& moveList)
 					victimToSquare = wherePush._Find_first();												// where victim can be pushed to
 					while (victimToSquare!=BIT_LEN) {
 
-						moveList[listCount++].setValues(MOVE_PUSH, tm, piece, fromSquare, victimFromSquare,
+						stepList[listCount++].setValues(STEP_PUSH, tm, piece, fromSquare, victimFromSquare,
 																			getSquarePiece(victimFromSquare), victimFromSquare, victimToSquare  );
 						victimToSquare = wherePush._Find_next(victimToSquare);												// where victim can be pushed to
 					}
 				victimFromSquare = victims._Find_next(victimFromSquare);					// get next victim 
 				} //while victims
 			}//if piece rabbit
-    fromSquare = movablePieces._Find_next(fromSquare);							// consider moves from this square next 
+    fromSquare = movablePieces._Find_next(fromSquare);							// consider steps from this square next 
 		} //while movablePieces any
 	} // for piece
 
 	return listCount;
-} //Board::generateMoves
+} //Board::generateSteps
 
 bool Board::init(const char* fn)
  /**
@@ -377,7 +378,7 @@ bool Board::init(const char* fn)
     return false; //initialization from file failed
   }
 
-  build_move_offsets();
+  buildStepOffsets();
 
   return true;
 }
@@ -387,7 +388,7 @@ void Board::dump()
 {
 
   log_() << endl;
-  log_() << "Move " << moveCount_ / 2 + 1 << endl;// << ", Step " << stepCnt_ << ", ";
+  log_() << "Move " << moveCount_ / 2 + 1 << endl; << ", Step " << stepCount_ << ", ";
 
   if (toMove_ == GOLD) 
     log_() << "Gold to move." << endl;

@@ -7,10 +7,24 @@
 
 class Engine
 {
-		Logger logger_;
-	public:
-		string doSearch(Board&);		
-		string initialSetup(bool); 
+	Logger logger_;
+public:
+	string doSearch(Board&);		
+	string initialSetup(bool); 
 };
 
 #endif
+
+#define MAX_PLAYOUT_LENGTH 60  //these are "moves" ( i.e. 4 steps ) 
+
+enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG }; 
+
+class SimplePlayout
+{
+	Board*				board_;
+	uint					playoutLength_;
+	void playOne();	
+	public:
+		SimplePlayout(Board*);
+		playoutStatus_e doPlayout();	
+};

@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-#define MAX_MOVES 100
+#define MAX_STEPS 100
 
 #define NORTH -8
 #define SOUTH 8
@@ -30,10 +30,10 @@ typedef unsigned long long u64;
 
 #define TRAPS       0x0000240000240000ULL
 
-#define MOVE_PASS     0
-#define MOVE_SINGLE   1
-#define MOVE_PUSH     2
-#define MOVE_PULL     3
+#define STEP_PASS     0
+#define STEP_SINGLE   1
+#define STEP_PUSH     2
+#define STEP_PULL     3
 
 #define OPP(player) (1 - player)				 //opponent
 #define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
@@ -54,16 +54,16 @@ namespace bitStuff {
  // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
 }
 
-typedef unsigned int color_t;
-typedef unsigned int coord_t;
-typedef unsigned int piece_t;
-typedef unsigned int moveType_t;
+typedef uint color_t;
+typedef uint coord_t;
+typedef uint piece_t;
+typedef uint stepType_t;
 
-class Move
+class Step
 {
     Logger        log_; 
 
-    moveType_t    moveType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
+    stepType_t    stepType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
     color_t       color_;      
     piece_t       piece_;  
     coord_t       from_;     
@@ -76,22 +76,31 @@ class Move
   public:
     void dump(); 
     const string getStepStr(color_t, piece_t, coord_t, coord_t);
-    inline void setValues( moveType_t, color_t, piece_t, coord_t, coord_t );
-    inline void setValues( moveType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+    inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t );
+    inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
 
 };
 
-typedef Move   MoveList [MAX_MOVES];			 // fixed array for performance reasons 
+typedef Step	StepList [MAX_STEPS];			 // fixed array for performance reasons 
 
 class Board
+		/*This is a crucial class - representing the board. 
+		 *
+		 * step is either pass or single piece step or push/pull step
+		 * move consists of up to 4 steps ( push/pull  counting for 2 )
+		 */
 {
     Logger        log_; 
 
     bit64         bitBoard_[2][7];
-    bit64         moveOffset_[2][7][64];     // precomputed move offsets 
-
-
+    bit64					stepOffset_[2][7][64];				// precomputed step offsets TODO: move outside the class
+  
+		// move consists of up to 4 steps ( push/pull  counting for 2 ),
+		// thus moveCount_ expresses how far in the game position is 
     unsigned int  moveCount_;
+
+		// step is either pass or single piece step or push/pull step,
+		// thus stepCount_ takes values 0 - 4 
     unsigned int  stepCount_;
     unsigned int  toMove_;
 
@@ -106,12 +115,12 @@ class Board
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
 
-		void makeMove(Move&);
+		void makeStep(Step&);
 		int checkGameEnd();
 
-    int generateMoves(MoveList&);
+    int generateSteps(StepList&);
 
-    void build_move_offsets();
+    void buildStepOffsets();
 
 		void test();
     void dump();
