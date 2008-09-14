@@ -26,6 +26,12 @@ SimplePlayout::SimplePlayout(Board* board)
 
 void SimplePlayout::playOne()
 {
+	Step step;
+	do {
+		step = board_->generateRandomStep();
+		board_->makeStep(step);
+	}
+	while ( board_->getStepCount()	< 4 && ! step.isPass()); 
 	return;
 }
 

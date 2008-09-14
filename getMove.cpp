@@ -4,18 +4,22 @@
 
 void test(Board board)
 {
-	Logger logger;
 
   board.dump();
-//  Step step(STEP_SINGLE, GOLD, ELEPHANT, 52, 44);
-//  step.dump();
+	Board playBoard;
+
+	playBoard = board;
+	SimplePlayout sp(&playBoard);	
+	sp.doPlayout();
+/*
+	Logger logger;
+  Step step(STEP_SINGLE, GOLD, ELEPHANT, 52, 44);
+  step.dump();
 
 	//board.test();
-
   StepList stepList;
 	int listCount;
   board.generateSteps(stepList);
-	//	logger() << "Potential single steps from the position:" << endl;
 
   time_t now = time (NULL);
 	unsigned long long i=0;
@@ -26,10 +30,12 @@ void test(Board board)
 	logger()<< endl << "games per sec: " << i/1600 + i%1600 <<endl;
 		
 
+	logger() << "Potential single steps from the position:" << endl;
   for (int i = 0; i < listCount; i++) 
     stepList[i].dump();
 
 	logger() << endl;
+*/
 
 }
 
@@ -44,7 +50,8 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		return 1;
 	}
 
-	srand(0);
+	srand(time(NULL));
+
 	if (! board.init(argv[1])) {
 		logger() << "Couldn't read position from file.\n";
 		return 1;

@@ -78,6 +78,8 @@ class Step
     const string getStepStr(color_t, piece_t, coord_t, coord_t);
     inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t );
     inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+    inline void setPass(); 
+		bool isPass();
 
 };
 
@@ -94,15 +96,16 @@ class Board
 
     bit64         bitBoard_[2][7];
     bit64					stepOffset_[2][7][64];				// precomputed step offsets TODO: move outside the class
+		StepList			stepList_;										// for inner step generation ( like generate all and select random )
   
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
-    unsigned int  moveCount_;
+    uint  moveCount_;
 
 		// step is either pass or single piece step or push/pull step,
 		// thus stepCount_ takes values 0 - 4 
-    unsigned int  stepCount_;
-    unsigned int  toMove_;
+    uint  stepCount_;
+    uint  toMove_;
 
   public:
     bool init(const char* fn); 
@@ -114,15 +117,16 @@ class Board
     inline void delSquare(coord_t);											//deletes piece from square ( traping ) 
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
+		uint	getStepCount();
 
 		void makeStep(Step&);
 		int checkGameEnd();
 
     int generateSteps(StepList&);
+		Step generateRandomStep();
 
     void buildStepOffsets();
 
-		void test();
     void dump();
     
 };

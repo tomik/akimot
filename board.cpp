@@ -3,6 +3,7 @@
 
 using namespace bitStuff;
 
+
 bit64 getNeighbours(bit64 pieces)
   //Returns neighbors bitset for a bitset of pieces
 {
@@ -15,6 +16,15 @@ bit64 getNeighbours(bit64 pieces)
 
   return(result);
 }
+
+void Step::setPass() {
+	stepType_ = STEP_PASS;
+}
+
+bool Step::isPass() {
+	return (stepType_ == STEP_PASS);
+}
+
 
 void Step::setValues( stepType_t stepType, color_t color, piece_t piece, coord_t from, coord_t to)
 {
@@ -86,6 +96,7 @@ void Step::dump()
 	log_() << ") ";
 }
 
+/*
 void Board::test()
 {
 	for (int color = 0; color < 2; color++)
@@ -100,7 +111,7 @@ void Board::test()
 				}
 			}
 		}
-}
+}*/
 
 void Board::buildStepOffsets()
    //This table returns a bitmap of legal squares for a
@@ -166,6 +177,7 @@ void Board::makeStep(Step& step){
     bitBoard_[step.color_][step.piece_].set(step.to_);
     bitBoard_[step.color_][0].reset(step.from_);
     bitBoard_[step.color_][0].set(step.to_);
+		stepCount_++;
 
 		//handle push/pull steps
 		if (step.stepType_ != STEP_SINGLE) {  
@@ -174,6 +186,7 @@ void Board::makeStep(Step& step){
 			bitBoard_[step.color_][step.oppPiece_].set(step.oppTo_);
 			bitBoard_[step.color_][0].reset(step.oppFrom_);
 			bitBoard_[step.color_][0].set(step.oppTo_);
+			stepCount_++;
 		}
 
     // update zobrist hash key 
@@ -191,16 +204,17 @@ void Board::makeStep(Step& step){
 			//getNeighbours(trapGuards) & bitStuff:traps  ... these are guardedTraps
 			//so guardedTraps ^ fullTraps gives us full unguarded traps 
 			//I have a bad feeling of utter inefficiency anyway :( 
-			fullTraps = bitStuff::traps & bitBoard_[color][0];
-			fullTraps = (getNeighbours((bitStuff::trapsNeighbours & bitBoard_[color][0])) & bitStuff::traps)^fullTraps;
 			//optimize: do it the "stupid way" checking trap by trap and 
 			
+			fullTraps = bitStuff::traps & bitBoard_[color][0];
+			fullTraps = (getNeighbours((bitStuff::trapsNeighbours & bitBoard_[color][0])) & bitStuff::traps)^fullTraps;
 
+			//now go through fulltraps and discard the pieces 
 			trap = fullTraps._Find_first();							// consider unguarded full trap
       while (trap != BIT_LEN) {										// Find_first fails => returns bitset length
 				delSquare(trap);
-					//nxt->signature ^= zobrist[c][typ][t];   // repair hash
-				trap = fullTraps._Find_next(trap);							// consider trap
+ 				//nxt->signature ^= zobrist[c][typ][t];   // repair hash
+				trap = fullTraps._Find_next(trap);			  // consider trap
 			}
 		}
  
@@ -216,6 +230,15 @@ int Board::checkGameEnd()
 	return 0;
 }
 
+
+Step Board::generateRandomStep()
+	/* optimize: this must be a very quick method !
+	 * generate all and then select one is VERY slow 
+	 */
+{
+	int len = generateSteps(stepList_);
+	return stepList_[rand() % len];
+}
 
 int Board::generateSteps(StepList& stepList)
 	/*Crucial function generating steps from position for player to Step.
@@ -270,7 +293,7 @@ int Board::generateSteps(StepList& stepList)
 				toSquare = whereStep._Find_next(toSquare);						 // get next whereStep step  
       }
 
-			if ( piece > RABBIT ) {
+			if ( piece > RABBIT && stepCount_ < 3 ) { //push/pull only possible for strong pieces and not in last step
 				//generate push/pull steps
 				victimFromSquare = victims._Find_first();												// get next victim 
 				while (victimFromSquare != BIT_LEN) {
@@ -300,6 +323,10 @@ int Board::generateSteps(StepList& stepList)
 		} //while movablePieces any
 	} // for piece
 
+		
+	if ( stepCount_ > 1 ) //pass is added for steps 2,3,4
+		stepList[listCount++].setPass();
+
 	return listCount;
 } //Board::generateSteps
 
@@ -317,6 +344,9 @@ bool Board::init(const char* fn)
     bitBoard_[0][i].reset();
 		bitBoard_[1][i].reset();
   }
+
+	moveCount_ = 1;
+	stepCount_ = 0;
 
   fstream f;
   char side;
@@ -388,7 +418,7 @@ void Board::dump()
 {
 
   log_() << endl;
-  log_() << "Move " << moveCount_ / 2 + 1 << endl; << ", Step " << stepCount_ << ", ";
+  log_() << "Move " << moveCount_ / 2 + 1 << ", Step " << stepCount_ << ", ";
 
   if (toMove_ == GOLD) 
     log_() << "Gold to move." << endl;
@@ -475,3 +505,7 @@ color_t Board::getSquareColor(coord_t coord)
   return NO_COLOR;
 }
 
+uint Board::getStepCount() 
+{
+	return stepCount_;
+}
