@@ -28,10 +28,6 @@ typedef unsigned long long u64;
 #define CAMEL       5
 #define ELEPHANT    6
 
-#define NOT_A_FILE  0xfefefefefefefefeULL
-#define NOT_H_FILE  0x7f7f7f7f7f7f7f7fULL
-#define NOT_1_RANK  0x00ffffffffffffffULL
-#define NOT_8_RANK  0xffffffffffffff00ULL
 #define TRAPS       0x0000240000240000ULL
 
 #define MOVE_PASS     0
@@ -39,14 +35,21 @@ typedef unsigned long long u64;
 #define MOVE_PUSH     2
 #define MOVE_PULL     3
 
+#define OPP(player) (1 - player)				 //opponent
 #define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
 
-namespace BitStuff { 
+namespace bitStuff { 
   const bit64			 one(string("0000000000000000000000000000000000000000000000000000000000000001"));
   const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
   const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
   const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
   const bit64 not8rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
+  const bit64 traps		(string("0000000000000000001001000000000000000000001001000000000000000000"));
+  const bit64 trapsNeighbours
+											(string("0000000000100100010110100010010000100100010110100010010000000000"));
+	const bit64	winRank[2] = 
+							 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
+							   bit64(string("0000000000000000000000000000000000000000000000000000000011111111")) };
 
  // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
 }
@@ -88,7 +91,8 @@ class Board
     bit64         moveOffset_[2][7][64];     // precomputed move offsets 
 
 
-    unsigned int  moveCnt_;
+    unsigned int  moveCount_;
+    unsigned int  stepCount_;
     unsigned int  toMove_;
 
   public:
@@ -98,8 +102,12 @@ class Board
     bool isGoldMove();
 
     inline void setSquare(coord_t, color_t, piece_t);
+    inline void delSquare(coord_t);											//deletes piece from square ( traping ) 
     inline piece_t getSquarePiece(coord_t);
     inline color_t getSquareColor(coord_t);
+
+		void makeMove(Move&);
+		int checkGameEnd();
 
     int generateMoves(MoveList&);
 
@@ -107,7 +115,6 @@ class Board
 
 		void test();
     void dump();
-
     
 };
 

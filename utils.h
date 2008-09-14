@@ -10,7 +10,6 @@
 #include <sstream>
 #include <string>
 #include <bitset>
-#include <boost/dynamic_bitset.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>

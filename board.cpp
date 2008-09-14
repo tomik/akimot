@@ -1,7 +1,7 @@
 
 #include "board.h"
 
-using namespace BitStuff;
+using namespace bitStuff;
 
 bit64 getNeighbours(bit64 pieces)
   //Returns neighbors bitset for a bitset of pieces
@@ -72,12 +72,12 @@ void Move::dump()
 			log_() << getStepStr(color_, piece_, from_, to_) ; 
 			break;
 		case MOVE_PUSH: 
-			log_() << getStepStr(1-color_, oppPiece_, oppFrom_, oppTo_)
+			log_() << getStepStr(OPP(color_), oppPiece_, oppFrom_, oppTo_)
 						 << getStepStr(color_, piece_, from_, to_ );
 			break;
 		case MOVE_PULL: 
 			log_() << getStepStr(color_, piece_, from_, to_ )
-						 << getStepStr(1-color_, oppPiece_, oppFrom_, oppTo_);
+						 << getStepStr(OPP(color_), oppPiece_, oppFrom_, oppTo_);
 			break;
 		default:
 			assert(false);
@@ -147,12 +147,72 @@ void Board::build_move_offsets()
 
 bool Board::isEmpty() 
 {
- return moveCnt_ == 1;
+ return moveCount_ == 1;
 }
 
 bool Board::isGoldMove() 
 {
  return toMove_ == GOLD;
+}
+
+void Board::makeMove(Move& move){
+
+		if (move.moveType_ == MOVE_PASS) 
+			return;
+
+		//update board
+    bitBoard_[move.color_][move.piece_].reset(move.from_);
+    bitBoard_[move.color_][move.piece_].set(move.to_);
+    bitBoard_[move.color_][0].reset(move.from_);
+    bitBoard_[move.color_][0].set(move.to_);
+
+		//handle push/pull moves
+		if (move.moveType_ != MOVE_SINGLE) {  
+			assert( stepCount_ < 3 );	
+			bitBoard_[move.color_][move.oppPiece_].reset(move.oppFrom_);
+			bitBoard_[move.color_][move.oppPiece_].set(move.oppTo_);
+			bitBoard_[move.color_][0].reset(move.oppFrom_);
+			bitBoard_[move.color_][0].set(move.oppTo_);
+		}
+
+    // update zobrist hash key 
+    //nxt->signature ^= zobrist[ s.col ][ s.typ ][ s.fsq ];
+    //nxt->signature ^= zobrist[ s.col ][ s.typ ][ s.tsq ];
+
+		//check traps (o) at most 2 traps "kill" after a push/pull move, otherwise just one
+		bit64 fullTraps;
+		int trap;
+		
+		for (int color = 0; color < 2; color++){
+			//a little explanation of following two lines:
+			//fullTraps ... traps ( bitstuff::traps ) that have (&) someone on them bitBoard[color][0] of particular color
+			//biStuff::trapsNeighbours & bitBoard_[color][0] ... these are trapGuards
+			//getNeighbours(trapGuards) & bitStuff:traps  ... these are guardedTraps
+			//so guardedTraps ^ fullTraps gives us full unguarded traps 
+			//I have a bad feeling of utter inefficiency anyway :( 
+			fullTraps = bitStuff::traps & bitBoard_[color][0];
+			fullTraps = (getNeighbours((bitStuff::trapsNeighbours & bitBoard_[color][0])) & bitStuff::traps)^fullTraps;
+			//optimize: do it the "stupid way" checking trap by trap and 
+			
+
+			trap = fullTraps._Find_first();							// consider unguarded full trap
+      while (trap != BIT_LEN) {										// Find_first fails => returns bitset length
+				delSquare(trap);
+					//nxt->signature ^= zobrist[c][typ][t];   // repair hash
+				trap = fullTraps._Find_next(trap);							// consider trap
+			}
+		}
+ 
+	 	return;
+}
+
+int Board::checkGameEnd()
+{
+  // detect rabbit run wins 
+  if ( (bitBoard_[toMove_][1] & winRank[toMove_]).any() ) return(1);
+  if ( (bitBoard_[OPP(toMove_)][1] & winRank[OPP(toMove_)]).any() ) return(-1); //pushing opponents rabbit to the goal - wtf ?
+
+	return 0;
 }
 
 
@@ -168,7 +228,7 @@ int Board::generateMoves(MoveList& moveList)
   bit64		empty(~(bitBoard_[0][0] | bitBoard_[1][0]));		// mask of unoccupied squares    
   bit64   notFrozenSquares;																// mask of friendly pieces which are not frozen
   bit64   movablePieces;																	// mask of friendly pieces on notFrozenSquares
-  bit64		stronger (bitBoard_[1-tm][0]);                  // mask of stronger enemy pcs for movablePieces
+  bit64		stronger (bitBoard_[OPP(tm)][0]);                  // mask of stronger enemy pcs for movablePieces
   bit64		weaker;																			 // weaker enemy pieces all over the board 
 	bit64		victims;																		 // weaker enemy pieces in adjacent squares
 	bit64		wherePush;																	 // where to push
@@ -187,12 +247,12 @@ int Board::generateMoves(MoveList& moveList)
 
   for (int piece = 1; piece < 7; piece++) {
     movablePieces = bitBoard_[tm][piece];														// get all pieces of this type
-    stronger ^= bitBoard_[1-tm][piece];															// remove from consideration
+    stronger ^= bitBoard_[OPP(tm)][piece];															// remove from consideration
     notFrozenSquares = 
 			getNeighbours(bitBoard_[tm][0]) | (~getNeighbours(stronger)); //around is friendly piece or no stroger enemy piece 
     movablePieces &= notFrozenSquares;															// pieces from slice on notFrozenSquares
 
-		weaker |= bitBoard_[1-tm][piece-1];														// all pieces we can we can push/pull
+		weaker |= bitBoard_[OPP(tm)][piece-1];														// all pieces we can we can push/pull
 		
     fromSquare = movablePieces._Find_first();							// consider moves from this square next 
     while (fromSquare != BIT_LEN) {
@@ -268,7 +328,7 @@ bool Board::init(const char* fn)
        return false;
      }
 
-    f >> moveCnt_; 
+    f >> moveCount_; 
     f >> side;
     f.ignore(1024,'\n'); //ignores the rest of initial line 
 
@@ -276,7 +336,7 @@ bool Board::init(const char* fn)
       toMove_ = GOLD;
     else {
       toMove_ = SILVER;
-      moveCnt_++; //TODO ? 
+      moveCount_++; //TODO ? 
     }
 
     f.ignore(1024,'\n'); //ignores the top of the border till EOF 
@@ -327,7 +387,7 @@ void Board::dump()
 {
 
   log_() << endl;
-  log_() << "Move " << moveCnt_ / 2 + 1 << endl;// << ", Step " << stepCnt_ << ", ";
+  log_() << "Move " << moveCount_ / 2 + 1 << endl;// << ", Step " << stepCnt_ << ", ";
 
   if (toMove_ == GOLD) 
     log_() << "Gold to move." << endl;
@@ -368,6 +428,24 @@ void Board::setSquare(coord_t coord, color_t color, piece_t piece)
  
  bitBoard_[color][piece].set(coord);
  bitBoard_[color][0].set(coord);
+}
+
+//optimize: methods delSquare, getSquarePiece, etc. are VERY slow - optimize using one board for all pieces
+void Board::delSquare(coord_t coord) 
+{
+  if (bitBoard_[GOLD][0][coord]){
+		bitBoard_[GOLD][0].reset(coord);
+		for (int i = 1; i < 7; i++ )
+			if (bitBoard_[GOLD][i][coord])
+				bitBoard_[GOLD][i].reset(coord);
+	}
+
+  if (bitBoard_[SILVER][0][coord]){
+		bitBoard_[SILVER][0].reset(coord);
+    for (int i = 1; i < 7; i++ )
+			if (bitBoard_[SILVER][i][coord])
+				bitBoard_[SILVER][i].reset(coord);
+	}
 }
 
 piece_t Board::getSquarePiece(coord_t coord) 
