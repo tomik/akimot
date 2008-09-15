@@ -237,7 +237,9 @@ Step Board::generateRandomStep()
 	 */
 {
 	int len = generateSteps(stepList_);
-	return stepList_[rand() % len];
+	int index = rand() % len;
+	assert(index >= 0 && index < len);
+	return stepList_[index];
 }
 
 int Board::generateSteps(StepList& stepList)

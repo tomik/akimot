@@ -50,3 +50,74 @@ playoutStatus_e SimplePlayout::doPlayout()
 	}
 }
 
+uint SimplePlayout::getPlayoutLength()
+{
+	return playoutLength_;
+}
+
+
+Benchmark::Benchmark()
+{
+}
+
+
+Benchmark::Benchmark(Board* board, uint playoutCount)
+{
+	board_ = board;	
+	playoutCount_ = playoutCount;
+}
+
+
+void Benchmark::doBenchmark()
+{
+		
+  float					secondsBegin;
+  float					secondsEnd;
+  float					secondsTotal;
+	Board					playBoard;
+  
+  playoutStatus_e  playoutStatus;
+  uint			 winCount[2] = { 0, 0};
+	uint			 playoutTooLong = 0;
+	uint			 playoutAvgLen = 0;
+  
+  secondsBegin = clock();
+  
+  for (uint i = 0 ; i < playoutCount_; i++)  {
+		playBoard = *board_;
+    SimplePlayout simplePlayout(&playBoard);
+    playoutStatus = simplePlayout.doPlayout ();
+    
+    switch (playoutStatus) {
+		case PLAYOUT_OK:
+      winCount [0/*playBoard.winner()*/] ++;
+      break;
+    case PLAYOUT_TOO_LONG:
+			playoutTooLong++;
+      break;
+    }
+		playoutAvgLen += simplePlayout.getPlayoutLength(); 
+  }
+  
+  secondsEnd = clock();
+  
+//  out << "Initial board:" << endl;
+//  out << board_->dump (); todo add to_string method to board
+  
+  secondsTotal = secondsEnd - secondsBegin;
+  
+  log_()
+			<< "Performance: " << endl
+      << "  " <<playoutCount_ << " playouts" << endl 
+      << "  " << secondsTotal << " seconds" << endl
+      << "  " << float (playoutCount_) / secondsTotal / 1000.0 << " pps" << endl;
+  
+  log_()
+			<< "Gold wins = " << winCount [GOLD] << endl
+      << "Silver wins = " << winCount [SILVER] << endl
+      << "Playout too long = " << playoutTooLong << endl
+      << "P(gold win) = " << float (winCount [GOLD]) / float (winCount [GOLD] + winCount [SILVER]) << endl
+			<< "Avererage playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
+}
+
+
