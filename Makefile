@@ -6,8 +6,8 @@ CFLAGS += -Wall
 
 GPP    = g++ $(CFLAGS) 
 
-h_FILES   = board.h getMove.h engine.h utils.h
-H_FILES   = board.cpp getMove.cpp engine.cpp utils.cpp
+H_FILES   = board.h engine.h utils.h
+C_FILES   = board.cpp getMove.cpp engine.cpp utils.cpp
 O_FILES   = board.o getMove.o engine.o utils.o
 
 all: debug 
@@ -21,10 +21,22 @@ opt: $(O_FILES)
 prof: $(O_FILES)
 	$(GPP) $(PROF) -o akimot getMove.o board.o engine.o utils.o
 
-.SUFFIXES: .cpp .o
+board.o: board.cpp board.h utils.h
+	$(GPP) -c board.cpp
 
-.cpp.o:
-	$(GPP) -c $<
+engine.o: engine.cpp engine.h utils.h board.h
+	$(GPP) -c engine.cpp
+
+utils.o: utils.cpp utils.h
+	$(GPP) -c utils.cpp
+
+getMove.o: getMove.cpp
+	$(GPP) -c getMove.cpp
+
+
+#.SUFFIXES: .cpp .o
+#.cpp.o: $(H_FILES)
+#	$(GPP) -c $<
 
 clean:
 	rm -f *.o

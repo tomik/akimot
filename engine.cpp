@@ -32,7 +32,6 @@ void SimplePlayout::playOne()
 		board_->makeStep(step);
 	}
 	while ( board_->getStepCount()	< 4 && step.pieceMoved()); 
-	board_->dump();
 	board_->commitMove();
 	return;
 }

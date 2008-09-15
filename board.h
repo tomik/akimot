@@ -10,8 +10,6 @@
 #define EAST 1
 #define WEST -1
 
-//dailey 
-
 #define BIT_LEN     64
 typedef bitset<BIT_LEN> bit64;
 typedef unsigned long long u64;
@@ -28,13 +26,11 @@ typedef unsigned long long u64;
 #define CAMEL       5
 #define ELEPHANT    6
 
-#define TRAPS       0x0000240000240000ULL
-
 #define STEP_PASS     0
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
 #define STEP_PULL     3
-#define STEP_NO_STEP  0   //no step is possible ( not even pass ! - position repetition )
+#define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
 
 #define OPP(player) (1 - player)				 //opponent
 #define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
@@ -52,10 +48,16 @@ namespace bitStuff {
 							 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
 							   bit64(string("111111110000000000000000000000000000000000000000000000000000000")) };
 
+  extern bit64					stepOffset_[2][7][64]; //cannot be const - is build by buildStepOffset
+
  // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
+ 
+	void buildStepOffsets();
+	string stepOffsettoString();
+	bit64 getNeighbours(bit64);
 }
 
-typedef uint color_t;
+typedef uint player_t;
 typedef uint coord_t;
 typedef uint piece_t;
 typedef uint stepType_t;
@@ -65,7 +67,7 @@ class Step
     Logger        log_; 
 
     stepType_t    stepType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
-    color_t       color_;      
+    player_t      player_;      
     piece_t       piece_;  
     coord_t       from_;     
     coord_t       to_;        
@@ -75,14 +77,16 @@ class Step
     
     friend class  Board;
   public:
-    void dump(); 
 		Step(){};
 		Step( stepType_t );
-    const string getStepStr(color_t, piece_t, coord_t, coord_t);
-    inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t );
-    inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+    inline void setValues( stepType_t, player_t, piece_t, coord_t, coord_t );
+    inline void setValues( stepType_t, player_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
     inline void setPass(); 
 		bool pieceMoved();
+
+    const string oneSteptoString(player_t, piece_t, coord_t, coord_t);
+    const string toString();
+    void dump(); 
 
 };
 
@@ -98,7 +102,6 @@ class Board
     Logger        log_; 
 
     bit64         bitBoard_[2][7];
-    bit64					stepOffset_[2][7][64];				// precomputed step offsets TODO: move outside the class
 		StepList			stepList_;										// for inner step generation ( like generate all and select random )
   
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
@@ -110,31 +113,30 @@ class Board
     uint  stepCount_;
     uint  toMove_;
 
-		color_t winner_;
+		player_t winner_;
 
   public:
     bool init(const char* fn); 
 
-    bool isEmpty();
-    bool isGoldMove();
+    bool		 isEmpty();
+    player_t getPlayerToMove();
 
-    inline void			setSquare(coord_t, color_t, piece_t);
+    inline void			setSquare(coord_t, player_t, piece_t);
     inline void			delSquare(coord_t);											//deletes piece from square ( traping ) 
     inline piece_t	getSquarePiece(coord_t);
-    inline color_t	getSquareColor(coord_t);
+    inline player_t	getSquarePlayer(coord_t);
 		uint			getStepCount();
-		color_t	getWinner();
+		player_t	getWinner();
 
 		void makeStep(Step&);
 		void commitMove();
-		int checkGameEnd();
 
     int generateSteps(StepList&);
 		Step generateRandomStep();
 
-    void buildStepOffsets();
 
     void dump();
+		string toString();
     
 };
 

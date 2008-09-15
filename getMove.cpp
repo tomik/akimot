@@ -7,7 +7,7 @@ void test(Board board)
 
   board.dump();
 
-	Benchmark benchmark(&board,1000);
+	Benchmark benchmark(&board,10000);
 	benchmark.doBenchmark();
 /*
 	Logger logger;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	} 
 
 	if (board.isEmpty()) { //first step
-		cout << engine.initialSetup(board.isGoldMove());
+		cout << engine.initialSetup(board.getPlayerToMove() == GOLD);
 	}else {
 		cout << engine.doSearch(board) << endl;
 	}
