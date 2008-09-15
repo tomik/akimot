@@ -17,12 +17,23 @@ bit64 getNeighbours(bit64 pieces)
   return(result);
 }
 
-void Step::setPass() {
+Step::Step( stepType_t stepType )
+	/*this constructor is mainly used for 
+	 * step_no_step or step_pass which don't use other values*/
+{
+	stepType_ = stepType;
+}
+
+void Step::setPass() 
+{
 	stepType_ = STEP_PASS;
 }
 
-bool Step::isPass() {
-	return (stepType_ == STEP_PASS);
+bool Step::pieceMoved() 
+	/* returns true if any piece was moved
+	 * i.e. returns false if pass or no_step */
+{
+	return (! (stepType_ == STEP_PASS || stepType_ == STEP_NO_STEP));
 }
 
 
@@ -169,8 +180,13 @@ bool Board::isGoldMove()
 
 void Board::makeStep(Step& step){
 
-		if (step.stepType_ == STEP_PASS) 
+		if (step.stepType_ == STEP_NO_STEP)
 			return;
+
+		if (step.stepType_ == STEP_PASS ){
+			stepCount_++;	
+			return;
+		}
 
 		//update board
     bitBoard_[step.color_][step.piece_].reset(step.from_);
@@ -181,7 +197,7 @@ void Board::makeStep(Step& step){
 
 		//handle push/pull steps
 		if (step.stepType_ != STEP_SINGLE) {  
-			assert( stepCount_ < 3 );	
+			assert( stepCount_ < 4 );	
 			bitBoard_[step.color_][step.oppPiece_].reset(step.oppFrom_);
 			bitBoard_[step.color_][step.oppPiece_].set(step.oppTo_);
 			bitBoard_[step.color_][0].reset(step.oppFrom_);
@@ -221,6 +237,22 @@ void Board::makeStep(Step& step){
 	 	return;
 }
 
+void Board::commitMove()
+	/*called after player ends his move, checks the winner*/
+{
+
+	//winner might be set already ( when player to move has no move ) 
+  if ( (bitBoard_[toMove_][1] & winRank[toMove_]).any() ) 
+		winner_ = toMove_;
+  if ( (bitBoard_[OPP(toMove_)][1] & winRank[OPP(toMove_)]).any() )  //pushing opponents rabbit to the goal - wtf ?
+		winner_ = OPP(toMove_);
+
+	if (toMove_ == SILVER) 
+		moveCount_++;
+	toMove_ = 1 - toMove_;
+	stepCount_ = 0;
+}
+
 int Board::checkGameEnd()
 {
   // detect rabbit run wins 
@@ -230,13 +262,18 @@ int Board::checkGameEnd()
 	return 0;
 }
 
-
 Step Board::generateRandomStep()
 	/* optimize: this must be a very quick method !
 	 * generate all and then select one is VERY slow 
 	 */
 {
 	int len = generateSteps(stepList_);
+
+	if (len == 0){ //player to move has no step to play ( not even pass ! ) => loss
+		winner_ = 1 - toMove_; 
+		return Step(STEP_NO_STEP);  //todo: return this as pass move ( slight speed up )
+	}
+
 	int index = rand() % len;
 	assert(index >= 0 && index < len);
 	return stepList_[index];
@@ -320,7 +357,7 @@ int Board::generateSteps(StepList& stepList)
 					}
 				victimFromSquare = victims._Find_next(victimFromSquare);					// get next victim 
 				} //while victims
-			}//if piece rabbit
+			}//if piece > rabbit and stepcount < 3 
     fromSquare = movablePieces._Find_next(fromSquare);							// consider steps from this square next 
 		} //while movablePieces any
 	} // for piece
@@ -349,6 +386,7 @@ bool Board::init(const char* fn)
 
 	moveCount_ = 1;
 	stepCount_ = 0;
+	winner_ = NO_PLAYER;
 
   fstream f;
   char side;
@@ -394,7 +432,7 @@ bool Board::init(const char* fn)
            case 'd' : setSquare(i*8+j, SILVER, DOG);   break;
            case 'c' : setSquare(i*8+j, SILVER, CAT);   break;
            case 'r' : setSquare(i*8+j, SILVER, RABBIT);  break;
-					 case ' ' : case 'X' : case 'x': break; //setSquare(i*10+j, NO_COLOR, EMPTY); break;
+					 case ' ' : case 'X' : case 'x': break; //setSquare(i*10+j, NO_PLAYER, EMPTY); break;
            default :
            log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n";
            f.close();
@@ -504,10 +542,15 @@ color_t Board::getSquareColor(coord_t coord)
   if (bitBoard_[SILVER][0][coord])
     return SILVER;
 
-  return NO_COLOR;
+  return NO_PLAYER;
 }
 
 uint Board::getStepCount() 
 {
 	return stepCount_;
+}
+
+color_t Board::getWinner()
+{
+	return winner_;
 }

@@ -31,7 +31,9 @@ void SimplePlayout::playOne()
 		step = board_->generateRandomStep();
 		board_->makeStep(step);
 	}
-	while ( board_->getStepCount()	< 4 && ! step.isPass()); 
+	while ( board_->getStepCount()	< 4 && step.pieceMoved()); 
+	board_->dump();
+	board_->commitMove();
 	return;
 }
 
@@ -42,7 +44,7 @@ playoutStatus_e SimplePlayout::doPlayout()
 		playOne();
 		playoutLength_++;
 
-		if ( board_->checkGameEnd() ) 
+		if ( board_->getWinner() != NO_PLAYER ) //somebody won
 			return PLAYOUT_OK;
 
 		if ( playoutLength_ > MAX_PLAYOUT_LENGTH ) 
@@ -71,9 +73,9 @@ Benchmark::Benchmark(Board* board, uint playoutCount)
 void Benchmark::doBenchmark()
 {
 		
-  float					secondsBegin;
-  float					secondsEnd;
-  float					secondsTotal;
+  clock_t				clockBegin;
+  clock_t 			clockEnd;
+  float					timeTotal;
 	Board					playBoard;
   
   playoutStatus_e  playoutStatus;
@@ -81,7 +83,7 @@ void Benchmark::doBenchmark()
 	uint			 playoutTooLong = 0;
 	uint			 playoutAvgLen = 0;
   
-  secondsBegin = clock();
+  clockBegin = clock();
   
   for (uint i = 0 ; i < playoutCount_; i++)  {
 		playBoard = *board_;
@@ -90,7 +92,7 @@ void Benchmark::doBenchmark()
     
     switch (playoutStatus) {
 		case PLAYOUT_OK:
-      winCount [0/*playBoard.winner()*/] ++;
+      winCount [playBoard.getWinner()] ++;
       break;
     case PLAYOUT_TOO_LONG:
 			playoutTooLong++;
@@ -99,18 +101,18 @@ void Benchmark::doBenchmark()
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
   }
   
-  secondsEnd = clock();
+  clockEnd = clock();
   
 //  out << "Initial board:" << endl;
 //  out << board_->dump (); todo add to_string method to board
   
-  secondsTotal = secondsEnd - secondsBegin;
+	timeTotal = float (clockEnd - clockBegin) / CLOCKS_PER_SEC;
   
   log_()
 			<< "Performance: " << endl
       << "  " <<playoutCount_ << " playouts" << endl 
-      << "  " << secondsTotal << " seconds" << endl
-      << "  " << float (playoutCount_) / secondsTotal / 1000.0 << " pps" << endl;
+      << "  " << timeTotal << " seconds" << endl
+      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl;
   
   log_()
 			<< "Gold wins = " << winCount [GOLD] << endl

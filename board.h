@@ -18,7 +18,7 @@ typedef unsigned long long u64;
 
 #define GOLD        0
 #define SILVER      1
-#define NO_COLOR    2
+#define NO_PLAYER   2
 
 #define EMPTY       0
 #define RABBIT      1
@@ -34,6 +34,7 @@ typedef unsigned long long u64;
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
 #define STEP_PULL     3
+#define STEP_NO_STEP  0   //no step is possible ( not even pass ! - position repetition )
 
 #define OPP(player) (1 - player)				 //opponent
 #define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
@@ -49,7 +50,7 @@ namespace bitStuff {
 											(string("0000000000100100010110100010010000100100010110100010010000000000"));
 	const bit64	winRank[2] = 
 							 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
-							   bit64(string("0000000000000000000000000000000000000000000000000000000011111111")) };
+							   bit64(string("111111110000000000000000000000000000000000000000000000000000000")) };
 
  // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
 }
@@ -75,11 +76,13 @@ class Step
     friend class  Board;
   public:
     void dump(); 
+		Step(){};
+		Step( stepType_t );
     const string getStepStr(color_t, piece_t, coord_t, coord_t);
     inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t );
     inline void setValues( stepType_t, color_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
     inline void setPass(); 
-		bool isPass();
+		bool pieceMoved();
 
 };
 
@@ -107,19 +110,23 @@ class Board
     uint  stepCount_;
     uint  toMove_;
 
+		color_t winner_;
+
   public:
     bool init(const char* fn); 
 
     bool isEmpty();
     bool isGoldMove();
 
-    inline void setSquare(coord_t, color_t, piece_t);
-    inline void delSquare(coord_t);											//deletes piece from square ( traping ) 
-    inline piece_t getSquarePiece(coord_t);
-    inline color_t getSquareColor(coord_t);
-		uint	getStepCount();
+    inline void			setSquare(coord_t, color_t, piece_t);
+    inline void			delSquare(coord_t);											//deletes piece from square ( traping ) 
+    inline piece_t	getSquarePiece(coord_t);
+    inline color_t	getSquareColor(coord_t);
+		uint			getStepCount();
+		color_t	getWinner();
 
 		void makeStep(Step&);
+		void commitMove();
 		int checkGameEnd();
 
     int generateSteps(StepList&);
