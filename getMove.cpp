@@ -9,6 +9,7 @@ void test(Board board)
 
 	Benchmark benchmark(&board,10000);
 	benchmark.doBenchmark();
+
 /*
 	Logger logger;
   Step step(STEP_SINGLE, GOLD, ELEPHANT, 52, 44);

@@ -5,26 +5,42 @@
 
 #define MAX_STEPS 100
 
-#define NORTH -8
-#define SOUTH 8
-#define EAST 1
-#define WEST -1
-
 #define BIT_LEN     64
 typedef bitset<BIT_LEN> bit64;
 typedef unsigned long long u64;
 
-#define GOLD        0
-#define SILVER      1
-#define NO_PLAYER   2
+#define EMPTY_SQUARE 0x0U
+#define EMPTY 0x0U
+#define OFF_BOARD_SQUARE 0x9FU
+#define OFF_BOARD 0x18U
+#define GOLD 0x10U
+#define SILVER 0x8U
+#define OFF_BOARD_PIECE 0x7U
+#define ELEPHANT_PIECE 0x6U
+#define CAMEL_PIECE 0x5U
+#define HORSE_PIECE 0x4U
+#define DOG_PIECE 0x3U
+#define CAT_PIECE 0x2U
+#define RABBIT_PIECE 0x1U
+#define EMPTY_PIECE 0x0U
+#define PIECE_MASK 0x7U
+#define OWNER_MASK 0x18U
+#define FLIP_SIDE GOLD^SILVER
+#define TRUE 1
+#define FALSE 0
+#define NORTH -10
+#define SOUTH 10
+#define EAST 1
+#define WEST -1
 
-#define EMPTY       0
-#define RABBIT      1
-#define CAT         2
-#define DOG         3
-#define HORSE       4
-#define CAMEL       5
-#define ELEPHANT    6
+#define OWNER(square) (square & OWNER_MASK) 
+#define PIECE(square) (square & PIECE_MASK) 
+#define ROW(square) (9-square/10) // what row is a square in?  1 = bottom, 8 = top
+#define COL(square) (square%10) // what column is a square in?  1 = left (a), 8 = right (h)
+#define OPP(player) ( (16 - player) + 8 )
+#define PLAYER_TO_INDEX(player)	((16-player)/8)	//0 for GOLD, 1 for SILVER - for indexation
+#define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
+    
 
 #define STEP_PASS     0
 #define STEP_SINGLE   1
@@ -32,33 +48,11 @@ typedef unsigned long long u64;
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
 
-#define OPP(player) (1 - player)				 //opponent
-#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
-
-namespace bitStuff { 
-  const bit64			 one(string("0000000000000000000000000000000000000000000000000000000000000001"));
-  const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
-  const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
-  const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
-  const bit64 not8rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
-  const bit64 traps		(string("0000000000000000001001000000000000000000001001000000000000000000"));
-  const bit64 trapsNeighbours
-											(string("0000000000100100010110100010010000100100010110100010010000000000"));
-	const bit64	winRank[2] = 
-							 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
-							   bit64(string("111111110000000000000000000000000000000000000000000000000000000")) };
-
-  extern bit64					stepOffset_[2][7][64]; //cannot be const - is build by buildStepOffset
-
- // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
- 
-	void buildStepOffsets();
-	string stepOffsettoString();
-	bit64 getNeighbours(bit64);
-}
+extern const int direction[4];
+extern const int trap[4];
 
 typedef uint player_t;
-typedef uint coord_t;
+typedef uint square_t;
 typedef uint piece_t;
 typedef uint stepType_t;
 
@@ -69,28 +63,36 @@ class Step
     stepType_t    stepType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
     player_t      player_;      
     piece_t       piece_;  
-    coord_t       from_;     
-    coord_t       to_;        
+    square_t       from_;     
+    square_t       to_;        
     piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
-    coord_t       oppFrom_;
-    coord_t       oppTo_;
+    square_t       oppFrom_;
+    square_t       oppTo_;
     
     friend class  Board;
   public:
 		Step(){};
 		Step( stepType_t );
-    inline void setValues( stepType_t, player_t, piece_t, coord_t, coord_t );
-    inline void setValues( stepType_t, player_t, piece_t, coord_t, coord_t, piece_t, coord_t, coord_t );
+    inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
+    inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setPass(); 
 		bool pieceMoved();
 
-    const string oneSteptoString(player_t, piece_t, coord_t, coord_t);
+    const string oneSteptoString(player_t, piece_t, square_t, square_t);
     const string toString();
     void dump(); 
 
 };
 
-typedef Step	StepList [MAX_STEPS];			 // fixed array for performance reasons 
+class Board;
+
+class StepList {
+		Step list[28];
+		uint count_;
+		friend class Board;
+	public:
+		StepList() { count_ = 0; }			
+};
 
 class Board
 		/*This is a crucial class - representing the board. 
@@ -101,9 +103,11 @@ class Board
 {
     Logger        log_; 
 
-    bit64         bitBoard_[2][7];
-		StepList			stepList_;										// for inner step generation ( like generate all and select random )
-  
+		int						board_[100];
+		StepList			stepBoard_[100];
+
+		uint					stepsNum_[2];		//number of possible steps per player, 0 == Gold, 1 == Silver
+
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
     uint  moveCount_;
@@ -121,23 +125,22 @@ class Board
     bool		 isEmpty();
     player_t getPlayerToMove();
 
-    inline void			setSquare(coord_t, player_t, piece_t);
-    inline void			delSquare(coord_t);											//deletes piece from square ( traping ) 
-    inline piece_t	getSquarePiece(coord_t);
-    inline player_t	getSquarePlayer(coord_t);
 		uint			getStepCount();
 		player_t	getWinner();
 
 		void makeStep(Step&);
 		void commitMove();
 
-    int generateSteps(StepList&);
-		Step generateRandomStep();
+    void generateAllSteps();
+		Step getRandomStep();
+
+		inline bool hasFriends(square_t);		
+		inline bool hasStrongerEnemies(square_t square);
 
 
     void dump();
 		string toString();
-    
+
 };
 
 

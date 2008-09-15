@@ -28,10 +28,11 @@ void SimplePlayout::playOne()
 {
 	Step step;
 	do {
-		step = board_->generateRandomStep();
+		step = board_->getRandomStep();
 		board_->makeStep(step);
 	}
 	while ( board_->getStepCount()	< 4 && step.pieceMoved()); 
+	//board_->dump();
 	board_->commitMove();
 	return;
 }
@@ -43,7 +44,7 @@ playoutStatus_e SimplePlayout::doPlayout()
 		playOne();
 		playoutLength_++;
 
-		if ( board_->getWinner() != NO_PLAYER ) //somebody won
+		if ( board_->getWinner() != EMPTY ) //somebody won
 			return PLAYOUT_OK;
 
 		if ( playoutLength_ > MAX_PLAYOUT_LENGTH ) 
@@ -91,7 +92,7 @@ void Benchmark::doBenchmark()
     
     switch (playoutStatus) {
 		case PLAYOUT_OK:
-      winCount [playBoard.getWinner()] ++;
+      winCount [PLAYER_TO_INDEX(playBoard.getWinner())]++;
       break;
     case PLAYOUT_TOO_LONG:
 			playoutTooLong++;
@@ -114,8 +115,8 @@ void Benchmark::doBenchmark()
       << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl;
   
   log_()
-			<< "Gold wins = " << winCount [GOLD] << endl
-      << "Silver wins = " << winCount [SILVER] << endl
+			<< "Gold wins = " << winCount [PLAYER_TO_INDEX(GOLD)] << endl
+      << "Silver wins = " << winCount [PLAYER_TO_INDEX(SILVER)] << endl
       << "Playout too long = " << playoutTooLong << endl
       << "P(gold win) = " << float (winCount [GOLD]) / float (winCount [GOLD] + winCount [SILVER]) << endl
 			<< "Avererage playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
