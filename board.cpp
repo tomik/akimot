@@ -40,13 +40,13 @@ void Step::setValues( stepType_t stepType, player_t player, piece_t piece, squar
             piece_t oppPiece, square_t oppFrom, square_t oppTo)
 {
   stepType_ = stepType;
-  player_ = player;
-  piece_ = piece;
-  from_ = from;
-  to_ = to;
+  player_		= player;
+  piece_		= piece;
+  from_			= from;
+  to_				= to;
   oppPiece_ = oppPiece;
-  oppFrom_ = oppFrom;
-  oppTo_ = oppTo;
+  oppFrom_	= oppFrom;
+  oppTo_		= oppTo;
 
 }
 
@@ -158,7 +158,7 @@ void Board::makeStep(Step& step){
 		for (int j = 0; j < checkTrapNum; j++)
 			for (int i = 0; i < 4; i++)
 				if ( IS_TRAP(checkTrap[j] + direction[i]) ){		
-					if ( board_[checkTrap[j] + direction[i]] != EMPTY_SQUARE && ! hasFriends(checkTrap[j] + direction[i]) ){
+					if ( board_[checkTrap[j] + direction[i]] != EMPTY_SQUARE && ! hasFriend(checkTrap[j] + direction[i]) ){
 						//trap is not empty and piece in there has no friends around => KILL
 						board_[checkTrap[j] + direction[i]] = EMPTY_SQUARE; 
 						//TODO ... after killing, some moves might be added :(
@@ -221,8 +221,6 @@ Step Board::getRandomStep()
 
 void Board::generateAllSteps()
 {
-		StepList* stepList;
-    int i, j;
     
 		stepsNum_[PLAYER_TO_INDEX(toMove_)] = 0;
     for (int square=11; square < 89; square++) {
@@ -230,58 +228,70 @@ void Board::generateAllSteps()
 					continue;
 				stepBoard_[square].count_ = 0;
 				assert( OWNER(board_[square]) == SILVER || OWNER(board_[square]) == GOLD );
-        if ( ! hasFriends(square) && hasStrongerEnemies(square)) 	//frozen
+        if ( isFrozen(square)) 	//frozen
 				  continue;	
+
+				generateStepsFromSquare(square);
 
 				assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
-				//generate push/pull moves
-				if (stepCount_ < 3) {
-					for (i = 0; i < 4; i++) {  
-						if (OWNER(board_[square + direction[i]]) == OPP(toMove_) 
-								&& PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
-							for (j=0; j<4; j++)  // pull
-								if (board_[square + direction[j]]==EMPTY_SQUARE) { //create move
-										stepList = & stepBoard_[square];
-										stepList->list[stepList->count_++].setValues( STEP_PULL, toMove_, 
-													PIECE(board_[square]), square, square + direction[j], PIECE(board_[square + direction[i]]),
-													square + direction[i], square);
-										stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
-																																			
-								}
-					    for (j=0; j<4; j++)  //push
-								if (board_[square+direction[i]+direction[j]]==EMPTY_SQUARE) { //create move
-										stepList = & stepBoard_[square];
-										stepList->list[stepList->count_++].setValues( STEP_PUSH, toMove_, 
-													PIECE(board_[square]), square, square + direction[i], PIECE(board_[square + direction[i]]),
-													square + direction[i], square + direction[j]);
-										stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
-							}
-						} //if weaker enemy
-					} //for
-				} 
-
-        // generate single moves
-        for (i=0; i<4; i++) // check each direction
-					if (board_[square+direction[i]] == EMPTY_SQUARE)  {
-						if (PIECE(board_[square]) == RABBIT_PIECE){ // rabbit cannot backwards
-							if (OWNER(board_[square]) == GOLD && direction[i] == SOUTH)
-								continue;
-              if (OWNER(board_[square]) == SILVER && direction[i] == NORTH)
-								continue;
-            }
-						//create move
-						stepList = & stepBoard_[square];
-						stepList->list[stepList->count_++].setValues( STEP_SINGLE, toMove_, PIECE(board_[square]), 
-																														square, square + direction[i]);
-						(stepsNum_[PLAYER_TO_INDEX(toMove_)])++;
-					}
     }
 
 }
 
+void Board::generateStepsFromSquare(square_t square)
+	/*this function takes a square and generates all moves for a piece on this square
+	 *the moves are generated and stored into a classical structure - cross linked dynamic list */
+{
+	StepList* stepList;
+  int i, j;
 
-bool Board::hasFriends(square_t square)
+	//generate push/pull moves
+	if (stepCount_ < 3) {
+		for (i = 0; i < 4; i++) {  
+			if (OWNER(board_[square + direction[i]]) == OPP(toMove_) 
+					&& PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
+				for (j=0; j<4; j++)  // pull
+					if (board_[square + direction[j]]==EMPTY_SQUARE) { //create move
+							stepList = & stepBoard_[square];
+							stepList->list[stepList->count_++].setValues( STEP_PULL, toMove_, 
+										PIECE(board_[square]), square, square + direction[j], PIECE(board_[square + direction[i]]),
+										square + direction[i], square);
+							stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
+																																
+					}
+		    for (j=0; j<4; j++)  //push
+					if (board_[square+direction[i]+direction[j]]==EMPTY_SQUARE) { //create move
+							stepList = & stepBoard_[square];
+							stepList->list[stepList->count_++].setValues( STEP_PUSH, toMove_, 
+										PIECE(board_[square]), square, square + direction[i], PIECE(board_[square + direction[i]]),
+										square + direction[i], square + direction[j]);
+							stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
+				}
+			} //if weaker enemy
+		} //for
+	} 
+
+  // generate single moves
+  for (i=0; i<4; i++) // check each direction
+		if (board_[square+direction[i]] == EMPTY_SQUARE)  {
+			if (PIECE(board_[square]) == RABBIT_PIECE){ // rabbit cannot backwards
+				if (OWNER(board_[square]) == GOLD && direction[i] == SOUTH)
+					continue;
+        if (OWNER(board_[square]) == SILVER && direction[i] == NORTH)
+					continue;
+      }
+			//create move
+			stepList = & stepBoard_[square];
+			stepList->list[stepList->count_++].setValues( STEP_SINGLE, toMove_, PIECE(board_[square]), 
+																											square, square + direction[i]);
+			(stepsNum_[PLAYER_TO_INDEX(toMove_)])++;
+		}
+	
+}
+
+
+bool Board::hasFriend(square_t square)
 	/* checks whether piece at given square has adjacent friendly pieces*/
 {
 	uint owner = OWNER(board_[square]);
@@ -293,7 +303,8 @@ bool Board::hasFriends(square_t square)
 	return false;
 }
 
-bool Board::hasStrongerEnemies(square_t square)
+
+bool Board::hasStrongerEnemy(square_t square)
 	/* checks whether piece at given square has adjacent stronger enemy pieces*/
 {
 	uint owner = OWNER(board_[square]);
@@ -304,6 +315,13 @@ bool Board::hasStrongerEnemies(square_t square)
 
 	return false;
 	
+}
+
+bool Board::isFrozen(square_t square)
+	/*checks whether piece at given square is frozen == !combination of hasFriend and hasStrongerEnemy
+	 * optimize: actually code the function, not use the hasFriend,hasStrongerEnemy */
+{
+	return (!hasFriend(square) && hasStrongerEnemy(square)); 
 }
 
 
@@ -324,13 +342,15 @@ bool Board::init(const char* fn)
     board_[i] = OFF_BOARD_SQUARE;
 
   for (int i = 1; i < 9; i++)
-    for (int j = 1; j < 9; j++)
-      board_[10*i+j]=EMPTY_SQUARE;
+    for (int j = 1; j < 9; j++){
+      board_[10*i+j]			 = EMPTY_SQUARE;
+      frozenBoard_[10*i+j] = false;						//implicitly we consider everything not frozen
+		}
 
-  toMove_=GOLD;
+  toMove_		 = GOLD;
   moveCount_ = 1;
   stepCount_ = 0;
-  winner_ = EMPTY;
+  winner_		 = EMPTY;
 
  // BOARD_Calculate_Hashkey(bp);
  

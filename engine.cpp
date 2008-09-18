@@ -118,7 +118,8 @@ void Benchmark::doBenchmark()
 			<< "Gold wins = " << winCount [PLAYER_TO_INDEX(GOLD)] << endl
       << "Silver wins = " << winCount [PLAYER_TO_INDEX(SILVER)] << endl
       << "Playout too long = " << playoutTooLong << endl
-      << "P(gold win) = " << float (winCount [GOLD]) / float (winCount [GOLD] + winCount [SILVER]) << endl
+      << "P(gold win) = " << float (winCount [PLAYER_TO_INDEX(GOLD)]) / (
+														 float (winCount [PLAYER_TO_INDEX(GOLD)] + winCount [PLAYER_TO_INDEX(SILVER)]) ) << endl
 			<< "Avererage playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
 }
 

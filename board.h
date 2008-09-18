@@ -56,18 +56,20 @@ typedef uint square_t;
 typedef uint piece_t;
 typedef uint stepType_t;
 
+
 class Step
 {
+	private:
     Logger        log_; 
 
     stepType_t    stepType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
     player_t      player_;      
     piece_t       piece_;  
-    square_t       from_;     
-    square_t       to_;        
+    square_t      from_;     
+    square_t      to_;        
     piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
-    square_t       oppFrom_;
-    square_t       oppTo_;
+    square_t      oppFrom_;
+    square_t      oppTo_;
     
     friend class  Board;
   public:
@@ -84,9 +86,22 @@ class Step
 
 };
 
+
+class StepNode
+	/**/
+{
+	private:
+		Step step_;
+		StepNode* from_next_;
+		StepNode* from_previous_;
+		StepNode* to_next_;
+		StepNode* to_previous_;
+};
+
 class Board;
 
 class StepList {
+	private:
 		Step list[28];
 		uint count_;
 		friend class Board;
@@ -101,10 +116,13 @@ class Board
 		 * move consists of up to 4 steps ( push/pull  counting for 2 )
 		 */
 {
+	private:
     Logger        log_; 
 
-		int						board_[100];
+		int						board_[100];						//actual pieces are stored here 
 		StepList			stepBoard_[100];
+		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
+		StepNode*			stepNodeBoard_[2][100]; //[0][100] board for from, [1][100] board for to 
 
 		uint					stepsNum_[2];		//number of possible steps per player, 0 == Gold, 1 == Silver
 
@@ -134,8 +152,11 @@ class Board
     void generateAllSteps();
 		Step getRandomStep();
 
-		inline bool hasFriends(square_t);		
-		inline bool hasStrongerEnemies(square_t square);
+		inline bool hasFriend(square_t);		
+		inline bool hasStrongerEnemy(square_t);
+		inline bool isFrozen(square_t);		
+
+		void generateStepsFromSquare(square_t);
 
 
     void dump();
