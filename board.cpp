@@ -206,21 +206,114 @@ Step Board::getRandomStep()
 	if ( stepCount_ > 1 && index-- == 0)
 		return Step(STEP_PASS);
 
+	StepNode* stepNode;
+
   for (int square=11; square < 89; square++) {
 	  if (OWNER(board_[square]) == toMove_) {
-			if ( index < stepBoard_[square].count_ )
-				return stepBoard_[square].list[index];
-			index -= stepBoard_[square].count_;
+			stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
+			while ( stepNode != NULL ) { 
+				if ( index-- == 0 ) 
+					return stepNode->step_; 
+				stepNode = stepNode->from_next_;
+			}
+								
+		/*if ( index < stepBoard_[square].count_ )
+			return stepBoard_[square].list[index];
+			index -= stepBoard_[square].count_;*/
 		}
 	}
-		
 	assert(false); //it must not come here ! 
 	return  Step(STEP_PASS);
 }
 
 
+int Board::clearStepList(StepNode head)
+	/* frees the stepList which starts with head 
+	 * returns how many items have been cleared == how many moves have been deleted
+	 * */
+{
+	int i = 0;
+	int index = 0;
+
+	StepNode* stepNode;
+	StepNode* destroyNode;
+
+	if ( head.from_next_ != NULL ) {
+		stepNode = head.from_next_;
+		index = STEP_LIST_FROM;
+		assert( head.to_next_ == NULL && head.victim_next_ == NULL );
+	}
+	else if ( head.to_next_ != NULL ) {
+		stepNode = head.to_next_;
+		index = STEP_LIST_TO;
+		assert( head.from_next_ == NULL && head.victim_next_ == NULL );
+	}
+	else if ( head.victim_next_ != NULL ) {
+		stepNode = head.victim_next_;
+		index = STEP_LIST_VICTIM;
+		assert( head.from_next_ == NULL && head.to_next_ == NULL );
+	}else 
+		return 0;   //nothing in steplist
+	
+
+	while (stepNode != NULL) {
+		i++;
+		destroyNode = stepNode; //this node will be destroyed
+
+		//move to the next node
+		if ( index == STEP_LIST_FROM ) 
+			stepNode = stepNode->from_next_;
+		else if ( index == STEP_LIST_TO ) 
+			stepNode = stepNode->to_next_;
+		else if ( index == STEP_LIST_VICTIM )
+			stepNode = stepNode->victim_next_;
+
+		//now "bypass the node before destroying it" - here we do 1+1 more bypasses than necessary,
+		//-> for instance for index == STEP_LIST_FROM, from_next->from_previous and from_previous->from_next 
+		//doesn't have to be bypassed because they will be destroyed anyway
+		//but the code would get too long ... 
+		assert( destroyNode->from_previous_ != NULL);
+		destroyNode->from_previous_->from_next_ = destroyNode->from_next_;
+		assert( destroyNode->to_previous_ != NULL);
+		destroyNode->to_previous_->to_next_ = destroyNode->to_next_;
+
+		//victim_previous_ can be NULL ( in case of move that has no victim ) - one step moves
+		if ( destroyNode->victim_previous_ != NULL ) 
+			destroyNode->victim_previous_->victim_next_ = destroyNode->victim_next_;
+
+		if ( destroyNode->from_next_ != NULL )
+			destroyNode->from_next_->from_previous_ = destroyNode->from_previous_;
+		if ( destroyNode->to_next_ != NULL )
+			destroyNode->to_next_->to_previous_ = destroyNode->to_previous_;
+		if ( destroyNode->victim_next_ != NULL )
+			destroyNode->victim_next_->victim_previous_ = destroyNode->victim_previous_;
+
+		delete destroyNode; 
+		//optimize: own memory management - put DestroyNode to a special list and allocate from there as well 
+			
+	}
+
+	// now clean the head again
+	if ( index == STEP_LIST_FROM ) 
+		head.from_next_ = NULL;
+	else if ( index == STEP_LIST_TO ) 
+		head.to_next_ = NULL;
+	else if ( index == STEP_LIST_VICTIM )
+		head.victim_next_ = NULL;
+
+	return i;
+		
+}
+
 void Board::generateAllSteps()
 {
+
+		//first drop the whole - cross linked dynamic list - structure
+		
+		for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM+1; i++)
+			for (int square=11; square < 89; square++) 
+				clearStepList(stepListBoard_[i][square]);
+
     
 		stepsNum_[PLAYER_TO_INDEX(toMove_)] = 0;
     for (int square=11; square < 89; square++) {
@@ -243,7 +336,7 @@ void Board::generateStepsFromSquare(square_t square)
 	/*this function takes a square and generates all moves for a piece on this square
 	 *the moves are generated and stored into a classical structure - cross linked dynamic list */
 {
-	StepList* stepList;
+	StepNode* stepNode;
   int i, j;
 
 	//generate push/pull moves
@@ -253,19 +346,19 @@ void Board::generateStepsFromSquare(square_t square)
 					&& PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
 				for (j=0; j<4; j++)  // pull
 					if (board_[square + direction[j]]==EMPTY_SQUARE) { //create move
-							stepList = & stepBoard_[square];
-							stepList->list[stepList->count_++].setValues( STEP_PULL, toMove_, 
-										PIECE(board_[square]), square, square + direction[j], PIECE(board_[square + direction[i]]),
-										square + direction[i], square);
+							stepNode = new StepNode;
+							initStepNode(stepNode,square, square + direction[j], square + direction[i] ); //add also victim
+							stepNode->step_.setValues( STEP_PULL, toMove_, PIECE(board_[square]), square, square + direction[j], 
+							 															PIECE(board_[square + direction[i]]),	square + direction[i], square);
 							stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
 																																
 					}
 		    for (j=0; j<4; j++)  //push
 					if (board_[square+direction[i]+direction[j]]==EMPTY_SQUARE) { //create move
-							stepList = & stepBoard_[square];
-							stepList->list[stepList->count_++].setValues( STEP_PUSH, toMove_, 
-										PIECE(board_[square]), square, square + direction[i], PIECE(board_[square + direction[i]]),
-										square + direction[i], square + direction[j]);
+							stepNode = new StepNode;
+							initStepNode(stepNode,square, square + direction[j], square + direction[i]); 
+							stepNode->step_.setValues( STEP_PUSH, toMove_, PIECE(board_[square]), square, square + direction[i], 
+															 PIECE(board_[square + direction[i]]), square + direction[i], square + direction[j]);
 							stepsNum_[PLAYER_TO_INDEX(toMove_)]++;
 				}
 			} //if weaker enemy
@@ -282,12 +375,44 @@ void Board::generateStepsFromSquare(square_t square)
 					continue;
       }
 			//create move
-			stepList = & stepBoard_[square];
+			stepNode = new StepNode;
+			initStepNode(stepNode,square, square + direction[i]); 
+			stepNode->step_.setValues( STEP_SINGLE, toMove_, PIECE(board_[square]), square, square + direction[i]);
+			/*stepList = & stepBoard_[square];
 			stepList->list[stepList->count_++].setValues( STEP_SINGLE, toMove_, PIECE(board_[square]), 
-																											square, square + direction[i]);
+																											square, square + direction[i]);*/
 			(stepsNum_[PLAYER_TO_INDEX(toMove_)])++;
 		}
 	
+}
+
+void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t victim)
+{
+
+	stepNode->from_next_ = stepListBoard_[STEP_LIST_FROM][from].from_next_;
+	stepListBoard_[STEP_LIST_FROM][from].from_next_ = stepNode;
+	stepNode->to_next_ = stepListBoard_[STEP_LIST_TO][to].to_next_;
+	stepListBoard_[STEP_LIST_TO][to].to_next_ = stepNode;
+
+	stepNode->from_previous_ = & stepListBoard_[STEP_LIST_FROM][from];
+	if (stepNode->from_next_ != NULL) 
+		stepNode->from_next_->from_previous_ = stepNode;
+	stepNode->to_previous_ = & stepListBoard_[STEP_LIST_TO][to];
+	if (stepNode->to_next_ != NULL) 
+		stepNode->to_next_->to_previous_ = stepNode;
+
+	if ((int) victim != -1){  //push/pull moves 
+		stepNode->victim_next_ = stepListBoard_[STEP_LIST_VICTIM][victim].victim_next_;
+		stepListBoard_[STEP_LIST_VICTIM][victim].victim_next_ = stepNode;
+		stepNode->victim_previous_ = & stepListBoard_[STEP_LIST_VICTIM][victim];
+		if (stepNode->victim_next_ != NULL) 
+			stepNode->victim_next_->victim_previous_ = stepNode;
+
+	}else{
+		stepNode->victim_next_ = NULL;
+		stepNode->victim_previous_ = NULL;
+	}
+
 }
 
 
@@ -337,6 +462,13 @@ bool Board::init(const char* fn)
 	assert(OPP(GOLD) == SILVER);
 	assert(OPP(SILVER) == GOLD);
 	
+	//initiate the stepLists
+	for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM+1; i++)
+		for (int square=11; square < 89; square++) {
+			stepListBoard_[i][square].from_next_ = NULL;
+			stepListBoard_[i][square].to_next_ = NULL;
+			stepListBoard_[i][square].victim_next_ = NULL;
+		}
 
   for (int i = 0; i < 100; i++)  
     board_[i] = OFF_BOARD_SQUARE;

@@ -48,6 +48,10 @@ typedef unsigned long long u64;
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
 
+#define STEP_LIST_FROM		0
+#define STEP_LIST_TO			1
+#define STEP_LIST_VICTIM	2
+
 extern const int direction[4];
 extern const int trap[4];
 
@@ -96,6 +100,9 @@ class StepNode
 		StepNode* from_previous_;
 		StepNode* to_next_;
 		StepNode* to_previous_;
+		StepNode* victim_next_;
+		StepNode* victim_previous_;
+		friend class Board;
 };
 
 class Board;
@@ -122,7 +129,7 @@ class Board
 		int						board_[100];						//actual pieces are stored here 
 		StepList			stepBoard_[100];
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
-		StepNode*			stepNodeBoard_[2][100]; //[0][100] board for from, [1][100] board for to 
+		StepNode			stepListBoard_[3][100]; //[0][100] board for from, [1][100] board for to 
 
 		uint					stepsNum_[2];		//number of possible steps per player, 0 == Gold, 1 == Silver
 
@@ -155,6 +162,9 @@ class Board
 		inline bool hasFriend(square_t);		
 		inline bool hasStrongerEnemy(square_t);
 		inline bool isFrozen(square_t);		
+		
+		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
+		int clearStepList(StepNode head);
 
 		void generateStepsFromSquare(square_t);
 
