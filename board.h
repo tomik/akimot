@@ -12,7 +12,7 @@ typedef unsigned long long u64;
 #define EMPTY_SQUARE 0x0U
 #define EMPTY 0x0U
 #define OFF_BOARD_SQUARE 0x9FU
-#define OFF_BOARD 0x18U
+//#define OFF_BOARD 0x18U
 #define GOLD 0x10U
 #define SILVER 0x8U
 #define OFF_BOARD_PIECE 0x7U
@@ -90,6 +90,7 @@ class Step
 
 };
 
+class Board;
 
 class StepNode
 	/**/
@@ -105,16 +106,6 @@ class StepNode
 		friend class Board;
 };
 
-class Board;
-
-class StepList {
-	private:
-		Step list[28];
-		uint count_;
-		friend class Board;
-	public:
-		StepList() { count_ = 0; }			
-};
 
 class Board
 		/*This is a crucial class - representing the board. 
@@ -127,7 +118,6 @@ class Board
     Logger        log_; 
 
 		int						board_[100];						//actual pieces are stored here 
-		StepList			stepBoard_[100];
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 		StepNode			stepListBoard_[3][100]; //[0][100] board for from, [1][100] board for to 
 
@@ -166,7 +156,12 @@ class Board
 		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
 		int clearStepList(StepNode head);
 
-		void generateStepsFromSquare(square_t);
+		//important functions for move generation 
+		void generateSingleStepsFromSquare(square_t);
+		void generatePushPullsFromSquare(square_t);
+		void generatePushPullsToSquare(square_t);
+		void generateSingleStepsToSquare(square_t);
+		void updateStepsForNeighbours(square_t);
 
 
     void dump();
