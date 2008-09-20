@@ -125,43 +125,28 @@ string Board::allStepsToString()
 {
 	stringstream ss;
 	StepNode* stepNode;
-	uint realStepsNum = 0;
 
-	ss << endl << "Potential moves for GOLD: " << stepsNum_[PLAYER_TO_INDEX(GOLD)];
-	
-	for (int square=11; square < 89; square++) {
-		if (OWNER(board_[square]) == SILVER)
-			continue;
-		//ss << "[sqr " << square << "] ";
-			
-		stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-		while ( stepNode != NULL ) { 
-			ss << stepNode->step_.toString();
-			stepNode = stepNode->from_next_;
-			realStepsNum++;
+	for (uint player = 0; player < 2; player++) {
+		uint realStepsNum = 0;
+		ss << endl << "Potential moves for GOLD: " << stepsNum_[player];
+
+		for (int square=11; square < 89; square++) {
+			if (PLAYER_TO_INDEX(OWNER(board_[square])) == 1 - player)
+				continue;
+			//ss << "[sqr " << square << "] ";
+			stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
+			while ( stepNode != NULL ) { 
+
+				//assert - move not already there
+				assert(ss.str().find(stepNode->step_.toString()) == string::npos);	
+
+				ss << stepNode->step_.toString();
+				stepNode = stepNode->from_next_;
+				realStepsNum++;
+			}
 		}
+		assert( realStepsNum == stepsNum_[player]);
 	}
-	assert( realStepsNum == stepsNum_[PLAYER_TO_INDEX(GOLD)]);
-
-	//TODO DRY !!!
-
-	realStepsNum=0;
-
-	ss << endl << "Potential moves for SILVER: " << stepsNum_[PLAYER_TO_INDEX(SILVER)] ;
-	for (int square=11; square < 89; square++) {
-		if (OWNER(board_[square]) == GOLD)
-			continue;
-		//ss << "[sqr " << square << "] ";
-			
-		stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-		while ( stepNode != NULL ) { 
-			ss << stepNode->step_.toString();
-			stepNode = stepNode->from_next_;
-			realStepsNum++;
-		}
-	}
-
-	assert( realStepsNum == stepsNum_[PLAYER_TO_INDEX(SILVER)]);
 
 	ss << endl;
 	return ss.str();
@@ -237,7 +222,6 @@ void Board::makeStep(Step& step){
 
     //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
 		
-	/*
 		for (int j = 0; j < checkTrapNum; j++)
 			for (int i = 0; i < 4; i++)
 				if ( IS_TRAP(checkTrap[j] + direction[i]) ){		
@@ -250,7 +234,6 @@ void Board::makeStep(Step& step){
 					}
 					break;
 				}
-	*/
 }
 
 void Board::updateAfterStep(const Step & step)
@@ -258,6 +241,9 @@ void Board::updateAfterStep(const Step & step)
 	 * step is from -> to ( push/pulls are considered as two separate steps )*/
 	/* optimize: give just from/to, not the whole step */
 {
+	#ifdef DEBUG_3
+		cerr << "=== BEGIN Board::updateAfterStep" << endl;
+	#endif
 
 	 //after step update ... first clear moves from original field and to destination field
 	clearStepList(& stepListBoard_[STEP_LIST_FROM][step.from_]);
@@ -270,6 +256,10 @@ void Board::updateAfterStep(const Step & step)
 		//generate moves to just emptied field
 	//generatePushPullsToSquare(step.from_);
 	frozenBoard_[step.from_] = false;							//status of empty field is implicitly unfrozen 
+
+	#ifdef DEBUG_3
+		cerr << "=== END Board::updateAfterStep" << endl;
+	#endif
 }
 
 void Board::updateAfterKill(square_t square)
@@ -283,7 +273,7 @@ void Board::updateAfterKill(square_t square)
 	//update neighbours ( some of them might get (un)frozen )
 	updateStepsForNeighbours(square);
 	generatePushPullsToSquare(square);		
-	generateSingleStepsToSquare(square);
+	//generateSingleStepsToSquare(square);
 	frozenBoard_[square] = false;								//status of empty field is implicitly unfrozen 
 	#ifdef DEBUG_3
 		cerr << "=== END Board::updateAfterKill" << endl;
@@ -368,19 +358,19 @@ int Board::clearStepList(StepNode* head)
 	StepNode* stepNode;
 	StepNode* destroyNode;
 
-	cerr << "Clearing steplist " << endl;   //todo remove
+	//cerr << "Clearing steplist " << endl;   //todo remove
 
 	if ( head->from_next_ != NULL ) {
 		stepNode = head->from_next_;
 		index = STEP_LIST_FROM;
 		assert( head->to_next_ == NULL && head->victim_next_ == NULL );
-		cerr << "Clearing from steplist " << endl;  //todo remove
+		//cerr << "Clearing from steplist " << endl;  //todo remove
 	}
 	else if ( head->to_next_ != NULL ) {
 		stepNode = head->to_next_;
 		index = STEP_LIST_TO;
 		assert( head->from_next_ == NULL && head->victim_next_ == NULL );
-		cerr << "Clearing to steplist " << endl;//todo remove
+		//cerr << "Clearing to steplist " << endl;//todo remove
 	}
 	else if ( head->victim_next_ != NULL ) {
 		stepNode = head->victim_next_;
@@ -391,7 +381,7 @@ int Board::clearStepList(StepNode* head)
 
 
 	while (stepNode != NULL) {
-		cerr << "xxx" << endl;
+		//cerr << "xxx" << endl;
 		i++;
 		destroyNode = stepNode; //this node will be destroyed
 
@@ -438,7 +428,7 @@ int Board::clearStepList(StepNode* head)
 		}
 */
 
-		cerr << "removing step: ";
+		cerr << "-";
 		destroyNode->step_.dump();
 		cerr << endl;
 
@@ -553,7 +543,7 @@ void Board::generateSingleStepsFromSquare(square_t square)
 			stepNode->step_.setValues( STEP_SINGLE, squareOwner, PIECE(board_[square]), square, square + direction[i]);
 			(stepsNum_[PLAYER_TO_INDEX(squareOwner)])++;
 
-			cerr << "adding step: " << stepNode->step_.toString() << endl;
+			cerr << "+" << stepNode->step_.toString() << endl;
 		}
 	
 }
@@ -650,7 +640,7 @@ void Board::generateSingleStepsToSquare(square_t square)
 			stepNode->step_.setValues( STEP_SINGLE, OWNER(board_[from]), PIECE(board_[from]), from, to);
 			(stepsNum_[PLAYER_TO_INDEX(OWNER(board_[from]))])++;
 
-			cerr << "adding step: " << stepNode->step_.toString() << endl;
+			cerr << "+" << stepNode->step_.toString() << endl;
 		}
 	}
 	
@@ -684,28 +674,21 @@ void Board::updateStepsForNeighbours(square_t square, square_t newPosition)
 			if ( nowFrozen && ! frozenBoard_[neighbour] ){ //it got frozen by the last move ( delete moves from it )
 				clearStepList(&stepListBoard_[STEP_LIST_FROM][neighbour]);
 				frozenBoard_[neighbour] = true;							 // update frozen status "freeze"
-			}
-			if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move ( generate moves for it )
+			}else if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move ( generate moves for it )
 				frozenBoard_[neighbour] = false;						 // update frozen status "unfreeze"
 				generateSingleStepsFromSquare(neighbour);
 				generatePushPullsFromSquare(neighbour);
-			}
-			//we must manuall add moves from unfrozen pieces to the newly emptied square - TODO move elsewhere ? 
-			if ( !nowFrozen && ! frozenBoard_[neighbour] && (OWNER(board_[square]) == EMPTY) ){
-
+			} else if ( !nowFrozen && ! frozenBoard_[neighbour] && (OWNER(board_[square]) == EMPTY) ){
+				//we must manuall add moves from unfrozen pieces to the newly emptied square - TODO move elsewhere ? 
 				StepNode* stepNode = new StepNode;
 				initStepNode(stepNode,neighbour, square); 
 				stepNode->step_.setValues( STEP_SINGLE, OWNER(board_[neighbour]), PIECE(board_[neighbour]), neighbour, square );
 				(stepsNum_[PLAYER_TO_INDEX(OWNER(board_[neighbour]))])++;
-				cerr << "adding step: " << stepNode->step_.toString() << endl;
+				cerr << "+" << stepNode->step_.toString() << endl;
 			}
-
-		}
-	
-
-	}
-
-}
+		} // if OWNER(board_[neighbour]) ... 
+	}  //for neighbours
+} //function
 	
 
 void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t victim)
