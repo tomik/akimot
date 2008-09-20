@@ -39,7 +39,9 @@ typedef unsigned long long u64;
 #define COL(square) (square%10) // what column is a square in?  1 = left (a), 8 = right (h)
 #define OPP(player) ( (16 - player) + 8 )
 #define PLAYER_TO_INDEX(player)	((16-player)/8)	//0 for GOLD, 1 for SILVER - for indexation
+#define INDEX_TO_PLAYER(index)	(uint) (16-8*player)	//0 -> GOLD, 1 -> SILVER - reverse indexation
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
+#define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
     
 
 #define STEP_PASS     0
@@ -127,7 +129,8 @@ class Board
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 		StepNode			stepListBoard_[3][100]; //[0][100] board for from, [1][100] board for to 
 
-		uint					stepsNum_[2];		//number of possible steps per player, 0 == Gold, 1 == Silver
+		uint					singleStepsNum_[2];			//number of possible single steps per player, 0 == Gold, 1 == Silver
+		uint					pushPullStepsNum_[2];		//number of possible push/pull steps per player, 0 == Gold, 1 == Silver
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
@@ -149,6 +152,8 @@ class Board
 		uint			getStepCount();
 		player_t	getWinner();
 
+		uint			getAllStepsNum(uint);
+
 		void makeStep(Step&);
 		void commitMove();
 
@@ -163,13 +168,12 @@ class Board
 		int clearStepList(StepNode* head);
 
 
-		void updateAfterStep(const Step&);
+		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
 		//important functions for move generation 
 		void generateSingleStepsFromSquare(square_t);
 		void generatePushPullsFromSquare(square_t);
 		void generatePushPullsToSquare(square_t);
-		void generateSingleStepsToSquare(square_t);
 		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
 
     void dump();
