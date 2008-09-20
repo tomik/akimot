@@ -15,7 +15,7 @@ public:
 
 #endif
 
-#define MAX_PLAYOUT_LENGTH 150  //these are "moves" ( i.e. 4 steps ) 
+#define MAX_PLAYOUT_LENGTH 300  //these are "moves" ( i.e. 4 steps ) 
 
 enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG }; 
 
@@ -32,7 +32,7 @@ class SimplePlayout
 
 class Benchmark
 {
-	const Board* board_;
+	Board* board_; //todo return const
 	uint playoutCount_;
 	Logger log_;
 	public: 

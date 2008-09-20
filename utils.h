@@ -16,6 +16,10 @@
 #include <time.h>
 #include <ctime>
 
+#define DEBUG_1				//different levels of debug 1 -- lovest, 3 -- highest
+#define DEBUG_2
+#define DEBUG_3
+
 using namespace std;
 
 class Logger

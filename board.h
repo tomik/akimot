@@ -47,17 +47,23 @@ typedef unsigned long long u64;
 #define STEP_PUSH     2
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
+#define	STEP_HEAD			5
 
 #define STEP_LIST_FROM		0
 #define STEP_LIST_TO			1
 #define STEP_LIST_VICTIM	2
 
+/*#define FROZEN_YES				0			//piece is frozen
+#define FROZEN_NO					0			//piece is active
+#define FROZEN_EMPTY			0			//no piece - field was empty
+typedef uint frozen_t;  // FROZEN_YES, FROZEN_NO, FROZEN_EMPTY*/
+
 extern const int direction[4];
 extern const int trap[4];
 
 typedef uint player_t;
-typedef uint square_t;
-typedef uint piece_t;
+typedef int square_t;
+typedef uint piece_t;		// 
 typedef uint stepType_t;
 
 
@@ -77,7 +83,7 @@ class Step
     
     friend class  Board;
   public:
-		Step(){};
+		Step(){stepType_ = STEP_HEAD;};
 		Step( stepType_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
@@ -130,7 +136,7 @@ class Board
 		// step is either pass or single piece step or push/pull step,
 		// thus stepCount_ takes values 0 - 4 
     uint  stepCount_;
-    uint  toMove_;
+    player_t toMove_;
 
 		player_t winner_;
 
@@ -146,7 +152,7 @@ class Board
 		void makeStep(Step&);
 		void commitMove();
 
-    void generateAllSteps();
+    void generateAllSteps(player_t);
 		Step getRandomStep();
 
 		inline bool hasFriend(square_t);		
@@ -154,18 +160,22 @@ class Board
 		inline bool isFrozen(square_t);		
 		
 		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
-		int clearStepList(StepNode head);
+		int clearStepList(StepNode* head);
 
+
+		void updateAfterStep(const Step&);
+		void updateAfterKill(square_t square);
 		//important functions for move generation 
 		void generateSingleStepsFromSquare(square_t);
 		void generatePushPullsFromSquare(square_t);
 		void generatePushPullsToSquare(square_t);
 		void generateSingleStepsToSquare(square_t);
-		void updateStepsForNeighbours(square_t);
-
+		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
 
     void dump();
 		string toString();
+		void dumpAllSteps();
+		string allStepsToString();
 
 };
 

@@ -2,12 +2,12 @@
 #include "board.h"
 #include "engine.h"
 
-void test(Board board)
+void test(Board* board)
 {
 
-  board.dump();
+	board->dump();
 
-	Benchmark benchmark(&board,10000);
+	Benchmark benchmark(board,1);
 	benchmark.doBenchmark();
 
 /*
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		cout << engine.doSearch(board) << endl;
 	}
 
- test(board);
+ test(&board);
 	
 	return 0;
 }

@@ -13,7 +13,7 @@ string Engine::initialSetup(bool isGold)
 
 string Engine::doSearch(Board&) 
 { 
-	return "pass";
+	return "here will be some search soon";
 }
 
 
@@ -29,10 +29,13 @@ void SimplePlayout::playOne()
 	Step step;
 	do {
 		step = board_->getRandomStep();
+		#ifdef DEBUG_2
+			board_->dumpAllSteps();
+			board_->dump();
+		#endif
 		board_->makeStep(step);
 	}
-	while ( board_->getStepCount()	< 4 && step.pieceMoved()); 
-	//board_->dump();
+	while ( board_->getStepCount() < 4 && step.pieceMoved()); 
 	board_->commitMove();
 	return;
 }
@@ -76,7 +79,7 @@ void Benchmark::doBenchmark()
   clock_t				clockBegin;
   clock_t 			clockEnd;
   float					timeTotal;
-	Board					playBoard;
+	Board*				playBoard;
   
   playoutStatus_e  playoutStatus;
   uint			 winCount[2] = { 0, 0};
@@ -86,13 +89,13 @@ void Benchmark::doBenchmark()
   clockBegin = clock();
   
   for (uint i = 0 ; i < playoutCount_; i++)  {
-		playBoard = *board_;
-    SimplePlayout simplePlayout(&playBoard);
+		playBoard = board_;
+    SimplePlayout simplePlayout(playBoard);
     playoutStatus = simplePlayout.doPlayout ();
     
     switch (playoutStatus) {
 		case PLAYOUT_OK:
-      winCount [PLAYER_TO_INDEX(playBoard.getWinner())]++;
+      winCount [PLAYER_TO_INDEX(playBoard->getWinner())]++;
       break;
     case PLAYOUT_TOO_LONG:
 			playoutTooLong++;
