@@ -15,17 +15,19 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctime>
+#include <cstring>
 
-#define DEBUG_1				//different levels of debug 1 -- lovest, 3 -- highest
-#define DEBUG_2
-#define DEBUG_3
+//different levels of debug 1 -- lovest, 3 -- highest
+#define DEBUG_1				
+//#define DEBUG_2
+//#define DEBUG_3
 
 using namespace std;
 
 class Logger
 {
 	public:
-		ostream& operator()(unsigned int = 0);
+		ostream& operator()(unsigned int = 0) const;
 		//ostream& log(int=0 );
 }; 
 

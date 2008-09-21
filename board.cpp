@@ -817,23 +817,20 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
 void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t victim)
 {
 
-  //todo is this necessary ? move to constructor
+  //optimize this is not neccessary
   stepNode->from_next_ = NULL;
   stepNode->from_previous_ = NULL;
   stepNode->to_previous_ = NULL;
   stepNode->to_next_ = NULL;
   stepNode->victim_next_ = NULL;
   stepNode->victim_previous_ = NULL;
+  //
 
   stepNode->from_next_ = stepListBoard_[STEP_LIST_FROM][from].from_next_;
   stepListBoard_[STEP_LIST_FROM][from].from_next_ = stepNode;
 
-  //assert( stepListBoard_[STEP_LIST_TO][to].to_next_ == NULL);   //todo remove
-
   stepNode->to_next_ = stepListBoard_[STEP_LIST_TO][to].to_next_;
   stepListBoard_[STEP_LIST_TO][to].to_next_ = stepNode;
-
-  //assert( stepListBoard_[STEP_LIST_TO][to].to_next_->to_next_ == NULL); //todo remove
 
   stepNode->from_previous_ = & stepListBoard_[STEP_LIST_FROM][from];
   if (stepNode->from_next_ != NULL) 
@@ -842,9 +839,6 @@ void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t
   stepNode->to_previous_ = & (stepListBoard_[STEP_LIST_TO][to]);
   if (stepNode->to_next_ != NULL) 
     stepNode->to_next_->to_previous_ = stepNode;
-
-  //assert( &(stepListBoard_[STEP_LIST_TO][to]) == (stepNode->to_previous_)); //todo remove
-  //assert( stepListBoard_[STEP_LIST_TO][to].to_next_  == stepNode); //todo remove
 
   assert( stepNode->from_previous_->from_next_ == stepNode );
   assert( stepNode->to_previous_->to_next_ == stepNode );
@@ -1142,4 +1136,74 @@ int Board::generateAllStepsOld(player_t player, StepArray stepArray, bool pushPu
           }
     } //for pieces on board
   return stepsNum;
+}
+
+//Board& Board::operator=(const Board& other)
+Board::Board(const Board& other)
+  /* shallow copy is not enough - a correct copy of the cross linked dynamic list must be made*/
+{
+ 
+  //DIRTY: this might be very dangerous !!! there must be no virtual methods at board right ?  
+  memcpy(this,&other,sizeof(other));
+   
+  //now handle the stepLists
+
+  //initialize
+  for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM + 1; i++)
+    for (int square = 11; square < 89; square++) {
+      this->stepListBoard_[i][square].from_next_ = NULL;
+      this->stepListBoard_[i][square].to_next_ = NULL;
+      this->stepListBoard_[i][square].victim_next_ = NULL;
+    }
+
+  StepNode* oldStepNode;
+  StepNode* newStepNode;
+  Step step;
+
+  //go through the old steplist and create a new step for every old one
+  for (int square = 11; square < 89; square++) {
+    oldStepNode = other.stepListBoard_[STEP_LIST_FROM][square].from_next_;
+    while ( oldStepNode != NULL ) {
+      step = oldStepNode->step_;
+      newStepNode = new StepNode;
+
+      switch (step.stepType_) {
+        case STEP_PUSH : 
+          this->initStepNode(newStepNode, step.from_, step.oppTo_, step.oppFrom_); 
+          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_,
+                                                                      step.oppPiece_,step.oppFrom_, step.oppTo_);
+          break;
+        case STEP_PULL :
+          this->initStepNode(newStepNode, step.from_, step.to_, step.oppFrom_); 
+          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_,
+                                                                      step.oppPiece_,step.oppFrom_, step.oppTo_);
+          break;
+        case STEP_SINGLE :
+          this->initStepNode(newStepNode, step.from_, step.to_); 
+          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_);
+          break;
+        default:
+          assert(false);
+          break;
+    
+      }
+      oldStepNode = oldStepNode->from_next_;
+    }
+  }
+  //return *this;
+}
+
+Board::~Board()
+  /* destroy the cross linked dynamic list */
+{
+  StepNode* stepNode;
+  StepNode* destroyNode;
+  for (int square = 11; square < 89; square++) {
+    stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
+    while ( stepNode != NULL ) {
+      destroyNode = stepNode;
+      stepNode    = stepNode->from_next_;
+      delete destroyNode;
+    }
+  }
 }

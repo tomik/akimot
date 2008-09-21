@@ -32,11 +32,11 @@ class SimplePlayout
 
 class Benchmark
 {
-	Board* board_; //todo return const
+	const Board * board_; //todo return const
 	uint playoutCount_;
 	Logger log_;
 	public: 
 		Benchmark();
 		Benchmark(Board*,uint);
-		void doBenchmark();
+		void doBenchmark() const;
 };

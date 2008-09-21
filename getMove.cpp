@@ -7,34 +7,8 @@ void test(Board* board)
 
 	board->dump();
 
-	Benchmark benchmark(board,1);
+	Benchmark benchmark(board,10000);
 	benchmark.doBenchmark();
-
-/*
-	Logger logger;
-  Step step(STEP_SINGLE, GOLD, ELEPHANT, 52, 44);
-  step.dump();
-
-	//board.test();
-  StepList stepList;
-	int listCount;
-  board.generateSteps(stepList);
-
-  time_t now = time (NULL);
-	unsigned long long i=0;
-	while ( time(NULL) - now < 11 ) {
-		i++;
-		listCount = board.generateSteps(stepList);
-	}
-	logger()<< endl << "games per sec: " << i/1600 + i%1600 <<endl;
-		
-
-	logger() << "Potential single steps from the position:" << endl;
-  for (int i = 0; i < listCount; i++) 
-    stepList[i].dump();
-
-	logger() << endl;
-*/
 
 }
 

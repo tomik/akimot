@@ -74,13 +74,12 @@ Benchmark::Benchmark(Board* board, uint playoutCount)
 }
 
 
-void Benchmark::doBenchmark()
+void Benchmark::doBenchmark() const
 {
 		
   clock_t				clockBegin;
   clock_t 			clockEnd;
   float					timeTotal;
-	Board*				playBoard;
   
   playoutStatus_e  playoutStatus;
   uint			 winCount[2] = { 0, 0};
@@ -90,7 +89,10 @@ void Benchmark::doBenchmark()
   clockBegin = clock();
   
   for (uint i = 0 ; i < playoutCount_; i++)  {
-		playBoard = board_;
+
+    //here we copy the given board
+    Board *playBoard = new Board(*board_);
+
     SimplePlayout simplePlayout(playBoard);
     playoutStatus = simplePlayout.doPlayout ();
     

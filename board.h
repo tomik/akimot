@@ -141,6 +141,10 @@ class Board
 		player_t winner_;
 
   public:
+		Board(){};
+		Board(const Board&);
+		~Board();
+
     bool init(const char* fn); 
 
     bool		 isEmpty();
@@ -150,6 +154,7 @@ class Board
 		player_t	getWinner();
 
 		uint			getAllStepsNum(uint);
+
 
 		void makeStep(Step&);
 		void commitMove();
@@ -163,7 +168,6 @@ class Board
 		
 		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
 		int clearStepList(StepNode* head);
-
 
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);

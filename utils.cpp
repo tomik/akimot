@@ -1,6 +1,6 @@
 
 #include "utils.h"
 
-ostream& Logger::operator()(unsigned int level) {
+ostream& Logger::operator()(unsigned int level) const{
 	return cerr;
 }
