@@ -30,8 +30,11 @@ void SimplePlayout::playOne()
 	do {
 		step = board_->getRandomStep();
 		#ifdef DEBUG_2
+      board_->testStepsStructure();  
+		#endif
+
+		#ifdef DEBUG_3
 			board_->dumpAllSteps();
-      board_->testStepsStructure();
 			board_->dump();
 		#endif
 		board_->makeStep(step);
@@ -51,28 +54,25 @@ playoutStatus_e SimplePlayout::doPlayout()
 		if ( board_->getWinner() != EMPTY ) //somebody won
 			return PLAYOUT_OK;
 
-		if ( playoutLength_ > MAX_PLAYOUT_LENGTH ) 
+		if ( playoutLength_ > 2 * MAX_PLAYOUT_LENGTH ) 
 			return PLAYOUT_TOO_LONG;
 	}
 }
 
 uint SimplePlayout::getPlayoutLength()
 {
-	return playoutLength_;
+	return playoutLength_/2;
 }
-
 
 Benchmark::Benchmark()
 {
 }
-
 
 Benchmark::Benchmark(Board* board, uint playoutCount)
 {
 	board_ = board;	
 	playoutCount_ = playoutCount;
 }
-
 
 void Benchmark::doBenchmark() const
 {
@@ -126,7 +126,7 @@ void Benchmark::doBenchmark() const
       << "Playout too long = " << playoutTooLong << endl
       << "P(gold win) = " << float (winCount [PLAYER_TO_INDEX(GOLD)]) / (
 														 float (winCount [PLAYER_TO_INDEX(GOLD)] + winCount [PLAYER_TO_INDEX(SILVER)]) ) << endl
-			<< "Avererage playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
+			<< "Average playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
 }
 
 

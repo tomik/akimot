@@ -2,7 +2,7 @@ OPT   = -O3 -march=native -fomit-frame-pointer -ffast-math -frename-registers
 DEBUG = -ggdb3 -DDEBUG -fno-inline 
 PROF  = -O2 -march=native -DDEBUG -ggdb3 -fno-inline 
 
-CFLAGS += -Wall 
+CFLAGS += -Wall  
 
 GPP    = g++ $(CFLAGS) 
 
@@ -13,7 +13,7 @@ O_FILES   = board.o getMove.o engine.o utils.o
 all: debug 
 
 debug: $(O_FILES)
-	$(GPP) $(DEBUG) -o akimot getMove.o board.o engine.o utils.o
+	$(GPP) -o akimot getMove.o board.o engine.o utils.o
 
 opt: $(O_FILES)
 	$(GPP) $(OPT) -o akimot getMove.o board.o engine.o utils.o

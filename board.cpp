@@ -194,6 +194,7 @@ void Board::testStepsStructure()
 
     stepsNum = generateAllStepsOld(player,stepArray,true);  //false == nopushpulls
 
+    /*
     if (player == GOLD)
       log_() << "VERIFIED: GOLD (" <<  stepsNum << ")" ;
     else
@@ -203,6 +204,7 @@ void Board::testStepsStructure()
     for ( int i = 0; i < stepsNum; i++ )
       log_() << stepArray[i].toString();
     log_() << endl;
+    */ 
 
     //check point 2)
     for (int square = 11; square < 89; square++) {
@@ -218,8 +220,8 @@ void Board::testStepsStructure()
             stepArray[i] = Step(STEP_NO_STEP);    //to check in the end that all moves from stepArray were found
           }
         }
-        if ( ! found ) 
-          log_() << "Invalid move :" << stepNode->step_.toString() << endl;
+        //if ( ! found ) 
+          //log_() << "Invalid move :" << stepNode->step_.toString() << endl;
         assert(found);
         stepNode = stepNode->from_next_;
       } 
@@ -313,8 +315,7 @@ void Board::makeStep(Step& step){
 
 void Board::updateAfterStep(square_t from, square_t to)
   /* update step structure after performance of step 
-   * step is from -> to ( push/pulls are considered as two separate steps )*/
-  /* optimize: give just from/to, not the whole step */
+   * from -> to ( push/pulls are considered as two separate steps )*/
 {
   #ifdef DEBUG_3
     log_() << "=== BEGIN Board::updateAfterStep" << endl;
@@ -571,9 +572,8 @@ void Board::generatePushPullsFromSquare(square_t square, square_t excludePushTo)
    *         this is because step structure doesn't allow to add moves already there ... 
    */
 {
-  assert( IS_PLAYER(board_[square]));
-  if ( isFrozen(square))  //frozen cannot make any move
-   return;  
+  assert(IS_PLAYER(board_[square]));
+  assert( ! isFrozen(square));  //frozen cannot make any move
 
   player_t squareOwner = OWNER(board_[square]);
   square_t from, victimFrom;
@@ -626,8 +626,7 @@ void Board::generateSingleStepsFromSquare(square_t square)
   /*this function takes a square and generates single step moves for a piece on this square*/
 
 {
-  if ( isFrozen(square))  //frozen cannot make any move
-    return; 
+  assert( ! isFrozen(square));  //frozen cannot make any move
 
   player_t squareOwner = OWNER(board_[square]);
   int i;
@@ -762,12 +761,11 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
   bool isEmpty = board_[square] == EMPTY_SQUARE ;
     
   if ( ! isEmpty ){ //generate moves for itself 
-    nowFrozen = isFrozen(square);
-    if ( ! nowFrozen ) {
+    frozenBoard_[square] = isFrozen(square);
+    if ( ! frozenBoard_[square] ) {
       generateSingleStepsFromSquare(square);
       generatePushPullsFromSquare(square);
     }
-    frozenBoard_[square] = nowFrozen;
   } 
 
 
@@ -784,7 +782,8 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
       frozenBoard_[neighbour] = true;              // update frozen status "freeze"
       clearStepList(&stepListBoard_[STEP_LIST_FROM][neighbour]);
     }else if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move =>generate moves for it
-      frozenBoard_[neighbour] = false;             // update frozen status "unfreeze"
+      //first update frozen status - other functions might be using it 
+      frozenBoard_[neighbour] = false;                  
       generateSingleStepsFromSquare(neighbour);
       //don't generate push moves for empty field - it will take care of it itself
       generatePushPullsFromSquare(neighbour, exclude);  
@@ -816,15 +815,6 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
 
 void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t victim)
 {
-
-  //optimize this is not neccessary
-  stepNode->from_next_ = NULL;
-  stepNode->from_previous_ = NULL;
-  stepNode->to_previous_ = NULL;
-  stepNode->to_next_ = NULL;
-  stepNode->victim_next_ = NULL;
-  stepNode->victim_previous_ = NULL;
-  //
 
   stepNode->from_next_ = stepListBoard_[STEP_LIST_FROM][from].from_next_;
   stepListBoard_[STEP_LIST_FROM][from].from_next_ = stepNode;

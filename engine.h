@@ -15,7 +15,7 @@ public:
 
 #endif
 
-#define MAX_PLAYOUT_LENGTH 300  //these are "moves" ( i.e. 4 steps ) 
+#define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 
 enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG }; 
 
