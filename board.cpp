@@ -185,7 +185,7 @@ void Board::testStepsStructure()
   StepArray stepArray;
 
   player_t player = toMove_;
-  int stepsNum = generateAllStepsOld(player,stepArray,false);  //false == nopushpulls
+  int stepsNum = generateAllStepsOld(player,stepArray,true);  //false == nopushpulls
   bool found;
   StepNode* stepNode;
 
@@ -278,6 +278,7 @@ void Board::makeStep(Step& step){
 
     //handle push/pull steps
     if (step.stepType_ == STEP_PULL) {  
+      assert(false);
       assert( stepCount_ < 4 ); 
       board_[step.oppTo_] = ( OPP(toMove_) | step.oppPiece_);
       board_[step.oppFrom_] = EMPTY_SQUARE;
@@ -290,7 +291,6 @@ void Board::makeStep(Step& step){
 
     //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
     
-    /*
     for (int j = 0; j < checkTrapNum; j++)
       for (int i = 0; i < 4; i++)
         if ( IS_TRAP(checkTrap[j] + direction[i]) ){    
@@ -303,7 +303,6 @@ void Board::makeStep(Step& step){
           }
           break;
         }
-    */
 }
 
 void Board::updateAfterStep(square_t from, square_t to)
@@ -321,11 +320,10 @@ void Board::updateAfterStep(square_t from, square_t to)
   //if the guy at the step.from_ was somebody's victim - he must be cleared too 
   clearStepList(&stepListBoard_[STEP_LIST_VICTIM][from]);
 
-  // add also a newPosition of the piece - to, so the moves for it might be generated explicitly
   updateStepsForNeighbours(from, to);
-  updateStepsForNeighbours(to);
+  updateStepsForNeighbours(to, from);
     //generate moves to just emptied field
-  //generatePushesToSquare(from);
+  generatePushesToSquare(from);
   frozenBoard_[from] = false;             //status of empty field is implicitly unfrozen 
 
   #ifdef DEBUG_3
@@ -340,10 +338,13 @@ void Board::updateAfterKill(square_t square)
   #ifdef DEBUG_3
     cerr << "=== BEGIN Board::updateAfterKill" << endl;
   #endif
-  clearStepList(& stepListBoard_[STEP_LIST_FROM][square]);  //todo add victim
+  //remove moves 
+  clearStepList(& stepListBoard_[STEP_LIST_FROM][square]);  
+  clearStepList(& stepListBoard_[STEP_LIST_VICTIM][square]);  
+
   //update neighbours ( some of them might get (un)frozen )
   updateStepsForNeighbours(square);
-  //generatePushesToSquare(square);    
+  generatePushesToSquare(square);    
   //generatePullsToSquare(square);    
   frozenBoard_[square] = false;               //status of empty field is implicitly unfrozen 
   #ifdef DEBUG_3
@@ -562,11 +563,15 @@ void Board::generateAllSteps(player_t player)
 
 }
 
-void Board::generatePushPullsFromSquare(square_t square)
+
+void Board::generatePushPullsFromSquare(square_t square, square_t excludePushTo)
   /*this function takes a square and generates push pull moves for a piece on this square
-   *the moves are generated and stored into a classical structure - cross linked dynamic list */
+   *the moves are generated and stored into a classical structure - cross linked dynamic list 
+   * DIRTY:( exclude is a field to exclude from pushing to ... workaround of a special situation
+   *         this is because step structure doesn't allow to add moves already there ... 
+   */
 {
-  return; //TODO DEBUGGING 
+  //return; //TODO DEBUGGING 
 
   assert( IS_PLAYER(board_[square]));
   if ( isFrozen(square))  //frozen cannot make any move
@@ -586,13 +591,9 @@ void Board::generatePushPullsFromSquare(square_t square)
         for (j=0; j<4; j++) { // pull
           to = square + direction[j];   
           if (board_[to] == EMPTY_SQUARE)  //create move
-            generatePull(from, to, victimFrom);
+            continue; //            generatePull(from, to, victimFrom); //todo
         }
-        for (j=0; j<4; j++) { //push
-          to = square + direction[i] + direction[j];
-          if (board_[to] == EMPTY_SQUARE)  //create move
-            generatePush(from, to, victimFrom);
-        }
+        generatePushesFromSquareThrough(from, victimFrom, excludePushTo);
       } //if weaker enemy
     } //for
 }
@@ -616,9 +617,25 @@ void Board::generateSingleStepsFromSquare(square_t square)
         if (squareOwner == SILVER && direction[i] == NORTH)
           continue;
       }
-      generateSingleStep( square, square + direction[i]);  //create move
+      generateSingleStep( square, square + direction[i]);  
     }
   
+}
+
+void Board::generatePushesFromSquareThrough(square_t from, square_t victimFrom, square_t excludePushTo)
+  /*for dry principles - 
+   * this function is called from generatePushesFromSquare ( naturally ) 
+   *                and also from updateStepsForNeighbours ( pushes through new position of the piece )
+   */
+{
+  square_t to;
+
+  for (int j=0; j<4; j++) { 
+    to = victimFrom + direction[j];
+    if ( board_[to] == EMPTY_SQUARE && 
+         (excludePushTo == -1 || to != excludePushTo) ) //DIRTY workaround of special situation :(
+      generatePush(from, to, victimFrom);  //create move
+  }
 }
 
 void Board::generatePushesToSquare(square_t square)
@@ -637,8 +654,8 @@ void Board::generatePushesToSquare(square_t square)
     if (IS_PLAYER(board_[victimFrom])){  //victim is a player 
       for (j = 0; j < 4; j++){   
         from = victimFrom + direction[j]; //pusher is behind the victim
-        if ( ! isFrozen(from)               // not frozen
-            && OWNER(board_[victimFrom]) == OPP(OWNER(board_[from]))
+        if ( OWNER(board_[victimFrom]) == OPP(OWNER(board_[from])) // this also covers IS_PLAYER(board_[from]) :)
+            && ! isFrozen(from)                                    // not frozen
             && PIECE(board_[victimFrom]) < PIECE(board_[from])) {
           assert(IS_PLAYER(board_[from]));
           generatePush(from, to, victimFrom);
@@ -649,27 +666,42 @@ void Board::generatePushesToSquare(square_t square)
 
 } //function 
 
+
 void Board::generatePullsToSquare(square_t square)
 {
-  square_t from, to, victimFrom;
-  int i, j;
+  square_t from, to;
+  int i;
   to = square;
   assert( board_[to] == EMPTY_SQUARE );
 
   for (i = 0; i < 4; i++) {  
-    from = to + direction[j];
+    from = to + direction[i];
     if (IS_PLAYER(board_[from]) && ! isFrozen(from)) 
-      for (j = 0; j < 4; j++) { 
-        victimFrom = from + direction[j];
-        if (    OWNER(board_[from]) == OPP(OWNER(board_[victimFrom]))
-             && PIECE(board_[from]) > PIECE(board_[victimFrom])) {
-          assert(IS_PLAYER(board_[victimFrom]));
-          generatePull(from, to, victimFrom);
-        }
-      }
+      generatePullsToSquareFrom(from, to);
   } 
 }
 
+void Board::generatePullsToSquareFrom(square_t from,square_t to )
+  /* another refinement which is also separetely used in updateStepsForNeighbours 
+   * assumptions: to is EMPTY_SQUARE, 
+   *              from is not frozen and there is a player at from 
+   * */
+{
+  assert( board_[to] == EMPTY_SQUARE );
+  assert( IS_PLAYER(board_[from]));
+  assert( ! isFrozen(from));
+
+  square_t victimFrom;
+  for (int j = 0; j < 4; j++) { 
+    victimFrom = from + direction[j];
+    if (    OWNER(board_[from]) == OPP(OWNER(board_[victimFrom]))
+         && PIECE(board_[from]) > PIECE(board_[victimFrom])) {
+      assert(IS_PLAYER(board_[victimFrom]));
+      generatePull(from, to, victimFrom);
+    }
+  }
+  
+}
 
 void Board::generatePush(square_t from, square_t to, square_t victimFrom)
   /* assumptions: from,to,victimFrom - everything is consistent !!!   
@@ -721,7 +753,7 @@ void Board::generateSingleStep(square_t from, square_t to )
   #endif
 }
 
-void Board::updateStepsForNeighbours(square_t square, square_t newPosition) 
+void Board::updateStepsForNeighbours(square_t square, square_t exclude) 
   /*goes through neighbours and updates move for them
    * i.e. frozen->active => generates moves
    *      active->frozen => deletes moves    
@@ -732,42 +764,56 @@ void Board::updateStepsForNeighbours(square_t square, square_t newPosition)
   bool nowFrozen;
   int neighbour;
 
+  bool isEmpty = board_[square] == EMPTY_SQUARE ;
+    
+  if ( ! isEmpty ){ //generate moves for itself 
+    nowFrozen = isFrozen(square);
+    if ( ! nowFrozen ) {
+      generateSingleStepsFromSquare(square);
+      generatePushPullsFromSquare(square);
+    }
+    frozenBoard_[square] = nowFrozen;
+  } 
+
+
   for (int i = 0; i < 4; i++){ 
     neighbour = square + direction[i];
-    if ( IS_PLAYER(board_[neighbour])) {
-      nowFrozen = isFrozen(neighbour);
+    if ( isEmpty && neighbour == exclude) //don't generate moves for neighbours from the move
+      continue; 
+    if ( ! IS_PLAYER(board_[neighbour])) 
+      continue;
 
-      //if we are considering a newPosition of the piece - generate the moves to make explicitly ! 
-      if ( newPosition != -1 && newPosition == neighbour ) {
-        if ( ! nowFrozen ) {
-          generateSingleStepsFromSquare(neighbour);
-          generatePushPullsFromSquare(neighbour);
-        }
-        frozenBoard_[neighbour] = nowFrozen;
-        continue; 
-      }
+    nowFrozen = isFrozen(neighbour);
 
-      if ( nowFrozen && ! frozenBoard_[neighbour] ){ //it got frozen by the last move ( delete moves from it )
-        frozenBoard_[neighbour] = true;              // update frozen status "freeze"
-        clearStepList(&stepListBoard_[STEP_LIST_FROM][neighbour]);
-      }else if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move =>generate moves for it
-        frozenBoard_[neighbour] = false;             // update frozen status "unfreeze"
-        generateSingleStepsFromSquare(neighbour);
-        generatePushPullsFromSquare(neighbour);
-      }else //add moves from active pieces to the newly emptied square ( single step && pulls ) 
-        if ( !nowFrozen && ! frozenBoard_[neighbour] && (OWNER(board_[square]) == EMPTY)){
-         //single steps - still neccessary to check for rabbits moving in wrong direction :(
-         if ( ! ( PIECE(board_[neighbour]) == RABBIT_PIECE && 
-                (( square - neighbour == SOUTH && OWNER(board_[neighbour]) == GOLD ) || 
-                ( square - neighbour == NORTH && OWNER(board_[neighbour]) == SILVER ) ))){
-            generateSingleStep(neighbour, square);
-          }
-         //pulls to square 
-         
-
-        }
-      
-    } // if OWNER(board_[neighbour]) ... 
+    if ( nowFrozen && ! frozenBoard_[neighbour] ){ //it got frozen by the last move ( delete moves from it )
+      frozenBoard_[neighbour] = true;              // update frozen status "freeze"
+      clearStepList(&stepListBoard_[STEP_LIST_FROM][neighbour]);
+    }else if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move =>generate moves for it
+      frozenBoard_[neighbour] = false;             // update frozen status "unfreeze"
+      generateSingleStepsFromSquare(neighbour);
+      //don't generate push moves for empty field - it will take care of it itself
+      generatePushPullsFromSquare(neighbour, exclude);  
+     
+    }else  //add moves from active pieces to the newly emptied square ( single step && pulls && pushes_through ) 
+       if ( ! nowFrozen && ! frozenBoard_[neighbour]){
+         if ( isEmpty){    //single steps && pulls
+           //single steps - still neccessary to check for rabbits moving in wrong direction :(
+           if ( ! ( PIECE(board_[neighbour]) == RABBIT_PIECE && 
+                  (( square - neighbour == SOUTH && OWNER(board_[neighbour]) == GOLD ) || 
+                  ( square - neighbour == NORTH && OWNER(board_[neighbour]) == SILVER ) ))){
+              generateSingleStep(neighbour, square);
+            }
+           //generatePullsToSquareFrom(neighbour, square);   //pulls to empty square
+           
+         }else {            // pushes through
+           if ( OWNER(board_[neighbour]) == OPP(OWNER(board_[square])) &&
+                PIECE(board_[neighbour]) > PIECE(board_[square])){ 
+             assert( IS_PLAYER(board_[neighbour]));
+             generatePushesFromSquareThrough(neighbour, square, exclude);
+           }
+         }
+       }
+    
   }  //for neighbours
 } //function
   
@@ -1067,12 +1113,13 @@ int Board::generateAllStepsOld(player_t player, StepArray stepArray, bool pushPu
           continue; 
 
         //generate push/pull moves
-        if (pushPulls && stepCount_ < 3) {
+        if (pushPulls /*&& stepCount_ < 3*/) {      //no stepcount limit ! this is solved elsewhere
           for (i = 0; i < 4; i++) {  
             if (OWNER(board_[square + direction[i]]) == OPP(player) 
                 && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
               for (j=0; j<4; j++)  // pull
                 if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
+                    continue; //todo first test only push moves ! 
                     stepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
                           square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
                 }

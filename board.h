@@ -172,9 +172,11 @@ class Board
 		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
 
 		void generateSingleStepsFromSquare(square_t);
-		void generatePushPullsFromSquare(square_t);
+		void generatePushPullsFromSquare(square_t, square_t = -1);
+		void generatePushesFromSquareThrough(square_t, square_t, square_t = -1);
 		void generatePushesToSquare(square_t);
 		void generatePullsToSquare(square_t);
+		void generatePullsToSquareFrom(square_t,square_t);
 
 		//optimize : inline these
 		void generatePull(square_t, square_t, square_t);
