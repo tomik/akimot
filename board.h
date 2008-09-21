@@ -169,11 +169,17 @@ class Board
 
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
-		//important functions for move generation 
+		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
+
 		void generateSingleStepsFromSquare(square_t);
 		void generatePushPullsFromSquare(square_t);
-		void generatePushPullsToSquare(square_t);
-		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
+		void generatePushesToSquare(square_t);
+		void generatePullsToSquare(square_t);
+
+		//optimize : inline these
+		void generatePull(square_t, square_t, square_t);
+		void generatePush(square_t, square_t, square_t);
+		void generateSingleStep(square_t, square_t);
 
     void dump();
 		string toString();
