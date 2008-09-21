@@ -31,6 +31,7 @@ void SimplePlayout::playOne()
 		step = board_->getRandomStep();
 		#ifdef DEBUG_2
 			board_->dumpAllSteps();
+      board_->testStepsStructure();
 			board_->dump();
 		#endif
 		board_->makeStep(step);

@@ -55,18 +55,14 @@ typedef unsigned long long u64;
 #define STEP_LIST_TO			1
 #define STEP_LIST_VICTIM	2
 
-/*#define FROZEN_YES				0			//piece is frozen
-#define FROZEN_NO					0			//piece is active
-#define FROZEN_EMPTY			0			//no piece - field was empty
-typedef uint frozen_t;  // FROZEN_YES, FROZEN_NO, FROZEN_EMPTY*/
-
 extern const int direction[4];
 extern const int trap[4];
 
 typedef uint player_t;
 typedef int square_t;
-typedef uint piece_t;		// 
+typedef uint piece_t;		
 typedef uint stepType_t;
+
 
 
 class Step
@@ -95,8 +91,11 @@ class Step
     const string oneSteptoString(player_t, piece_t, square_t, square_t);
     const string toString();
     void dump(); 
+		bool operator== ( const Step&);
 
 };
+
+typedef Step StepArray[MAX_STEPS];
 
 class Board;
 
@@ -160,9 +159,9 @@ class Board
     void generateAllSteps(player_t);
 		Step getRandomStep();
 
-		inline bool hasFriend(square_t);		
-		inline bool hasStrongerEnemy(square_t);
-		inline bool isFrozen(square_t);		
+		inline bool hasFriend(square_t) const;
+		inline bool hasStrongerEnemy(square_t) const;
+		inline bool isFrozen(square_t) const;
 		
 		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
 		int clearStepList(StepNode* head);
@@ -180,6 +179,9 @@ class Board
 		string toString();
 		void dumpAllSteps();
 		string allStepsToString();
+
+		void testStepsStructure();
+		int generateAllStepsOld(player_t, StepArray, bool) const;
 
 };
 
