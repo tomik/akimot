@@ -39,7 +39,7 @@ typedef unsigned long long u64;
 #define COL(square) (square%10) // what column is a square in?  1 = left (a), 8 = right (h)
 #define OPP(player) ( (16 - player) + 8 )
 #define PLAYER_TO_INDEX(player)	((16-player)/8)	//0 for GOLD, 1 for SILVER - for indexation
-#define INDEX_TO_PLAYER(index)	(uint) (16-8*player)	//0 -> GOLD, 1 -> SILVER - reverse indexation
+#define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	//0 -> GOLD, 1 -> SILVER - reverse indexation
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
     
@@ -62,8 +62,6 @@ typedef uint player_t;
 typedef int square_t;
 typedef uint piece_t;		
 typedef uint stepType_t;
-
-
 
 class Step
 {
@@ -174,14 +172,13 @@ class Board
 		void generateSingleStepsFromSquare(square_t);
 		void generatePushPullsFromSquare(square_t, square_t = -1);
 		void generatePushesFromSquareThrough(square_t, square_t, square_t = -1);
+		void generatePullsFromSquareVictim(square_t, square_t, square_t = -1);
 		void generatePushesToSquare(square_t);
-		void generatePullsToSquare(square_t);
 		void generatePullsToSquareFrom(square_t,square_t);
 
-		//optimize : inline these
-		void generatePull(square_t, square_t, square_t);
-		void generatePush(square_t, square_t, square_t);
-		void generateSingleStep(square_t, square_t);
+		inline void generatePull(square_t, square_t, square_t);
+		inline void generatePush(square_t, square_t, square_t);
+		inline void generateSingleStep(square_t, square_t);
 
     void dump();
 		string toString();
