@@ -127,7 +127,7 @@ class Board
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 		StepNode			stepListBoard_[3][100]; //[0][100] board for from, [1][100] board for to 
 
-		bool 					stepHashSingle[HASH_ITEMS][4];			
+		bool 					stepHashSingle[HASH_ITEMS][4];			  
 		bool 					stepHashPush[HASH_ITEMS][4][4];			
 		bool 					stepHashPull[HASH_ITEMS][4][4];			
 

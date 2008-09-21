@@ -255,7 +255,8 @@ void Board::makeStep(Step& step){
     log_() << "playing step: " << step.toString() << endl;
   #endif 
 
-  int checkTrap[0];         //squares in whose vicinity we check the traps
+  int checkTrap[2];         //squares in whose vicinity we check the traps
+  int trap[2] = {0,0} ;
   int checkTrapNum = 1;
 
     if (step.stepType_ == STEP_NO_STEP)
@@ -275,7 +276,6 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
-      updateAfterStep(step.oppFrom_,step.oppTo_);  //true is set to show that this is a victim move
     }
 
     //update board after single step
@@ -284,10 +284,9 @@ void Board::makeStep(Step& step){
      checkTrap[0] = step.from_;
      stepCount_++;
      //update the step structure 
-     updateAfterStep(step.from_,step.to_);
 
 
-    //handle push/pull steps
+    //pull steps
     if (step.stepType_ == STEP_PULL) {  
       assert( stepCount_ < 4 ); 
       board_[step.oppTo_] = ( OPP(toMove_) | step.oppPiece_);
@@ -296,8 +295,10 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
-      updateAfterStep(step.oppFrom_, step.oppTo_);  //true is set to show that this is a victim move
     }
+
+
+      
 
     //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
     
@@ -307,10 +308,27 @@ void Board::makeStep(Step& step){
           if ( board_[checkTrap[j] + direction[i]] != EMPTY_SQUARE && ! hasFriend(checkTrap[j] + direction[i]) ){
             //trap is not empty and piece in there has no friends around => KILL
             board_[checkTrap[j] + direction[i]] = EMPTY_SQUARE; 
-            updateAfterKill(checkTrap[j] + direction[i]);
+            trap[j] = checkTrap[j] + direction[i];
           }
           break;
         }
+            
+
+    if ( step.stepType_ == STEP_PUSH ){
+      updateAfterStep(step.oppFrom_,step.oppTo_);  
+      if (trap[1])
+        updateAfterKill(trap[1]);
+    }
+
+    updateAfterStep(step.from_,step.to_);
+    if (trap[0] )
+      updateAfterKill(trap[0]);
+
+    if ( step.stepType_ == STEP_PULL ){
+      updateAfterStep(step.oppFrom_,step.oppTo_);  
+      if (trap[1]) 
+        updateAfterKill(trap[1]);
+    }
 }
 
 void Board::updateAfterStep(square_t from, square_t to)
@@ -320,12 +338,12 @@ void Board::updateAfterStep(square_t from, square_t to)
   #ifdef DEBUG_3
     log_() << "=== BEGIN Board::updateAfterStep" << endl;
   #endif
+    clearStepList(& stepListBoard_[STEP_LIST_FROM][from]);
+    clearStepList(& stepListBoard_[STEP_LIST_TO][to]);
+    clearStepList(&stepListBoard_[STEP_LIST_VICTIM][from]);
 
    //after step update ... first clear moves from original field and to destination field
-  clearStepList(& stepListBoard_[STEP_LIST_FROM][from]);
-  clearStepList(& stepListBoard_[STEP_LIST_TO][to]);
   //if the guy at the step.from_ was somebody's victim - he must be cleared too 
-  clearStepList(&stepListBoard_[STEP_LIST_VICTIM][from]);
 
   updateStepsForNeighbours(from, to);
   updateStepsForNeighbours(to, from);
@@ -660,6 +678,9 @@ void Board::generatePushesToSquare(square_t square)
   /*this function takes a square and generates pushes to it for all pieces ( of both players ) */
 {
 
+  if ( board_[square] != EMPTY_SQUARE )
+    return;
+
   square_t from, to, victimFrom;
   int i, j;
   to = square;
@@ -716,7 +737,7 @@ void Board::generatePush(square_t from, square_t to, square_t victimFrom)
    * */
 {
   if ( checkStepHash(STEP_PUSH, from, to, victimFrom)) //already in 
-    assert(false); //return 
+    return; 
 
   StepNode* stepNode = new StepNode;
   initStepNode(stepNode,from, to, victimFrom); 
@@ -727,6 +748,7 @@ void Board::generatePush(square_t from, square_t to, square_t victimFrom)
   #ifdef DEBUG_3
     log_() << "+" << stepNode->step_.toString() << endl;
   #endif
+
   setStepHash(true, STEP_PUSH, from, to, victimFrom);
 }
   
@@ -736,7 +758,7 @@ void Board::generatePull(square_t from, square_t to, square_t victimFrom )
   //add the node to the cross linked dynamic list, arguments:
 
   if (checkStepHash(STEP_PULL, from, to, victimFrom)) //already in 
-    assert(false); //return 
+    return;
 
   StepNode* stepNode = new StepNode;
   initStepNode(stepNode, from, to, victimFrom); 
@@ -747,7 +769,8 @@ void Board::generatePull(square_t from, square_t to, square_t victimFrom )
   #ifdef DEBUG_3
     log_() << "+" << stepNode->step_.toString() << endl;
   #endif
-  setStepHash(true, STEP_SINGLE, from, to, victimFrom);
+
+  setStepHash(true, STEP_PULL, from, to, victimFrom);
 }
 
 void Board::generateSingleStep(square_t from, square_t to )
@@ -757,7 +780,7 @@ void Board::generateSingleStep(square_t from, square_t to )
    *     adjacency of to, fom */ 
 {
   if ( checkStepHash(STEP_SINGLE, from, to)) //already in 
-    assert(false); //return 
+    return; 
 
   StepNode* stepNode = new StepNode;
   initStepNode(stepNode, from, to); 
@@ -792,7 +815,6 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
       generatePushPullsFromSquare(square);
     }
   } 
-
 
   for (int i = 0; i < 4; i++){ 
     neighbour = square + direction[i];
@@ -875,6 +897,7 @@ void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t
 
 bool Board::checkStepHash(stepType_t stepType, square_t from, square_t to, square_t victimFrom) 
   /* the move must be within the bounds ! victimFrom is implicitly -1 */
+  //optimize: no switch ! index directly by stepType, speedup directionToIndex
 {
   switch(stepType){
     case STEP_SINGLE  :

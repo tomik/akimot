@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-//#define NDEBUG //switchis off assert ! 
+#define NDEBUG //switchis off assert ! 
 
 #include <cassert>
 
