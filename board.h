@@ -1,13 +1,9 @@
-#ifndef __BOARD_H__
-#define __BOARD_H__
+#ifndef BOARD_H
+#define BOARD_H
 
 #include "utils.h"
 
 #define MAX_STEPS 100
-
-#define BIT_LEN     64
-typedef bitset<BIT_LEN> bit64;
-typedef unsigned long long u64;
 
 #define EMPTY_SQUARE 0x0U
 #define EMPTY 0x0U
@@ -48,11 +44,6 @@ typedef unsigned long long u64;
 #define STEP_PUSH     2
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
-#define	STEP_HEAD			5
-
-#define STEP_LIST_FROM		0
-#define STEP_LIST_TO			1
-#define STEP_LIST_VICTIM	2
 
 extern const int direction[4];
 extern const int trap[4];
@@ -78,42 +69,30 @@ class Step
     
     friend class  Board;
   public:
-		Step(){stepType_ = STEP_HEAD;};
+		Step(){};
 		Step( stepType_t );
+    Step( stepType_t, player_t, piece_t, square_t, square_t );
+    Step( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setPass(); 
 		bool pieceMoved();
 
-    const string oneSteptoString(player_t, piece_t, square_t, square_t);
-    const string toString();
+    const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
+    const string toString() const;
     void dump(); 
 		bool operator== ( const Step&);
 
 };
 
-typedef Step StepArray[MAX_STEPS];
-
 class Board;
-
-class StepNode
-	/**/
-{
-	private:
-		Step step_;
-		StepNode* from_next_;
-		StepNode* from_previous_;
-		StepNode* to_next_;
-		StepNode* to_previous_;
-		StepNode* victim_next_;
-		StepNode* victim_previous_;
-		friend class Board;
-};  
 
 #define HASH_ITEMS 78
 
 
-typedef MyArray<Step> MyStepArray;
+//typedef MyArray<Step> StepArray;
+
+typedef Step SimpleStepArray[MAX_STEPS]; 
 
 class Board
 		/*This is a crucial class - representing the board. 
@@ -125,16 +104,15 @@ class Board
 	private:
     Logger        log_; 
 
-		int						board_[100];						//actual pieces are stored here 
+		uint						board_[100];						//actual pieces are stored here 
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
-		StepNode			stepListBoard_[3][100]; //[0][100] board for from, [1][100] board for to 
 
 		bool 					stepHashSingle[HASH_ITEMS][4];			  
 		bool 					stepHashPush[HASH_ITEMS][4][4];			
 		bool 					stepHashPull[HASH_ITEMS][4][4];			
 
-		uint					singleStepsNum_[2];			//number of possible single steps per player, 0 == Gold, 1 == Silver
-		uint					pushPullStepsNum_[2];		//number of possible push/pull steps per player, 0 == Gold, 1 == Silver
+    MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
+
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
@@ -149,8 +127,6 @@ class Board
 
   public:
 		Board(){};
-		Board(const Board&);
-		~Board();
 
     bool init(const char* fn); 
 
@@ -168,14 +144,14 @@ class Board
 
     void generateAllSteps(player_t);
 		Step getRandomStep();
+    bool checkStepValidity(const Step&);
+    inline void removeStepFromStepHash(const Step&);
+    void clearStepArray(player_t);
 
 		inline bool hasFriend(square_t) const;
 		inline bool hasStrongerEnemy(square_t) const;
 		inline bool isFrozen(square_t) const;
 		
-		void initStepNode(StepNode*, square_t, square_t, square_t = -1);
-		int clearStepList(StepNode* head);
-
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
 		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
@@ -197,11 +173,10 @@ class Board
 		string allStepsToString();
 
 		void testStepsStructure();
-		int generateAllStepsOld(player_t, StepArray, bool) const;
+		int generateAllStepsOld(player_t, SimpleStepArray, bool) const;
 
     void setStepHash(const Step&, bool);
-    bool checkStepHash(stepType_t, square_t, square_t, square_t victimFrom = -1); 
-    void setStepHash(bool value, stepType_t, square_t, square_t, square_t victimFrom = -1);
+    bool checkStepHash(const Step&); 
     inline uint directionToIndex(uint direction);
 
 };

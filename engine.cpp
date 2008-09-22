@@ -28,15 +28,14 @@ void SimplePlayout::playOne()
 {
 	Step step;
 	do {
-		step = board_->getRandomStep();
+		#ifdef DEBUG_3
+			board_->dump();
+			board_->dumpAllSteps();
+		#endif
 		#ifdef DEBUG_2
       board_->testStepsStructure();  
 		#endif
-
-		#ifdef DEBUG_3
-			board_->dumpAllSteps();
-			board_->dump();
-		#endif
+		step = board_->getRandomStep();
 		board_->makeStep(step);
 	}
 	while ( board_->getStepCount() < 4 && step.pieceMoved()); 

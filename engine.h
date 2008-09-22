@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "board.h"
 
-
 class Engine
 {
 	Logger logger_;

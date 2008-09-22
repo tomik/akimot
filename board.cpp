@@ -25,6 +25,13 @@ bool Step::pieceMoved()
   return (! (stepType_ == STEP_PASS || stepType_ == STEP_NO_STEP));
 }
 
+Step::Step( stepType_t stepType, player_t player, piece_t piece, square_t from, square_t to){
+  stepType_ = stepType;
+  player_   = player;
+  piece_    = piece;
+  from_     = from;
+  to_       = to;
+}
 
 void Step::setValues( stepType_t stepType, player_t player, piece_t piece, square_t from, square_t to)
 {
@@ -35,6 +42,18 @@ void Step::setValues( stepType_t stepType, player_t player, piece_t piece, squar
   to_       = to;
 }
 
+Step::Step( stepType_t stepType, player_t player, piece_t piece, square_t from, square_t to, 
+            piece_t oppPiece, square_t oppFrom, square_t oppTo)
+{
+  stepType_ = stepType;
+  player_   = player;
+  piece_    = piece;
+  from_     = from;
+  to_       = to;
+  oppPiece_ = oppPiece;
+  oppFrom_  = oppFrom;
+  oppTo_    = oppTo;
+}
 
 void Step::setValues( stepType_t stepType, player_t player, piece_t piece, square_t from, square_t to, 
             piece_t oppPiece, square_t oppFrom, square_t oppTo)
@@ -51,7 +70,7 @@ void Step::setValues( stepType_t stepType, player_t player, piece_t piece, squar
 }
 
 
-const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) 
+const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) const
   /**prints step string for given values */
 {
   stringstream s;
@@ -80,7 +99,7 @@ void Step::dump()
 }
 
 
-const string Step::toString()
+const string Step::toString() const
 {
   stringstream ss;
   ss.clear(); 
@@ -100,9 +119,6 @@ const string Step::toString()
     case STEP_PULL: 
       ss << oneSteptoString(player_, piece_, from_, to_ )
              << oneSteptoString(OPP(player_), oppPiece_, oppFrom_, oppTo_);
-      break;
-    case STEP_HEAD:
-      ss << "HEAD"; 
       break;
     case STEP_NO_STEP:
       ss << "NO_STEP";  
@@ -145,33 +161,18 @@ void Board::dumpAllSteps()
 string Board::allStepsToString()
 {
   stringstream ss;
-  StepNode* stepNode;
 
-  for (uint player = 0; player < 2; player++) {
-    uint realStepsNum = 0;
-    if ( player ) 
+  for (uint playerIndex = 0; playerIndex < 2; playerIndex++) {
+    if ( playerIndex ) 
       ss << endl << "Potential moves for SILVER: " << getAllStepsNum(SILVER);
     else
       ss << endl << "Potential moves for GOLD: " << getAllStepsNum(GOLD);
 
-    for (int square=11; square < 89; square++) {
-      if (PLAYER_TO_INDEX(OWNER(board_[square])) == 1 - player)
-        continue;
-      //ss << "[sqr " << square << "] ";
-      stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-      while ( stepNode != NULL ) { 
-
-        //assert - move not already there
-        assert(ss.str().find(stepNode->step_.toString()) == string::npos);  
-
-        ss << stepNode->step_.toString();
-        stepNode = stepNode->from_next_;
-        realStepsNum++;
-      }
+    for ( uint i = 0; i < stepArray[playerIndex].getElemCount(); i++){
+      //assert(ss.str().find(stepArray[playerIndex].getElem(i).toString()) == string::npos);  
+      ss << stepArray[playerIndex].getElem(i).toString();
     }
-    assert( realStepsNum == getAllStepsNum(INDEX_TO_PLAYER(player)));
   }
-
   ss << endl;
   return ss.str();
 }
@@ -181,59 +182,41 @@ void Board::testStepsStructure()
   /*testing function to check whether the actually kept set of moves is correct - 
    * for this all moves from position are generated and stepStructure is compared against this 
    * 1) all moves in structure are unique
-   * 2) every move in the structure is also among generated all moves
+   * //////// 2) every move in the structure is also among generated all moves
    * 3) every move in the generated moves is also in the structure */
 {
 
-  StepArray stepArray;
-  int stepsNum;
-  bool found;
-  StepNode* stepNode;
+  SimpleStepArray simpleStepArray;
+  uint stepsNum;
 
   player_t player;
 
-  for ( int j = 0; j < 2; j++) {
-    player = INDEX_TO_PLAYER(j);
-
-    stepsNum = generateAllStepsOld(player,stepArray,true);  //false == nopushpulls
-
-    /*
+  for ( uint playerIndex = 0; playerIndex < 2; playerIndex++) {
+    player = INDEX_TO_PLAYER(playerIndex);
+    stepsNum = generateAllStepsOld(player,simpleStepArray,true);  //false == nopushpulls
+    
     if (player == GOLD)
       log_() << "VERIFIED: GOLD (" <<  stepsNum << ")" ;
     else
       log_() << "VERIFIED: SILVER(" <<  stepsNum << ")" ;
-
         
-    for ( int i = 0; i < stepsNum; i++ )
-      log_() << stepArray[i].toString();
+    for ( uint i = 0; i < stepsNum; i++ )
+      log_() << simpleStepArray[i].toString();
     log_() << endl;
-    */ 
-
-    //check point 2)
-    for (int square = 11; square < 89; square++) {
-      if (OWNER(board_[square]) != player)
-        continue;
-      stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-      while ( stepNode != NULL ) {
-        //check whether is in ref array
-        found = false;
-        for ( int i = 0; i < stepsNum; i++ ){
-          if (stepNode->step_ == stepArray[i]) {
-            found = true;
-            stepArray[i] = Step(STEP_NO_STEP);    //to check in the end that all moves from stepArray were found
-          }
-        }
-        //if ( ! found ) 
-          //log_() << "Invalid move :" << stepNode->step_.toString() << endl;
-        assert(found);
-        stepNode = stepNode->from_next_;
-      } 
     
-    }   
 
-  //check point 3)
-  for ( int i = 0; i < stepsNum; i++ )
-    assert( stepArray[i].stepType_ == STEP_NO_STEP );
+    for ( uint j = 0; j < stepArray[playerIndex].getElemCount(); j++)
+      for ( uint i = 0; i < stepsNum; i++ )                     //check whether is in ref array
+        if (stepArray[playerIndex].getElem(j) == simpleStepArray[i]) 
+          simpleStepArray[i] = Step(STEP_NO_STEP);    //to check in the end that all moves were found
+
+      
+       
+    //all moves generated by verified method were found 
+    for ( uint i = 0; i < stepsNum; i++ ) {
+      //cerr << simpleStepArray[i].toString();
+      assert( simpleStepArray[i].stepType_ == STEP_NO_STEP );
+    }
   }
 
 }
@@ -259,7 +242,7 @@ void Board::makeStep(Step& step){
   #endif 
 
   int checkTrap[2];         //squares in whose vicinity we check the traps
-  int trap[2] = {0,0} ;
+  //int trap[2] = {0,0} ;
   int checkTrapNum = 1;
 
     if (step.stepType_ == STEP_NO_STEP)
@@ -279,6 +262,7 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
+      updateAfterStep(step.oppFrom_,step.oppTo_);  
     }
 
     //update board after single step
@@ -287,6 +271,7 @@ void Board::makeStep(Step& step){
      checkTrap[0] = step.from_;
      stepCount_++;
      //update the step structure 
+    updateAfterStep(step.from_,step.to_);
 
 
     //pull steps
@@ -298,6 +283,7 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
+      updateAfterStep(step.oppFrom_,step.oppTo_);  
     }
 
 
@@ -311,11 +297,13 @@ void Board::makeStep(Step& step){
           if ( board_[checkTrap[j] + direction[i]] != EMPTY_SQUARE && ! hasFriend(checkTrap[j] + direction[i]) ){
             //trap is not empty and piece in there has no friends around => KILL
             board_[checkTrap[j] + direction[i]] = EMPTY_SQUARE; 
-            trap[j] = checkTrap[j] + direction[i];
+           // trap[j] = checkTrap[j] + direction[i];
+            updateAfterKill(checkTrap[j] + direction[i]);
           }
           break;
         }
             
+  /*
 
     if ( step.stepType_ == STEP_PUSH ){
       updateAfterStep(step.oppFrom_,step.oppTo_);  
@@ -332,6 +320,7 @@ void Board::makeStep(Step& step){
       if (trap[1]) 
         updateAfterKill(trap[1]);
     }
+  */
 }
 
 void Board::updateAfterStep(square_t from, square_t to)
@@ -341,12 +330,6 @@ void Board::updateAfterStep(square_t from, square_t to)
   #ifdef DEBUG_3
     log_() << "=== BEGIN Board::updateAfterStep" << endl;
   #endif
-    clearStepList(& stepListBoard_[STEP_LIST_FROM][from]);
-    clearStepList(& stepListBoard_[STEP_LIST_TO][to]);
-    clearStepList(&stepListBoard_[STEP_LIST_VICTIM][from]);
-
-   //after step update ... first clear moves from original field and to destination field
-  //if the guy at the step.from_ was somebody's victim - he must be cleared too 
 
   updateStepsForNeighbours(from, to);
   updateStepsForNeighbours(to, from);
@@ -366,9 +349,6 @@ void Board::updateAfterKill(square_t square)
   #ifdef DEBUG_3
     log_() << "=== BEGIN Board::updateAfterKill" << endl;
   #endif
-  //remove moves 
-  clearStepList(& stepListBoard_[STEP_LIST_FROM][square]);  
-  clearStepList(& stepListBoard_[STEP_LIST_VICTIM][square]);  
   //update neighbours ( some of them might get (un)frozen )
   updateStepsForNeighbours(square);
   generatePushesToSquare(square);    
@@ -408,172 +388,134 @@ void Board::commitMove()
 Step Board::getRandomStep()
 {
 
-  uint len;
-  if ( stepCount_ < 3 )   
-    len = getAllStepsNum(toMove_);
-  else
-    len = singleStepsNum_[PLAYER_TO_INDEX(toMove_)]; //push/pull moves are not allowed now !
+  uint playerIndex = PLAYER_TO_INDEX(toMove_);
+  uint len = stepArray[playerIndex].getElemCount();
 
-  if ( stepCount_ > 1 ) //add pass move
-    len++;
+  if (len >= 100 ){
+    clearStepArray(toMove_);
+    len = stepArray[playerIndex].getElemCount();
+  }
 
-  if (len == 0){                //player to move has no step to play ( not even pass ! ) => loss
+
+  if (len == 0 && stepCount_ > 0){ //player to move has no step to play and cannot play pass => he lost
     winner_ = OPP(toMove_);
-    return Step(STEP_NO_STEP);  //todo: return this as pass move ( slight speed up )
+    return Step(STEP_NO_STEP); 
   }
 
-  assert(len != 0);
-  int index = rand() % len;
-  assert(index >= 0 && index < (int) len);
+  uint index;
+  if ( stepCount_ == 0)
+    index = rand() % (len + 1);
+    if ( index-- == 0 )
+      return Step(STEP_PASS);
 
-  if ( stepCount_ > 1 && index-- == 0)
-    return Step(STEP_PASS);
+  assert(len > 0);
+  index = rand() % len;
 
 
-  StepNode* stepNode;
+  //selection combined with move removal
+  Step step;
+  uint i = 0;
+  uint roundIndex = index;
+  assert( roundIndex >= 0 && roundIndex < len );
 
-  for (int square=11; square < 89; square++) {
-    if (OWNER(board_[square]) == toMove_) {
-      stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-      while ( stepNode != NULL ) { 
-        // we decrease the index and check the move only if it is played by player toMove 
-        // ( moves by both players are mixed in the structure ) 
-        if ( stepNode->step_.player_ == toMove_ ){ 
-          if ( stepCount_ >= 3 && stepNode->step_.stepType_ != STEP_SINGLE ){
-            stepNode = stepNode -> from_next_;
-            continue;
-          }
-          if ( index-- == 0 ) {
-            return stepNode->step_; 
-        }
-        }
-        stepNode = stepNode->from_next_;
+  do {
+    assert(len > 0);
+    step = stepArray[playerIndex].getElem(roundIndex % len);
+
+    if (! ( step.stepType_ != STEP_SINGLE && stepCount_ >= 3 )){
+      if (checkStepValidity(step)) {
+        assert(len > 0);
+        stepArray[playerIndex].del(roundIndex % len);          //chosen move -> we can delete :)
+        removeStepFromStepHash(step); 
+        return step; 
       }
-                
-    }
-  }
-  assert(false); //it must not come here !
-  return  Step(STEP_PASS);
-}
-
-
-int Board::clearStepList(StepNode* head)
-  /* frees the stepList which starts with head 
-   * returns how many items have been cleared == how many moves have been deleted
-   * */
-{
-  int i = 0;
-  int index = 0;
-
-  StepNode* stepNode;
-  StepNode* destroyNode;
-  const Step*     step;   //just for convenience
-
-
-  if ( head->from_next_ != NULL ) {
-    stepNode = head->from_next_;
-    index = STEP_LIST_FROM;
-    assert( head->to_next_ == NULL && head->victim_next_ == NULL );
-  }
-  else if ( head->to_next_ != NULL ) {
-    stepNode = head->to_next_;
-    index = STEP_LIST_TO;
-    assert( head->from_next_ == NULL && head->victim_next_ == NULL );
-  }
-  else if ( head->victim_next_ != NULL ) {
-    stepNode = head->victim_next_;
-    index = STEP_LIST_VICTIM;
-    assert( head->from_next_ == NULL && head->to_next_ == NULL );
-  }else 
-    return 0;   //nothing in steplist
-
-
-  while (stepNode != NULL) {
-    i++;
-    destroyNode = stepNode; //this node will be destroyed
-
-    //move to the next node
-    if ( index == STEP_LIST_FROM ) 
-      stepNode = stepNode->from_next_;
-    else if ( index == STEP_LIST_TO ) 
-      stepNode = stepNode->to_next_;
-    else if ( index == STEP_LIST_VICTIM )
-      stepNode = stepNode->victim_next_;
-    else 
-      assert(false);
-
-    //now "bypass the node before destroying it" - here we do 1+1 more bypasses than necessary,
-    //-> for instance for index == STEP_LIST_FROM, from_next->from_previous and from_previous->from_next 
-    //doesn't have to be bypassed because they will be destroyed anyway
-    //but the code would get too long ... 
-    if ( index != STEP_LIST_FROM ){
-      assert( destroyNode->from_previous_ != NULL);
-      destroyNode->from_previous_->from_next_ = destroyNode->from_next_;
-      if ( destroyNode->from_next_ != NULL )
-        destroyNode->from_next_->from_previous_ = destroyNode->from_previous_;
+      else{
+        //assert(false);        //there should be NO incorrect moves ! 
+        assert(len > 0);
+        stepArray[playerIndex].del(roundIndex % len );       //incorrect move -> delete ( only place in program )
+        removeStepFromStepHash(step);
+        len--;
+      }
+    }else{
+      roundIndex++;
+      i++;
     }
 
-    if ( index != STEP_LIST_TO ){
-      assert( destroyNode->to_previous_ != NULL);
-      destroyNode->to_previous_->to_next_ = destroyNode->to_next_;
 
-      //assert( destroyNode->to_previous_->to_next_ == NULL);
-      //assert( &(stepListBoard_[STEP_LIST_TO][destroyNode->step_.to_]) == (destroyNode->to_previous_));
-
-      if ( destroyNode->to_next_ != NULL )
-        destroyNode->to_next_->to_previous_ = destroyNode->to_previous_;
-    }
-
-    if ( index != STEP_LIST_VICTIM ){
-    //victim_previous_ can be NULL ( in case of move that has no victim ) - one step moves
-      if ( destroyNode->victim_previous_ != NULL ) 
-        destroyNode->victim_previous_->victim_next_ = destroyNode->victim_next_;
-
-      if ( destroyNode->victim_next_ != NULL )
-        destroyNode->victim_next_->victim_previous_ = destroyNode->victim_previous_;
-    }
-
-    #ifdef DEBUG_3
-      log_() << "-" << destroyNode->step_.toString() << endl;
-    #endif
-
-    step = &(destroyNode->step_);
+  } while ( i < len );  //no valid move in the array
   
-    if (destroyNode->step_.stepType_ == STEP_SINGLE)               
-      singleStepsNum_[PLAYER_TO_INDEX(destroyNode->step_.player_)]--; 
-    else
-      pushPullStepsNum_[PLAYER_TO_INDEX(destroyNode->step_.player_)]--; 
+  //assert(false);
+  //it must not come here !
+  winner_ = OPP(toMove_);
+  return  Step(STEP_NO_STEP);
+}
 
-    if (step->stepType_ == STEP_PUSH)
-      setStepHash(false, step->stepType_, step->from_, step->oppTo_, step->oppFrom_);
-    else
-      setStepHash(false, step->stepType_, step->from_, step->to_, step->oppFrom_);
+void Board::removeStepFromStepHash(const Step& step)
+{
+  //setStepHash(step, false);
+  #ifdef DEBUG_3
+    log_() << "-" << step.toString() << endl;
+  #endif
+}
 
-    delete destroyNode; 
-    //optimize: own memory management - put DestroyNode to a special list and allocate from there as well 
-      
+void Board::clearStepArray(player_t player)
+{
+  #ifdef DEBUG_3
+    log_() << "=== BEGIN Board::clearStepArray" << endl;
+  #endif
+
+  uint playerIndex = PLAYER_TO_INDEX(player);
+  uint len = stepArray[playerIndex].getElemCount();
+  uint i = 0;
+  Step step;
+
+  while ( i < len ) {
+    step = stepArray[playerIndex].getElem(i);
+    if ( ! checkStepValidity(step)){
+      stepArray[playerIndex].del(i);          //when deleting don't increase i, decrease len !
+      removeStepFromStepHash(step);
+      len--;
+    }
+    else
+      i++;
   }
 
-  // now clean the head again
-  if ( index == STEP_LIST_FROM ) 
-    head->from_next_ = NULL;
-  else if ( index == STEP_LIST_TO ) 
-    head->to_next_ = NULL;
-  else if ( index == STEP_LIST_VICTIM )
-    head->victim_next_ = NULL;
-  else 
-    assert(false);
+  #ifdef DEBUG_3
+    log_() << "=== END Board::clearStepArray" << endl;
+  #endif
 
-  return i;
-    
 }
+
+bool Board::checkStepValidity(const Step& step)
+{
+  switch (step.stepType_ ) {
+    case STEP_SINGLE:
+      if ( ! frozenBoard_[step.from_] &&
+           board_[step.to_] == EMPTY_SQUARE && board_[step.from_] == ( step.player_ | step.piece_ ) )
+       return true;
+      return false;
+    case STEP_PUSH: 
+      if ( ! frozenBoard_[step.from_] && board_[step.oppTo_] == EMPTY_SQUARE 
+          && board_[step.from_] == ( step.player_ | step.piece_ ) 
+          && board_[step.oppFrom_] == ( OPP(step.player_) | step.oppPiece_) ) 
+        return true;
+      return false;
+    case STEP_PULL: 
+      if ( ! frozenBoard_[step.from_] && board_[step.to_] == EMPTY_SQUARE 
+          && board_[step.from_] == ( step.player_ | step.piece_ ) 
+          && board_[step.oppFrom_] == ( OPP(step.player_) | step.oppPiece_) )
+        return true;
+      return false;
+  }
+  assert(false);
+  return false;
+}
+
 
 void Board::generateAllSteps(player_t player)
 {
     //first drop the whole - cross linked dynamic list - structure
-    
-    singleStepsNum_[PLAYER_TO_INDEX(player)] = 0;
-    pushPullStepsNum_[PLAYER_TO_INDEX(player)] = 0;
+   
     for (int square=11; square < 89; square++) {
         if (OWNER(board_[square]) != player) // unplayable piece
           continue;
@@ -592,9 +534,7 @@ void Board::generateAllSteps(player_t player)
         assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
     }
-
 }
-
 
 void Board::generatePushPullsFromSquare(square_t square, square_t excludePushTo)
   /*this function takes a square and generates push pull moves for a piece on this square
@@ -739,20 +679,23 @@ void Board::generatePush(square_t from, square_t to, square_t victimFrom)
    *      adjacency
    * */
 {
-  if ( checkStepHash(STEP_PUSH, from, to, victimFrom)) //already in 
-    return; 
 
-  StepNode* stepNode = new StepNode;
-  initStepNode(stepNode,from, to, victimFrom); 
-  stepNode->step_.setValues( STEP_PUSH, OWNER(board_[from]), PIECE(board_[from]), from , victimFrom, 
-                                                             PIECE(board_[victimFrom]), victimFrom, to);
-  pushPullStepsNum_[PLAYER_TO_INDEX(OWNER(board_[from]))]++;
+  player_t player = OWNER(board_[from]); 
+  Step newStep = Step(STEP_PUSH, player, PIECE(board_[from]), from, victimFrom, 
+                      PIECE(board_[victimFrom]), victimFrom, to);
+
+//  if ( checkStepHash(STEP_PUSH, from, to, victimFrom)) //already in 
+  //  return; 
+
+
+  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
 
   #ifdef DEBUG_3
-    log_() << "+" << stepNode->step_.toString() << endl;
+    log_() << "+" <<  newStep.toString() << endl;
   #endif
+  
 
-  setStepHash(true, STEP_PUSH, from, to, victimFrom);
+  setStepHash(newStep, true);
 }
   
 void Board::generatePull(square_t from, square_t to, square_t victimFrom )
@@ -760,20 +703,20 @@ void Board::generatePull(square_t from, square_t to, square_t victimFrom )
 {
   //add the node to the cross linked dynamic list, arguments:
 
-  if (checkStepHash(STEP_PULL, from, to, victimFrom)) //already in 
-    return;
+  player_t player = OWNER(board_[from]); 
+  Step newStep = Step(STEP_PULL, player, PIECE(board_[from]), from, to, 
+                      PIECE(board_[victimFrom]), victimFrom, from);
 
-  StepNode* stepNode = new StepNode;
-  initStepNode(stepNode, from, to, victimFrom); 
-  stepNode->step_.setValues( STEP_PULL, OWNER(board_[from]), PIECE(board_[from]), from, to, 
-                                                             PIECE(board_[victimFrom]), victimFrom, from);
-  pushPullStepsNum_[PLAYER_TO_INDEX(OWNER(board_[from]))]++;
+  //if (checkStepHash(STEP_PULL, from, to, victimFrom)) //already in 
+   // return;
+
+  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
 
   #ifdef DEBUG_3
-    log_() << "+" << stepNode->step_.toString() << endl;
+    log_() << "+" << newStep.toString() << endl;
   #endif
 
-  setStepHash(true, STEP_PULL, from, to, victimFrom);
+  setStepHash(newStep, true);
 }
 
 void Board::generateSingleStep(square_t from, square_t to )
@@ -782,19 +725,18 @@ void Board::generateSingleStep(square_t from, square_t to )
    *     to is empty 
    *     adjacency of to, fom */ 
 {
-  if ( checkStepHash(STEP_SINGLE, from, to)) //already in 
-    return; 
+  //if ( checkStepHash(STEP_SINGLE, from, to)) //already in 
+   // return; 
 
-  StepNode* stepNode = new StepNode;
-  initStepNode(stepNode, from, to); 
-  stepNode->step_.setValues( STEP_SINGLE, OWNER(board_[from]), PIECE(board_[from]), from, to);
-  (singleStepsNum_[PLAYER_TO_INDEX(OWNER(board_[from]))])++;
+  player_t player = OWNER(board_[from]); 
+  Step newStep = Step(STEP_SINGLE, player, PIECE(board_[from]), from, to);
+  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
 
   #ifdef DEBUG_3
-    log_() << "+" << stepNode->step_.toString() << endl;
+    log_() << "+" << newStep.toString() << endl;
   #endif
 
-  setStepHash(true, STEP_SINGLE, from, to);
+  setStepHash(newStep, true);
 }
 
 
@@ -830,7 +772,6 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
 
     if ( nowFrozen && ! frozenBoard_[neighbour] ){ //it got frozen by the last move ( delete moves from it )
       frozenBoard_[neighbour] = true;              // update frozen status "freeze"
-      clearStepList(&stepListBoard_[STEP_LIST_FROM][neighbour]);
     }else if ( ! nowFrozen && frozenBoard_[neighbour] ){ //it got "unfrozen" by the last move =>generate moves for it
       //first update frozen status - other functions might be using it 
       frozenBoard_[neighbour] = false;                  
@@ -863,70 +804,39 @@ void Board::updateStepsForNeighbours(square_t square, square_t exclude)
 } //function
   
 
-void Board::initStepNode(StepNode* stepNode,square_t from, square_t to, square_t victim)
-{
-
-  stepNode->from_next_ = stepListBoard_[STEP_LIST_FROM][from].from_next_;
-  stepListBoard_[STEP_LIST_FROM][from].from_next_ = stepNode;
-
-  stepNode->to_next_ = stepListBoard_[STEP_LIST_TO][to].to_next_;
-  stepListBoard_[STEP_LIST_TO][to].to_next_ = stepNode;
-
-  stepNode->from_previous_ = & stepListBoard_[STEP_LIST_FROM][from];
-  if (stepNode->from_next_ != NULL) 
-    stepNode->from_next_->from_previous_ = stepNode;
-
-  stepNode->to_previous_ = & (stepListBoard_[STEP_LIST_TO][to]);
-  if (stepNode->to_next_ != NULL) 
-    stepNode->to_next_->to_previous_ = stepNode;
-
-  assert( stepNode->from_previous_->from_next_ == stepNode );
-  assert( stepNode->to_previous_->to_next_ == stepNode );
-
-  if (victim != -1){  //push/pull moves 
-    stepNode->victim_next_ = stepListBoard_[STEP_LIST_VICTIM][victim].victim_next_;
-    stepListBoard_[STEP_LIST_VICTIM][victim].victim_next_ = stepNode;
-    stepNode->victim_previous_ = & (stepListBoard_[STEP_LIST_VICTIM][victim]);
-    if (stepNode->victim_next_ != NULL) 
-      stepNode->victim_next_->victim_previous_ = stepNode;
-
-  }else{
-    stepNode->victim_next_ = NULL;
-    stepNode->victim_previous_ = NULL;
-  }
-
-}
-
-
-bool Board::checkStepHash(stepType_t stepType, square_t from, square_t to, square_t victimFrom) 
+bool Board::checkStepHash(const Step& step) 
   /* the move must be within the bounds ! victimFrom is implicitly -1 */
   //optimize: no switch ! index directly by stepType, speedup directionToIndex
 {
-  switch(stepType){
+  switch(step.stepType_){
     case STEP_SINGLE  :
-      return stepHashSingle[from - 11][directionToIndex(to - from)];        
-    case STEP_PUSH    :   // in case of step_push to is a "total" to i.e from -> victimFrom -> to
-      return stepHashPush[from - 11][directionToIndex(victimFrom -from)][directionToIndex(to - victimFrom)];
+      return stepHashSingle[step.from_ - 11][directionToIndex(step.to_ - step.from_)];        
+    case STEP_PUSH    :  
+      return stepHashPush[step.from_ - 11][directionToIndex(step.oppFrom_ - step.from_)]
+                                          [directionToIndex(step.to_ - step.oppFrom_)];
     case STEP_PULL    :
-      return stepHashPull[from - 11][directionToIndex(to -from)][directionToIndex(victimFrom - from)];
+      return stepHashPull[step.from_ - 11][directionToIndex(step.to_ -step.from_)]
+                                          [directionToIndex(step.oppFrom_ - step.from_)];
   }
 
   assert( false); //must not come here
   return false;
 }
 
-void Board::setStepHash(bool value, stepType_t stepType, square_t from, square_t to, square_t victimFrom) 
+void Board::setStepHash(const Step& step, bool value)
   /* the move must be within the bounds ! victimFrom is implicitly -1 */
 {
-  switch(stepType){
+  switch(step.stepType_){
     case STEP_SINGLE  :
-      stepHashSingle[from - 11][directionToIndex(to - from)] = value; 
+      stepHashSingle[step.from_ - 11][directionToIndex(step.to_ - step.from_)] = value; 
       return;
     case STEP_PUSH    :   // in case of step_push to is a "total" to i.e from -> victimFrom -> to
-      stepHashPush[from - 11][directionToIndex(victimFrom -from)][directionToIndex(to - victimFrom)] = value;
+      stepHashPush[step.from_ - 11][directionToIndex(step.oppFrom_ - step.from_)]
+                                  [directionToIndex(step.to_ - step.oppTo_)] = value;
       return;
     case STEP_PULL    :
-      stepHashPull[from - 11][directionToIndex(to -from)][directionToIndex(victimFrom - from)] = value;
+      stepHashPull[step.from_ - 11][directionToIndex(step.to_ - step.from_)]
+                                   [directionToIndex(step.oppFrom_ - step.from_)] = value;
       return;
   }
 
@@ -1002,14 +912,6 @@ bool Board::init(const char* fn)
     }
 
   
-  //initiate the stepLists
-  for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM + 1; i++)
-    for (int square=11; square < 89; square++) {
-      stepListBoard_[i][square].from_next_ = NULL;
-      stepListBoard_[i][square].to_next_ = NULL;
-      stepListBoard_[i][square].victim_next_ = NULL;
-    }
-
   for (int i = 0; i < 100; i++)  
     board_[i] = OFF_BOARD_SQUARE;
 
@@ -1087,10 +989,6 @@ bool Board::init(const char* fn)
     return false; //initialization from file failed
   }
 
-  //drop the dynamic stucture TODO - make nicer ! 
-  //for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM+1; i++)
-  //  for (int square=11; square < 89; square++) 
-  //    clearStepList(stepListBoard_[i][square]);
   generateAllSteps(GOLD);
   generateAllSteps(SILVER);
 
@@ -1182,11 +1080,11 @@ player_t Board::getWinner()
 uint Board::getAllStepsNum(player_t player)
   /*returns number of all steps for given player - not index but player ! GOLD/SILVER */
 {
-  return singleStepsNum_[PLAYER_TO_INDEX(player)] + pushPullStepsNum_[PLAYER_TO_INDEX(player)];
+  return stepArray[PLAYER_TO_INDEX(player)].getElemCount();
 }
 
 
-int Board::generateAllStepsOld(player_t player, StepArray stepArray, bool pushPulls) const
+int Board::generateAllStepsOld(player_t player, SimpleStepArray simpleStepArray, bool pushPulls) const
 {
     int stepsNum;
     int i,j;
@@ -1206,12 +1104,12 @@ int Board::generateAllStepsOld(player_t player, StepArray stepArray, bool pushPu
                 && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
               for (j=0; j<4; j++)  // pull
                 if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
-                    stepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
+                    simpleStepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
                           square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
                 }
               for (j=0; j<4; j++)  //push
                 if (board_[square + direction[i] + direction[j]] == EMPTY_SQUARE) { //create move
-                    stepArray[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
+                    simpleStepArray[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
                           square + direction[i], PIECE(board_[square + direction[i]]),
                           square + direction[i], square + direction[i] + direction[j]);
               }
@@ -1229,78 +1127,8 @@ int Board::generateAllStepsOld(player_t player, StepArray stepArray, bool pushPu
                 continue;
             }
             //create move
-            stepArray[stepsNum++].setValues( STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
+            simpleStepArray[stepsNum++].setValues( STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
           }
     } //for pieces on board
   return stepsNum;
-}
-
-//Board& Board::operator=(const Board& other)
-Board::Board(const Board& other)
-  /* shallow copy is not enough - a correct copy of the cross linked dynamic list must be made*/
-{
- 
-  //DIRTY: this might be very dangerous !!! there must be no virtual methods at board right ?  
-  memcpy(this,&other,sizeof(other));
-   
-  //now handle the stepLists
-
-  //initialize
-  for (int i = STEP_LIST_FROM; i < STEP_LIST_VICTIM + 1; i++)
-    for (int square = 11; square < 89; square++) {
-      this->stepListBoard_[i][square].from_next_ = NULL;
-      this->stepListBoard_[i][square].to_next_ = NULL;
-      this->stepListBoard_[i][square].victim_next_ = NULL;
-    }
-
-  StepNode* oldStepNode;
-  StepNode* newStepNode;
-  Step step;
-
-  //go through the old steplist and create a new step for every old one
-  for (int square = 11; square < 89; square++) {
-    oldStepNode = other.stepListBoard_[STEP_LIST_FROM][square].from_next_;
-    while ( oldStepNode != NULL ) {
-      step = oldStepNode->step_;
-      newStepNode = new StepNode;
-
-      switch (step.stepType_) {
-        case STEP_PUSH : 
-          this->initStepNode(newStepNode, step.from_, step.oppTo_, step.oppFrom_); 
-          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_,
-                                                                      step.oppPiece_,step.oppFrom_, step.oppTo_);
-          break;
-        case STEP_PULL :
-          this->initStepNode(newStepNode, step.from_, step.to_, step.oppFrom_); 
-          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_,
-                                                                      step.oppPiece_,step.oppFrom_, step.oppTo_);
-          break;
-        case STEP_SINGLE :
-          this->initStepNode(newStepNode, step.from_, step.to_); 
-          newStepNode->step_.setValues( step.stepType_, step.player_, step.piece_, step.from_ , step.to_);
-          break;
-        default:
-          assert(false);
-          break;
-    
-      }
-      oldStepNode = oldStepNode->from_next_;
-    }
-  }
-  //return *this;
-}
-
-Board::~Board()
-  /* destroy the cross linked dynamic list */
-{
-  StepNode* stepNode;
-  StepNode* destroyNode;
-  for (int square = 11; square < 89; square++) {
-    stepNode = stepListBoard_[STEP_LIST_FROM][square].from_next_;
-    while ( stepNode != NULL ) {
-      destroyNode = stepNode;
-      stepNode    = stepNode->from_next_;
-      delete destroyNode;
-    }
-  }
 }
