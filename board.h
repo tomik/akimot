@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-#define MAX_STEPS 100
+#define MAX_STEPS 200
 
 #define EMPTY_SQUARE 0x0U
 #define EMPTY 0x0U
@@ -75,7 +75,6 @@ class Step
     Step( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
-    inline void setPass(); 
 		bool pieceMoved();
 
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
@@ -104,15 +103,17 @@ class Board
 	private:
     Logger        log_; 
 
-		uint						board_[100];						//actual pieces are stored here 
+		uint						board_[100];					//actual pieces are stored here 
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
 		bool 					stepHashSingle[HASH_ITEMS][4];			  
 		bool 					stepHashPush[HASH_ITEMS][4][4];			
 		bool 					stepHashPull[HASH_ITEMS][4][4];			
 
-    MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
-
+  // MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
+  
+    Step          stepArray[2][MAX_STEPS];   
+    uint          stepArrayLen[2];
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
@@ -126,7 +127,7 @@ class Board
 		player_t winner_;
 
   public:
-		Board(){};
+		Board(){stepArrayLen[0] = 0; stepArrayLen[1] = 0;};
 
     bool init(const char* fn); 
 

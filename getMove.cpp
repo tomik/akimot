@@ -4,7 +4,6 @@
 
 void test(Board* board)
 {
-
 	board->dump();
 
 	Benchmark benchmark(board,10000);

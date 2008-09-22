@@ -12,12 +12,6 @@ Step::Step( stepType_t stepType )
 }
 
 
-void Step::setPass() 
-{
-  stepType_ = STEP_PASS;
-}
-
-
 bool Step::pieceMoved() 
   /* returns true if any piece was moved
    * i.e. returns false if pass or no_step */
@@ -168,9 +162,9 @@ string Board::allStepsToString()
     else
       ss << endl << "Potential moves for GOLD: " << getAllStepsNum(GOLD);
 
-    for ( uint i = 0; i < stepArray[playerIndex].getElemCount(); i++){
+    for ( uint i = 0; i < stepArrayLen[playerIndex]; i++){
       //assert(ss.str().find(stepArray[playerIndex].getElem(i).toString()) == string::npos);  
-      ss << stepArray[playerIndex].getElem(i).toString();
+      ss << stepArray[playerIndex][i].toString();
     }
   }
   ss << endl;
@@ -205,9 +199,9 @@ void Board::testStepsStructure()
     log_() << endl;
     
 
-    for ( uint j = 0; j < stepArray[playerIndex].getElemCount(); j++)
+    for ( uint j = 0; j < stepArrayLen[playerIndex]; j++)
       for ( uint i = 0; i < stepsNum; i++ )                     //check whether is in ref array
-        if (stepArray[playerIndex].getElem(j) == simpleStepArray[i]) 
+        if (stepArray[playerIndex][j] == simpleStepArray[i]) 
           simpleStepArray[i] = Step(STEP_NO_STEP);    //to check in the end that all moves were found
 
       
@@ -238,7 +232,7 @@ player_t Board::getPlayerToMove()
 void Board::makeStep(Step& step){
 
   #ifdef DEBUG_3
-    log_() << "playing step: " << step.toString() << endl;
+    log_() << endl <<  "=== PLAYING STEP: " << step.toString() << endl;
   #endif 
 
   int checkTrap[2];         //squares in whose vicinity we check the traps
@@ -285,9 +279,6 @@ void Board::makeStep(Step& step){
       //update the step structure
       updateAfterStep(step.oppFrom_,step.oppTo_);  
     }
-
-
-      
 
     //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
     
@@ -387,13 +378,12 @@ void Board::commitMove()
 
 Step Board::getRandomStep()
 {
-
   uint playerIndex = PLAYER_TO_INDEX(toMove_);
-  uint len = stepArray[playerIndex].getElemCount();
+  uint len = stepArrayLen[playerIndex];
 
-  if (len >= 100 ){
+  if (len >= 60 && stepCount_ == 0 ){
     clearStepArray(toMove_);
-    len = stepArray[playerIndex].getElemCount();
+    len = stepArrayLen[playerIndex];
   }
 
 
@@ -402,11 +392,12 @@ Step Board::getRandomStep()
     return Step(STEP_NO_STEP); 
   }
 
-  uint index;
-  if ( stepCount_ == 0)
+  uint index = 0;
+  if ( stepCount_ == 0) {
     index = rand() % (len + 1);
     if ( index-- == 0 )
       return Step(STEP_PASS);
+  }
 
   assert(len > 0);
   index = rand() % len;
@@ -415,31 +406,23 @@ Step Board::getRandomStep()
   //selection combined with move removal
   Step step;
   uint i = 0;
-  uint roundIndex = index;
-  assert( roundIndex >= 0 && roundIndex < len );
+  assert( index >= 0 && index < len );
 
   do {
-    assert(len > 0);
-    step = stepArray[playerIndex].getElem(roundIndex % len);
+    if (index >= len)
+      index -= len;
 
-    if (! ( step.stepType_ != STEP_SINGLE && stepCount_ >= 3 )){
+    assert(index >= 0 && index % len < stepArrayLen[playerIndex]);
+    step = stepArray[playerIndex][index];
+
+    if (! ( step.stepType_ != STEP_SINGLE && stepCount_ >= 3 ))
       if (checkStepValidity(step)) {
-        assert(len > 0);
-        stepArray[playerIndex].del(roundIndex % len);          //chosen move -> we can delete :)
-        removeStepFromStepHash(step); 
+        assert(step.stepType_ != STEP_PASS);
         return step; 
       }
-      else{
-        //assert(false);        //there should be NO incorrect moves ! 
-        assert(len > 0);
-        stepArray[playerIndex].del(roundIndex % len );       //incorrect move -> delete ( only place in program )
-        removeStepFromStepHash(step);
-        len--;
-      }
-    }else{
-      roundIndex++;
-      i++;
-    }
+        //removeStepFromStepHash(step); 
+    i++;
+    index++;
 
 
   } while ( i < len );  //no valid move in the array
@@ -464,22 +447,10 @@ void Board::clearStepArray(player_t player)
     log_() << "=== BEGIN Board::clearStepArray" << endl;
   #endif
 
+  //false == nopushpulls
   uint playerIndex = PLAYER_TO_INDEX(player);
-  uint len = stepArray[playerIndex].getElemCount();
-  uint i = 0;
-  Step step;
-
-  while ( i < len ) {
-    step = stepArray[playerIndex].getElem(i);
-    if ( ! checkStepValidity(step)){
-      stepArray[playerIndex].del(i);          //when deleting don't increase i, decrease len !
-      removeStepFromStepHash(step);
-      len--;
-    }
-    else
-      i++;
-  }
-
+  stepArrayLen[playerIndex] = generateAllStepsOld(player,stepArray[playerIndex],true);  
+  
   #ifdef DEBUG_3
     log_() << "=== END Board::clearStepArray" << endl;
   #endif
@@ -688,7 +659,7 @@ void Board::generatePush(square_t from, square_t to, square_t victimFrom)
   //  return; 
 
 
-  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
+  stepArray[PLAYER_TO_INDEX(player)][(stepArrayLen[PLAYER_TO_INDEX(player)])++] = newStep;
 
   #ifdef DEBUG_3
     log_() << "+" <<  newStep.toString() << endl;
@@ -710,7 +681,7 @@ void Board::generatePull(square_t from, square_t to, square_t victimFrom )
   //if (checkStepHash(STEP_PULL, from, to, victimFrom)) //already in 
    // return;
 
-  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
+  stepArray[PLAYER_TO_INDEX(player)][(stepArrayLen[PLAYER_TO_INDEX(player)])++] = newStep;
 
   #ifdef DEBUG_3
     log_() << "+" << newStep.toString() << endl;
@@ -730,7 +701,7 @@ void Board::generateSingleStep(square_t from, square_t to )
 
   player_t player = OWNER(board_[from]); 
   Step newStep = Step(STEP_SINGLE, player, PIECE(board_[from]), from, to);
-  stepArray[PLAYER_TO_INDEX(player)].add(newStep);
+  stepArray[PLAYER_TO_INDEX(player)][(stepArrayLen[PLAYER_TO_INDEX(player)])++] = newStep;
 
   #ifdef DEBUG_3
     log_() << "+" << newStep.toString() << endl;
@@ -1080,7 +1051,7 @@ player_t Board::getWinner()
 uint Board::getAllStepsNum(player_t player)
   /*returns number of all steps for given player - not index but player ! GOLD/SILVER */
 {
-  return stepArray[PLAYER_TO_INDEX(player)].getElemCount();
+  return stepArrayLen[PLAYER_TO_INDEX(player)];
 }
 
 
