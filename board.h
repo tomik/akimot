@@ -113,6 +113,8 @@ class StepNode
 #define HASH_ITEMS 78
 
 
+typedef MyArray<Step> MyStepArray;
+
 class Board
 		/*This is a crucial class - representing the board. 
 		 *

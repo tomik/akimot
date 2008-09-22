@@ -135,10 +135,12 @@ bool Step::operator== ( const Step& other)
   return false;
 }
 
+
 void Board::dumpAllSteps()
 {
   log_() << allStepsToString(); 
 }
+
 
 string Board::allStepsToString()
 {
@@ -173,6 +175,7 @@ string Board::allStepsToString()
   ss << endl;
   return ss.str();
 }
+
 
 void Board::testStepsStructure()
   /*testing function to check whether the actually kept set of moves is correct - 

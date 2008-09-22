@@ -35,4 +35,27 @@ class Logger
 		//ostream& log(int=0 );
 }; 
 
+#define MY_ARRAY_MAX_LEN    100     //DIRTY - add as a constructor parameter
+
+template <class T> class MyArray
+/*clever ( array with fixed size, const time of indexation, deleting */
+{ 
+  private:
+    uint  validSpots[MY_ARRAY_MAX_LEN];       //indexes to spots
+    uint  emptySpots[MY_ARRAY_MAX_LEN];       //indexes to spots
+    T          spots[MY_ARRAY_MAX_LEN];       //data
+
+    uint lenValidSpots;
+    uint lenEmptySpots;
+    uint lenSpots;
+
+  public: 
+    MyArray();
+    void del(uint);
+    void add(T);
+    uint getElemCount();
+    T pop(uint);
+};
+
+
 #endif
