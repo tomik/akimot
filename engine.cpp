@@ -46,7 +46,7 @@ void SimplePlayout::playOne()
 
 playoutStatus_e SimplePlayout::doPlayout()
 {
-  while (true) {
+  while (true) {  
 		playOne();
 		playoutLength_++;
 

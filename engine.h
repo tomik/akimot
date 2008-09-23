@@ -26,7 +26,7 @@ class SimplePlayout
 	public:
 		SimplePlayout(Board*);
 		playoutStatus_e doPlayout();	
-		uint getPlayoutLength();
+		uint getPlayoutLength();  
 };
 
 class Benchmark
