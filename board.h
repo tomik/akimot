@@ -11,14 +11,14 @@
 //#define OFF_BOARD 0x18U
 #define GOLD 0x10U
 #define SILVER 0x8U
-#define OFF_BOARD_PIECE 0x7U
-#define ELEPHANT_PIECE 0x6U
-#define CAMEL_PIECE 0x5U
-#define HORSE_PIECE 0x4U
-#define DOG_PIECE 0x3U
-#define CAT_PIECE 0x2U
-#define RABBIT_PIECE 0x1U
-#define EMPTY_PIECE 0x0U
+#define PIECE_OFF_BOARD 0x7U
+#define PIECE_ELEPHANT 0x6U
+#define PIECE_CAMEL 0x5U
+#define PIECE_HORSE 0x4U
+#define PIECE_DOG 0x3U
+#define PIECE_CAT 0x2U
+#define PIECE_RABBIT 0x1U
+#define PIECE_EMPTY 0x0U
 #define PIECE_MASK 0x7U
 #define OWNER_MASK 0x18U
 #define FLIP_SIDE GOLD^SILVER
@@ -31,9 +31,7 @@
 
 #define OWNER(square) (square & OWNER_MASK) 
 #define PIECE(square) (square & PIECE_MASK) 
-#define ROW(square) (9-square/10) // what row is a square in?  1 = bottom, 8 = top
-#define COL(square) (square%10) // what column is a square in?  1 = left (a), 8 = right (h)
-#define OPP(player) ( (16 - player) + 8 )
+#define OPP(player) ((16 - player) + 8)
 #define PLAYER_TO_INDEX(player)	((16-player)/8)	//0 for GOLD, 1 for SILVER - for indexation
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	//0 -> GOLD, 1 -> SILVER - reverse indexation
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
@@ -54,11 +52,13 @@ typedef uint piece_t;
 typedef uint stepType_t;
 
 class Step
+  /** Class representing a step of one player. 
+   */ 
 {
 	private:
     Logger        log_; 
 
-    stepType_t    stepType_;    //values MOVE_SINGLE, MOVE_PUSH, MOVE_PULL, MOVE_PASS
+    stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
     player_t      player_;      
     piece_t       piece_;  
     square_t      from_;     
@@ -75,12 +75,13 @@ class Step
     Step( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
+
 		bool pieceMoved();
+		bool operator== ( const Step&);
 
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
     const string toString() const;
     void dump(); 
-		bool operator== ( const Step&);
 
 };
 
@@ -88,10 +89,7 @@ class Board;
 
 #define HASH_ITEMS 78
 
-
-//typedef MyArray<Step> StepArray;
-
-typedef Step SimpleStepArray[MAX_STEPS]; 
+typedef Step  StepArray[MAX_STEPS];
 
 class Board
 		/*This is a crucial class - representing the board. 
@@ -112,7 +110,7 @@ class Board
 
   // MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
   
-    Step          stepArray[2][MAX_STEPS];   
+    StepArray     stepArray[2];
     uint          stepArrayLen[2];
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
@@ -174,7 +172,7 @@ class Board
 		string allStepsToString();
 
 		void testStepsStructure();
-		int generateAllStepsOld(player_t, SimpleStepArray, bool) const;
+		int generateAllStepsOld(player_t, StepArray, bool) const;
 
     void setStepHash(const Step&, bool);
     bool checkStepHash(const Step&); 
