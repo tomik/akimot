@@ -8,6 +8,44 @@
 const int direction[4]={NORTH,EAST,SOUTH,WEST};
 const int trap[4]={33,36,63,66};
 
+
+
+PieceArray::PieceArray()
+{
+  len = 0;
+}
+
+void PieceArray::add(square_t elem)
+{
+  elems[len++] = elem;
+  assert(MAX_PIECES >= len);
+}
+
+void PieceArray::del(square_t elem)
+{
+
+  for (uint i = 0; i < len;i++)
+    if (elems[i] == elem){
+      elems[i] = elems[--len];
+      return;
+    }
+  assert(false);
+}
+
+ 
+uint PieceArray::getLen() const
+{
+  return len;
+}
+
+ 
+square_t PieceArray::operator[](uint index) const
+{
+  assert( index >= 0 && index < len );
+  return elems[index];
+}
+
+
 Step::Step( stepType_t stepType )
   /*this constructor is mainly used for 
    *step_no_step or step_pass which don't use other values than stepType*/
@@ -176,6 +214,19 @@ string Board::allStepsToString()
 }
 
 
+void Board::testPieceArray()
+{
+  for (uint playerIndex = 0; playerIndex < 2; playerIndex++){
+    cerr << endl << "player " << playerIndex << "("<< pieceArray[playerIndex].getLen()<<"):";
+    for(uint i = 0; i < pieceArray[playerIndex].getLen(); i++){
+      assert( OWNER(board_[pieceArray[playerIndex][i]] ) == INDEX_TO_PLAYER(playerIndex)); 
+      cerr << pieceArray[playerIndex][i] << " ";
+    }
+  }
+  
+
+}
+
 void Board::testStepsStructure()
   /* testing function to check whether the actually kept set of moves is correct - 
    * for this all moves from position are generated and stepStructure is compared against this 
@@ -241,7 +292,7 @@ void Board::makeStep(Step& step){
   #endif 
 
   int checkTrap[2];         //squares in whose vicinity we check the traps
-  //int trap[2] = {0,0} ;
+  int trapped[2] = {0,0} ;
   int checkTrapNum = 1;
 
     if (step.stepType_ == STEP_NO_STEP)
@@ -261,7 +312,7 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
-      updateAfterStep(step.oppFrom_,step.oppTo_);  
+      //updateAfterStep(step.oppFrom_,step.oppTo_);  
     }
 
     //update board after single step
@@ -270,7 +321,10 @@ void Board::makeStep(Step& step){
      checkTrap[0] = step.from_;
      stepCount_++;
      //update the step structure 
-    updateAfterStep(step.from_,step.to_);
+    //updateAfterStep(step.from_,step.to_);
+   
+     pieceArray[toMoveIndex_].del(step.from_);
+     pieceArray[toMoveIndex_].add(step.to_);
 
 
     //pull steps
@@ -282,23 +336,37 @@ void Board::makeStep(Step& step){
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
       //update the step structure
-      updateAfterStep(step.oppFrom_,step.oppTo_);  
+     // updateAfterStep(step.oppFrom_,step.oppTo_);  
+    }
+
+    if (step.stepType_ != STEP_SINGLE) {  
+     pieceArray[1 - toMoveIndex_].del(step.oppFrom_);
+     pieceArray[1 - toMoveIndex_].add(step.oppTo_);
     }
 
     //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
+    
+
     
     for (int j = 0; j < checkTrapNum; j++)
       for (int i = 0; i < 4; i++)
         if ( IS_TRAP(checkTrap[j] + direction[i]) ){    
           if ( board_[checkTrap[j] + direction[i]] != EMPTY_SQUARE && ! hasFriend(checkTrap[j] + direction[i]) ){
             //trap is not empty and piece in there has no friends around => KILL
-            board_[checkTrap[j] + direction[i]] = EMPTY_SQUARE; 
-           // trap[j] = checkTrap[j] + direction[i];
-            updateAfterKill(checkTrap[j] + direction[i]);
+            trapped[j] = checkTrap[j] + direction[i];
+            if (PIECE(board_[trapped[j]]) == PIECE_RABBIT)              //update rabbitsNum - for gameEnd check 
+              rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[trapped[j]]))]--;
+            board_[trapped[j]] = EMPTY_SQUARE; 
+            //updateAfterKill(checkTrap[j] + direction[i]);
+           if ( j == 0 ) 
+             pieceArray[toMoveIndex_].del(trapped[j]);
+           else
+             pieceArray[1 - toMoveIndex_].del(trapped[j]);
           }
           break;
         }
             
+
   /*
 
     if ( step.stepType_ == STEP_PUSH ){
@@ -366,18 +434,93 @@ void Board::commitMove()
     if (board_[i] == (SILVER | PIECE_RABBIT) )
       winner_ = SILVER;
 
+  if (rabbitsNum[toMoveIndex_] == 0)  //if player lost his last rabbit in his move - he loses ... 
+    winner_ = OPP(toMove_);
+  if (rabbitsNum[1 - toMoveIndex_] == 0)  //unless the other also lost his last rabbit 
+    winner_ = toMove_;
+
   #ifdef DEBUG_3
     log_() << "COMITTING MOVE" <<endl;
     log_() << "TO MOVE: " << toMove_ << endl;
     log_() << "move count: " << moveCount_ << endl;
   #endif
+
   if (toMove_ == SILVER) 
     moveCount_++;
   else 
     assert(toMove_ == GOLD);
+
   toMove_ = OPP(toMove_);
-  
+  toMoveIndex_ = 1 - toMoveIndex_;
+  assert(toMoveIndex_ == PLAYER_TO_INDEX(toMove_));
   stepCount_ = 0;
+}
+
+bool Board::createRandomStep(Step& step)
+{
+  
+  bool found = false; //once set to true, move is generated and returned 
+
+  for ( int i = 0; i < 10; i++){ 
+    assert(pieceArray[toMoveIndex_].getLen() != 0);
+    step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
+
+    assert(IS_PLAYER(board_[step.from_]));
+
+    if ( ! isFrozen(step.from_)){
+      step.to_ = step.from_ + direction[rand() % 4];
+      if (stepCount_ < 3 && PIECE(board_[step.from_]) != PIECE_RABBIT)
+        step.stepType_ = (rand() % 3) + 1;
+      else 
+        step.stepType_ = STEP_SINGLE;
+
+      assert(step.stepType_ == STEP_SINGLE || step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL);
+
+      switch (step.stepType_){
+        case STEP_SINGLE:
+           if ( board_[step.to_] == EMPTY_SQUARE && 
+                (PIECE(board_[step.from_]) != PIECE_RABBIT ||   //rabbits cannot backwards
+                ((toMove_ == GOLD && step.to_ - step.from_ != SOUTH) || (toMove_ == SILVER && step.to_ - step.from_ != NORTH))))  {
+             found = true; //generate the step 
+           }
+          break;
+        case STEP_PUSH: 
+          if ( OWNER(board_[step.to_]) == OPP(OWNER(board_[step.from_])) &&
+               PIECE(board_[step.to_]) <  PIECE(board_[step.from_])){
+            assert(IS_PLAYER(board_[step.to_]));
+            step.oppTo_ = step.to_ + direction[rand() % 4];    //todo - exclude "self" direction
+            if (board_[step.oppTo_] == EMPTY_SQUARE){  //generate the step
+              step.oppFrom_ = step.to_; 
+              found = true;
+            }
+          }
+          break; 
+        case STEP_PULL: 
+          if (board_[step.to_] == EMPTY_SQUARE){  
+            step.oppFrom_ = step.from_ + direction[rand() % 4];    //todo - exclude "to" direction
+            if ( OWNER(board_[step.oppFrom_]) == OPP(OWNER(board_[step.from_])) &&
+                 PIECE(board_[step.oppFrom_]) <  PIECE(board_[step.from_])){
+              step.oppTo_ = step.from_; 
+              found = true;
+            }
+          }
+        break;
+      }
+
+      if (found){
+        step.player_ = toMove_;
+        step.piece_  = PIECE(board_[step.from_]);
+        assert(OWNER(board_[step.from_]) == toMove_);
+
+        if (step.stepType_ != STEP_SINGLE) {
+          assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
+          step.oppPiece_  = PIECE(board_[step.oppFrom_]);
+        }
+        return true;
+      }
+    }
+  }
+    return false;
 }
 
 
@@ -386,31 +529,48 @@ Step Board::getRandomStep()
   uint playerIndex = PLAYER_TO_INDEX(toMove_);
   uint len = stepArrayLen[playerIndex];
 
-  if (len >= 60 && stepCount_ == 0 ){
-    clearStepArray(toMove_);
-    len = stepArrayLen[playerIndex];
-  }
+  Step step;
+
+  assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); //it's not possible to have 0 rabbits in the beginning of move
+
+  if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
+    return Step(STEP_PASS);                   //step_pass since the player with no pieces still might win 
+                                              //if he managed to kill opponent's last rabbit before he lost his last piece
+  if (createRandomStep(step))
+    return step;
+
+//  if (len >= 60 && stepCount_ == 0 ){
+  clearStepArray(toMove_);
+  len = stepArrayLen[playerIndex];
+// }
+//
+
+  assert(stepArrayLen[playerIndex] < MAX_STEPS);
 
 
-  if (len == 0 && stepCount_ > 0){ //player to move has no step to play and cannot play pass => he lost
+  if (len == 0 && stepCount_ == 0){ //player to move has no step to play and cannot play pass => he lost
     winner_ = OPP(toMove_);
     return Step(STEP_NO_STEP); 
   }
 
   uint index = 0;
-  if ( stepCount_ == 0) {
+
+  if ( stepCount_ != 0) {       //check pass move
     index = rand() % (len + 1);
-    if ( index-- == 0 )
+    if ( index == 0 )
       return Step(STEP_PASS);
+   // index--;  //not nece
   }
 
   assert(len > 0);
   index = rand() % len;
 
-  //selection combined with move removal
-  Step step;
   uint i = 0;
+  //selection combined with move removal
   assert( index >= 0 && index < len );
+
+  //clearsteparray every time
+  return( stepArray[playerIndex][index]);
 
   do {
     if (index >= len)
@@ -448,12 +608,15 @@ void Board::removeStepFromStepHash(const Step& step)
 void Board::clearStepArray(player_t player)
 {
   #ifdef DEBUG_3
-    log_() << "=== BEGIN Board::clearStepArray" << endl;
+    log_() << endl << "=== BEGIN Board::clearStepArray" << endl;
   #endif
 
   //false == nopushpulls
   uint playerIndex = PLAYER_TO_INDEX(player);
-  stepArrayLen[playerIndex] = generateAllStepsOld(player,stepArray[playerIndex],true);  
+  if (stepCount_ >= 3 )
+    stepArrayLen[playerIndex] = generateAllStepsOld(player,stepArray[playerIndex],false);  
+  else
+    stepArrayLen[playerIndex] = generateAllStepsOld(player,stepArray[playerIndex],true);  
   
   #ifdef DEBUG_3
     log_() << "=== END Board::clearStepArray" << endl;
@@ -506,7 +669,6 @@ void Board::generateAllSteps(player_t player)
         if (stepCount_ < 3) 
           generatePushPullsFromSquare(square);
 
-        assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
     }
 }
@@ -897,8 +1059,8 @@ bool Board::init(const char* fn)
     }
 
   toMove_    = GOLD;
-  moveCount_ = 1;
   stepCount_ = 0;
+  moveCount_ = 1;
   winner_    = EMPTY;
 
  // BOARD_Calculate_Hashkey(bp);
@@ -923,8 +1085,8 @@ bool Board::init(const char* fn)
       toMove_ = GOLD;
     else {
       toMove_ = SILVER;
-      moveCount_++; //TODO ? 
     }
+    toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
 
     f.ignore(1024,'\n'); //ignores the top of the border till EOF 
 
@@ -966,6 +1128,19 @@ bool Board::init(const char* fn)
 
   generateAllSteps(GOLD);
   generateAllSteps(SILVER);
+
+  //init pieceArray and rabbitsNum
+  rabbitsNum[0] = 0;
+  rabbitsNum[1] = 0;
+  for (int square = 11; square < 89; square++){
+    if (IS_PLAYER(board_[square]))
+      pieceArray[PLAYER_TO_INDEX(OWNER(board_[square]))].add(square);
+    if (PIECE(board_[square]) == PIECE_RABBIT)
+      rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++;
+
+  }
+
+  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
   return true;
 }
@@ -1023,7 +1198,7 @@ string Board::toString()
             break;
       }
       if ( OWNER(board_[i * 10 + j]) != EMPTY){
-        assert( frozenBoard_[i * 10 + j] == isFrozen( i * 10 + j));
+        //assert( frozenBoard_[i * 10 + j] == isFrozen( i * 10 + j)); uncomment when ready
         if (frozenBoard_[i * 10 + j] )
           ss << "*";
         else
@@ -1063,11 +1238,15 @@ int Board::generateAllStepsOld(player_t player, StepArray oldStepArray, bool pus
 {
     int stepsNum;
     int i,j;
+    int square;
     
     stepsNum = 0;
-    for (int square=11; square < 89; square++) {
-        if (OWNER(board_[square]) != player) // unplayable piece
-          continue;
+    //for (int square=11; square < 89; square++) {
+    for (uint index =0 ; index < pieceArray[PLAYER_TO_INDEX(player)].getLen(); index++) {
+        square = pieceArray[PLAYER_TO_INDEX(player)][index];
+        assert(OWNER(board_[square]) == player); 
+        //if (OWNER(board_[square]) != player) // unplayable piece
+         // continue;
         assert( IS_PLAYER(board_[square]));
         if ( isFrozen(square))  //frozen
           continue; 

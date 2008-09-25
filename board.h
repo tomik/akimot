@@ -3,7 +3,8 @@
 
 #include "utils.h"
 
-#define MAX_STEPS 200
+#define MAX_STEPS  200
+#define MAX_PIECES  16      //max number of pieces per player 
 
 #define EMPTY_SQUARE 0x0U
 #define EMPTY 0x0U
@@ -50,6 +51,21 @@ typedef uint player_t;
 typedef int square_t;
 typedef uint piece_t;		
 typedef uint stepType_t;
+
+
+class PieceArray
+{ 
+  private:
+    square_t elems[MAX_PIECES];      
+    uint len;
+
+  public: 
+    PieceArray();
+    void add(square_t);
+    void del(square_t);
+    uint getLen() const;
+    square_t operator[](uint) const;
+};
 
 class Step
   /** Class representing a step of one player. 
@@ -101,7 +117,7 @@ class Board
 	private:
     Logger        log_; 
 
-		uint						board_[100];					//actual pieces are stored here 
+		uint					board_[100];					//actual pieces are stored here 
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
 		bool 					stepHashSingle[HASH_ITEMS][4];			  
@@ -110,17 +126,24 @@ class Board
 
   // MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
   
+    PieceArray    pieceArray[2];  
+		square_t  	  piecesList[MAX_PIECES];					//actual pieces are stored here 
+  
     StepArray     stepArray[2];
     uint          stepArrayLen[2];
 
+    uint          rabbitsNum[2];        //kept number of rabbits for each player
+
+    uint  moveCount_;
+
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
-    uint  moveCount_;
 
 		// step is either pass or single piece step or push/pull step,
 		// thus stepCount_ takes values 0 - 4 
     uint  stepCount_;
     player_t toMove_;
+    uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
 
 		player_t winner_;
 
@@ -143,6 +166,7 @@ class Board
 
     void generateAllSteps(player_t);
 		Step getRandomStep();
+		bool createRandomStep(Step&);
     bool checkStepValidity(const Step&);
     inline void removeStepFromStepHash(const Step&);
     void clearStepArray(player_t);
@@ -172,6 +196,7 @@ class Board
 		string allStepsToString();
 
 		void testStepsStructure();
+		void testPieceArray();
 		int generateAllStepsOld(player_t, StepArray, bool) const;
 
     void setStepHash(const Step&, bool);
@@ -179,6 +204,7 @@ class Board
     inline uint directionToIndex(uint direction);
 
 };
+
 
 
 #endif
