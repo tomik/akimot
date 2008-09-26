@@ -120,12 +120,6 @@ class Board
 		uint					board_[100];					//actual pieces are stored here 
 		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
-		bool 					stepHashSingle[HASH_ITEMS][4];			  
-		bool 					stepHashPush[HASH_ITEMS][4][4];			
-		bool 					stepHashPull[HASH_ITEMS][4][4];			
-
-  // MyArray<Step>   stepArray[2];        //first index == player, 0 == gold, 1 == SILVER 
-  
     PieceArray    pieceArray[2];  
 		square_t  	  piecesList[MAX_PIECES];					//actual pieces are stored here 
   
@@ -134,18 +128,21 @@ class Board
 
     uint          rabbitsNum[2];        //kept number of rabbits for each player
 
-    uint  moveCount_;
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
 		// thus moveCount_ expresses how far in the game position is 
+    uint  moveCount_;
 
 		// step is either pass or single piece step or push/pull step,
 		// thus stepCount_ takes values 0 - 4 
     uint  stepCount_;
+
     player_t toMove_;
     uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
 
 		player_t winner_;
+
+    uint  generateAllCount;   //how many times generateAll was called :)
 
   public:
 		Board(){stepArrayLen[0] = 0; stepArrayLen[1] = 0;};
@@ -154,17 +151,16 @@ class Board
 
     bool		 isEmpty();
     player_t getPlayerToMove();
+    uint     getGenerateAllCount();
 
 		uint			getStepCount();
 		player_t	getWinner();
 
 		uint			getAllStepsNum(uint);
 
-
 		void makeStep(Step&);
 		void commitMove();
 
-    void generateAllSteps(player_t);
 		Step getRandomStep();
 		bool createRandomStep(Step&);
 
@@ -172,18 +168,16 @@ class Board
 		inline bool hasStrongerEnemy(square_t) const;
 		inline bool isFrozen(square_t) const;
 		
+		int generateAllSteps(player_t, StepArray) const;
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
 
     void dump();
 		string toString();
-
 		void dumpAllSteps();
 		string allStepsToString();
 
 		void testPieceArray();
-
-		int generateAllSteps(player_t, StepArray, bool) const;
 
 };
 

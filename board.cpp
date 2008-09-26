@@ -233,6 +233,10 @@ bool Board::isEmpty()
  return moveCount_ == 1; //TODO ... really check whether the board is empty 
 }
 
+player_t Board::getGenerateAllCount() 
+{
+ return generateAllCount;
+}
 
 player_t Board::getPlayerToMove() 
 {
@@ -381,7 +385,7 @@ bool Board::createRandomStep(Step& step)
   
   bool found = false; //once set to true, move is generated and returned 
 
-  for ( int i = 0; i < 10; i++){ 
+  for ( int i = 0; i < 3; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
     step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
 
@@ -457,6 +461,7 @@ Step Board::getRandomStep()
   if (createRandomStep(step))
     return step;
 
+  generateAllCount++;   
   stepArrayLen[playerIndex] = generateAllSteps(toMove_,stepArray[playerIndex]);
   uint len = stepArrayLen[playerIndex];
 
@@ -530,16 +535,6 @@ bool Board::init(const char* fn)
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
 
-  for (int i = 0; i < HASH_ITEMS; i++)
-    for (int j = 0; j < 4; j++){
-      stepHashSingle[i][j] = false;			
-      for (int k = 0; k < 4; k++){
-        stepHashPush[i][j][k] = false;			
-        stepHashPull[i][j][k] = false;			
-      }
-    }
-
-  
   for (int i = 0; i < 100; i++)  
     board_[i] = OFF_BOARD_SQUARE;
 
@@ -553,6 +548,7 @@ bool Board::init(const char* fn)
   stepCount_ = 0;
   moveCount_ = 1;
   winner_    = EMPTY;
+  generateAllCount = 0;
 
  // BOARD_Calculate_Hashkey(bp);
  
@@ -727,6 +723,7 @@ int Board::generateAllSteps(player_t player, StepArray oldStepArray) const
     int stepsNum;
   int i,j;
   int square;
+  
   
   stepsNum = 0;
   for (uint index =0 ; index < pieceArray[PLAYER_TO_INDEX(player)].getLen(); index++) { //go through pieces of player 

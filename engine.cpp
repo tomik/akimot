@@ -84,6 +84,8 @@ void Benchmark::doBenchmark() const
   uint			 winCount[2] = { 0, 0};
 	uint			 playoutTooLong = 0;
 	uint			 playoutAvgLen = 0;
+
+  uint      avgGenerateAllCount = 0;
   
   clockBegin = clock();
   
@@ -103,7 +105,9 @@ void Benchmark::doBenchmark() const
 			playoutTooLong++;
       break;
     }
+    
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
+		avgGenerateAllCount += playBoard -> getGenerateAllCount();
   }
   
   clockEnd = clock();
@@ -117,7 +121,8 @@ void Benchmark::doBenchmark() const
 			<< "Performance: " << endl
       << "  " <<playoutCount_ << " playouts" << endl 
       << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl;
+      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl
+      << "  " << float(avgGenerateAllCount)/playoutCount_ << " average amg" << endl;
   
   log_()
 			<< "Gold wins = " << winCount [PLAYER_TO_INDEX(GOLD)] << endl
