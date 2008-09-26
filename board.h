@@ -167,9 +167,6 @@ class Board
     void generateAllSteps(player_t);
 		Step getRandomStep();
 		bool createRandomStep(Step&);
-    bool checkStepValidity(const Step&);
-    inline void removeStepFromStepHash(const Step&);
-    void clearStepArray(player_t);
 
 		inline bool hasFriend(square_t) const;
 		inline bool hasStrongerEnemy(square_t) const;
@@ -177,34 +174,17 @@ class Board
 		
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
-		void updateStepsForNeighbours(square_t, square_t newPosition = -1);
-
-		void generateSingleStepsFromSquare(square_t);
-		void generatePushPullsFromSquare(square_t, square_t = -1);
-		void generatePushesFromSquareThrough(square_t, square_t, square_t = -1);
-		void generatePullsFromSquareVictim(square_t, square_t, square_t = -1);
-		void generatePushesToSquare(square_t);
-		void generatePullsToSquareFrom(square_t,square_t);
-
-		inline void generatePull(square_t, square_t, square_t);
-		inline void generatePush(square_t, square_t, square_t);
-		inline void generateSingleStep(square_t, square_t);
 
     void dump();
 		string toString();
+
 		void dumpAllSteps();
 		string allStepsToString();
 
-		void testStepsStructure();
 		void testPieceArray();
-		int generateAllStepsOld(player_t, StepArray, bool) const;
 
-    void setStepHash(const Step&, bool);
-    bool checkStepHash(const Step&); 
-    inline uint directionToIndex(uint direction);
+		int generateAllSteps(player_t, StepArray, bool) const;
 
 };
-
-
 
 #endif

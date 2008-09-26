@@ -33,7 +33,6 @@ void SimplePlayout::playOne()
 			board_->dumpAllSteps();
 		#endif
 		#ifdef DEBUG_2
-     // board_->testStepsStructure();  
       board_->testPieceArray();  
 		#endif
 		step = board_->getRandomStep();
