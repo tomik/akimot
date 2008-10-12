@@ -17,22 +17,24 @@
 #include <ctime>
 #include <cstring>
 
-//different levels of debug 1 -- lovest, 3 -- highest
+//different levels of debug 1 -- low, 2 -- mediocre,  3 -- high
 
-//#define DEBUG_1				
+//#define DEBUG_1	    	
 //#define DEBUG_2
 //#define DEBUG_3
 
 using namespace std;
 
+enum logLevel_e { LOG_INFO, LOG_DEBUG1, LOG_DEBUG2, LOG_DEBUG3  };
+
 class Logger
 {
+  string owner_;   //which class is logger part of i.e. board, benchmark, engine 
+
 	public:
+    Logger();
+    Logger(string);
 		ostream& operator()(unsigned int = 0) const;
-		//ostream& log(int=0 );
 }; 
-
-#define MY_ARRAY_MAX_LEN    150     //DIRTY - add as a constructor parameter
-
 
 #endif

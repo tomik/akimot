@@ -8,7 +8,7 @@ dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
-src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp')
+src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp')
 
 if ARGUMENTS.get('opt'):
   env = opt.Clone()

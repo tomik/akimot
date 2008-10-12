@@ -1,13 +1,14 @@
 #include "utils.h"
 #include "board.h"
 #include "engine.h"
+#include "benchmark.h"
 
 void test(Board* board)
 {
 	board->dump();
 
-	Benchmark benchmark(board,10000);
-	benchmark.doBenchmark();
+	Benchmark benchmark(board,1);
+	benchmark.playoutBenchmark();
 
 }
 

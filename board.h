@@ -38,11 +38,23 @@
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
 
+#define ROW(square) (9-square/10)
+#define COL(square) (square%10)
+
 #define STEP_PASS     0
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
+
+
+
+#define ELEPHANT_VALUE 20000
+#define CAMEL_VALUE 5000
+#define HORSE_VALUE 3000
+#define DOG_VALUE 1800
+#define CAT_VALUE 1500
+#define RABBIT_VALUE 1000
 
 extern const int direction[4];
 extern const int trap[4];
@@ -178,6 +190,8 @@ class Board
 		string allStepsToString();
 
 		void testPieceArray();
+
+    int evaluate(player_t);
 
 };
 

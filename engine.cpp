@@ -17,6 +17,63 @@ string Engine::doSearch(Board&)
 }
 
 
+Node::Node()
+{
+}
+
+
+Node::Node(Step& step)
+{
+  step_ = step;
+}
+
+
+void Node::addChild(Node* newChild)
+{
+  assert(newChild->sibling_ == NULL);
+  assert(newChild->firstChild_ == NULL);
+  
+  newChild->sibling_ = this->firstChild_;
+  this->firstChild_ = newChild->sibling_;
+  
+}
+
+
+void Node::removeChild(Node* delChild)
+{
+  assert(this->firstChild_ == NULL);
+
+  //TODO implement removal
+  return;
+  
+}
+
+
+Node* Node::getUctChild()
+{
+  assert(this->firstChild_ != NULL);
+
+  //TODO implement UCB1
+  return this->firstChild_;
+
+}
+
+
+Node* Node::getMostExploredChild()
+{
+  //TODO implement get most explored
+  return this->firstChild_;
+}
+
+string Node::toString()
+{
+  stringstream ss;
+
+  ss << step_.toString() << " " << visits_ << " " << value_ << endl;
+  return ss.str();
+
+}
+
 SimplePlayout::SimplePlayout(Board* board)
 {
 	board_ = board;
@@ -27,16 +84,20 @@ SimplePlayout::SimplePlayout(Board* board)
 void SimplePlayout::playOne()
 {
 	Step step;
+
 	do {
 		#ifdef DEBUG_3
 			board_->dump();
-			board_->dumpAllSteps();
+  		board_->dumpAllSteps();
 		#endif
 		#ifdef DEBUG_2
       board_->testPieceArray();  
 		#endif
 		step = board_->getRandomStep();
 		board_->makeStep(step);
+ // step.dump();
+	//board_->dump();
+
 	}
 	while ( board_->getStepCount() < 4 && step.pieceMoved()); 
 	board_->commitMove();
@@ -46,6 +107,8 @@ void SimplePlayout::playOne()
 
 playoutStatus_e SimplePlayout::doPlayout()
 {
+  int moves = 0;
+
   while (true) {  
 		playOne();
 		playoutLength_++;
@@ -55,6 +118,9 @@ playoutStatus_e SimplePlayout::doPlayout()
 
 		if ( playoutLength_ > 2 * MAX_PLAYOUT_LENGTH ) 
 			return PLAYOUT_TOO_LONG;
+
+    if (++moves > EVAL_AFTER_LENGTH  )
+      return PLAYOUT_EVAL;
 	}
 }
 
@@ -62,75 +128,4 @@ uint SimplePlayout::getPlayoutLength()
 {
 	return playoutLength_/2;
 }
-
-Benchmark::Benchmark()
-{
-}
-
-Benchmark::Benchmark(Board* board, uint playoutCount)
-{
-	board_ = board;	
-	playoutCount_ = playoutCount;
-}
-
-void Benchmark::doBenchmark() const
-{
-		
-  clock_t				clockBegin;
-  clock_t 			clockEnd;
-  float					timeTotal;
-  
-  playoutStatus_e  playoutStatus;
-  uint			 winCount[2] = { 0, 0};
-	uint			 playoutTooLong = 0;
-	uint			 playoutAvgLen = 0;
-
-  uint      avgGenerateAllCount = 0;
-  
-  clockBegin = clock();
-  
-  for (uint i = 0 ; i < playoutCount_; i++)  {
-
-    //here we copy the given board
-    Board *playBoard = new Board(*board_);
-
-    SimplePlayout simplePlayout(playBoard);
-    playoutStatus = simplePlayout.doPlayout ();
-    
-    switch (playoutStatus) {
-		case PLAYOUT_OK:
-      winCount [PLAYER_TO_INDEX(playBoard->getWinner())]++;
-      break;
-    case PLAYOUT_TOO_LONG:
-			playoutTooLong++;
-      break;
-    }
-    
-		playoutAvgLen += simplePlayout.getPlayoutLength(); 
-		avgGenerateAllCount += playBoard -> getGenerateAllCount();
-  }
-  
-  clockEnd = clock();
-  
-//  out << "Initial board:" << endl;
-//  out << board_->dump (); todo add to_string method to board
-  
-	timeTotal = float (clockEnd - clockBegin) / CLOCKS_PER_SEC;
-  
-  log_()
-			<< "Performance: " << endl
-      << "  " <<playoutCount_ << " playouts" << endl 
-      << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl
-      << "  " << float(avgGenerateAllCount)/playoutCount_ << " average amg" << endl;
-  
-  log_()
-			<< "Gold wins = " << winCount [PLAYER_TO_INDEX(GOLD)] << endl
-      << "Silver wins = " << winCount [PLAYER_TO_INDEX(SILVER)] << endl
-      << "Playout too long = " << playoutTooLong << endl
-      << "P(gold win) = " << float (winCount [PLAYER_TO_INDEX(GOLD)]) / (
-														 float (winCount [PLAYER_TO_INDEX(GOLD)] + winCount [PLAYER_TO_INDEX(SILVER)]) ) << endl
-			<< "Average playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
-}
-
-
+ //pointer debug

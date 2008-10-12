@@ -385,7 +385,7 @@ bool Board::createRandomStep(Step& step)
   
   bool found = false; //once set to true, move is generated and returned 
 
-  for ( int i = 0; i < 3; i++){ 
+  for ( int i = 0; i < 30; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
     step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
 
@@ -393,8 +393,9 @@ bool Board::createRandomStep(Step& step)
 
     if ( ! isFrozen(step.from_)){
       step.to_ = step.from_ + direction[rand() % 4];
-      if (stepCount_ < 3 && PIECE(board_[step.from_]) != PIECE_RABBIT)
+      if (stepCount_ < 3 && PIECE(board_[step.from_]) != PIECE_RABBIT){
         step.stepType_ = (rand() % 3) + 1;
+      }
       else 
         step.stepType_ = STEP_SINGLE;
 
@@ -440,6 +441,8 @@ bool Board::createRandomStep(Step& step)
           assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
           step.oppPiece_  = PIECE(board_[step.oppFrom_]);
         }
+
+
         return true;
       }
     }
@@ -458,8 +461,8 @@ Step Board::getRandomStep()
   if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
     return Step(STEP_PASS);                   //step_pass since the player with no pieces still might win 
                                               //if he managed to kill opponent's last rabbit before he lost his last piece
-  if (createRandomStep(step))
-    return step;
+  //if (createRandomStep(step))
+  //  return step;
 
   generateAllCount++;   
   stepArrayLen[playerIndex] = generateAllSteps(toMove_,stepArray[playerIndex]);
@@ -474,17 +477,57 @@ Step Board::getRandomStep()
 
   uint index = 0;
 
+  if ( len == 0 && stepCount_ > 0 ) 
+    return Step(STEP_PASS);
+  /*
   if ( stepCount_ != 0) {       //check pass move
     index = rand() % (len + 1);
     if ( index == 0 )
       return Step(STEP_PASS);
    // index--;  //not nece
   }
+  */
 
   assert(len > 0);
   index = rand() % len;
-
   assert( index >= 0 && index < len );
+
+  /*step verification - is it reasonable ?*/
+  for (int i = 0; i < 20; i++){
+    index = rand() % len;
+    step = stepArray[playerIndex][index]; 
+
+    
+    //avoid suicide
+    if (  IS_TRAP(step.to_) ){
+      bool suicide = true;
+      for(int i = 0; i < 4; i++)
+        if (OWNER(board_[step.to_ + direction[i]]) == step.player_ && step.to_ + direction[i] != step.from_ )
+          suicide = false;
+
+      if ( suicide )
+          continue;
+    }
+
+    if ( (step.piece_ == PIECE_RABBIT  &&  rand() % 99 > 70 ) )
+          continue;
+
+    if ( (step.piece_ == PIECE_CAT  &&  rand() % 99 > 50 ) )
+          continue;
+
+    if ( (step.piece_ == PIECE_DOG  &&  rand() % 99 > 30 ) )
+          continue;
+    //;   if ( step
+
+    //we prefer push/pulls
+    if ( step.stepType_ == STEP_SINGLE && rand() % 99 > 20) 
+      continue;
+      //rabbits move only forward
+    if ( step.piece_ == PIECE_RABBIT && (step.to_ - step.from_ == WEST || step.to_ - step.from_ == EAST ))
+      continue;
+    break;
+  }
+
   return( stepArray[playerIndex][index]);
 
 }
@@ -643,7 +686,7 @@ string Board::toString()
 
   
   ss << endl;
-  ss << "board at: " << this << endl;
+  //ss << "board at: " << this << endl; //pointer debug
   ss << "Move " << moveCount_  << ", Step " << stepCount_ << ", ";
 
   if (toMove_ == GOLD) 
@@ -767,4 +810,24 @@ int Board::generateAllSteps(player_t player, StepArray oldStepArray) const
       }
   } //for pieces on board
   return stepsNum;
+}
+
+int Board::evaluate(player_t player){
+  static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
+  int eval[2] = {0,0};
+
+  for ( uint i = 0; i < 2; i++){
+    for ( uint j = 0; j < pieceArray[i].getLen(); j++){
+      assert(PIECE(board_[pieceArray[i][j]]) > 0 && PIECE(board_[pieceArray[i][j]]) < 7);
+      eval[i] += piece_value[PIECE(board_[pieceArray[i][j]])];
+  //    cerr << i << "+ " << piece_value[PIECE(board_[pieceArray[i][j]])] << endl;
+    }
+   // cerr <<endl;
+  }
+  if (player == GOLD)
+    return eval[0] - eval[1];
+  else
+    return eval[1] - eval[0];
+    
+     
 }

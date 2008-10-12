@@ -12,11 +12,34 @@ public:
 	string initialSetup(bool); 
 };
 
-#endif
-
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
+#define EVAL_AFTER_LENGTH 15    //length of playout after which we evaluate
 
-enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG }; 
+enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL }; 
+
+
+class Node
+{
+  int         value_; 
+  int         visits_;
+  Step        step_;
+
+  Node*       sibling_;
+  Node*       firstChild_;
+
+  Logger      logger_;
+
+  public:
+    Node();
+    Node(Step&);
+    void addChild(Node*);
+    void removeChild(Node*);
+    Node* getUctChild();
+    Node* getMostExploredChild(); 
+
+    string toString(); 
+};
+
 
 class SimplePlayout
 {
@@ -29,13 +52,4 @@ class SimplePlayout
 		uint getPlayoutLength();  
 };
 
-class Benchmark
-{
-	const Board * board_; //todo return const
-	uint playoutCount_;
-	Logger log_;
-	public: 
-		Benchmark();
-		Benchmark(Board*,uint);
-		void doBenchmark() const;
-};
+#endif
