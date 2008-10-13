@@ -65,6 +65,29 @@ Node* Node::getMostExploredChild()
   return this->firstChild_;
 }
 
+
+/*
+ * Recursive method for freeing nodes children
+ */
+void Node::freeChildren()
+{
+  Node* actNode = firstChild_;
+  Node* sibling;
+  while(actNode != NULL){
+    sibling = actNode->sibling_;
+    actNode->freeChildren();
+    delete actNode;
+    actNode = sibling;
+  }
+}
+
+void Node::update(float sample)
+{
+  visits_++;
+  value_ += sample;
+}
+
+
 string Node::toString()
 {
   stringstream ss;
@@ -73,6 +96,44 @@ string Node::toString()
   return ss.str();
 
 }
+
+
+Tree::Tree()
+{
+  historyTop = 0;
+  history[historyTop] = new Node();
+}
+
+Tree::~Tree()
+{
+  history[0]->freeChildren();
+  delete history[0];
+}
+
+Node* Tree::actNode() 
+{
+  return history[historyTop];
+}
+
+void Tree::historyReset()
+{
+  historyTop = 0;
+}
+
+void Tree::uctDescend()
+{
+  history[historyTop + 1]= actNode()->getUctChild();
+  historyTop++;
+  assert(actNode() != NULL);
+}
+
+void Tree::updateHistory(float sample)
+{
+  for(int i = historyTop; i >= 0; i--)
+    history[i]->update(sample);
+  historyReset();
+
+} 
 
 SimplePlayout::SimplePlayout(Board* board)
 {
