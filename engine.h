@@ -37,10 +37,14 @@ class Node
     void  removeChild(Node*);
     Node* getUctChild();
     Node* getMostExploredChild(); 
+    Step  getStep();
     void  freeChildren();
     void  update(float);
+    bool  isMature();
+    bool  hasChildren();
 
     string toString(); 
+    string recToString(int);
 };
 
 class Tree
@@ -57,18 +61,21 @@ class Tree
     void uctDescend();
     void updateHistory(float);
     Node* actNode();
+    Node* root();
     string toString();
 };
 
 
-/*
 class Uct
 {
-  Tree tree;
+  Board* board_;
+  Tree tree_;
   public:
-    void treePlayout();
-}
-*/
+    Uct();
+    Uct(Board*);
+    void doPlayout();
+    int decidePlayoutWinner(Board*, playoutStatus_e);
+};
 
 
 class SimplePlayout

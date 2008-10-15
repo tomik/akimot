@@ -828,6 +828,10 @@ int Board::evaluate(player_t player){
     return eval[0] - eval[1];
   else
     return eval[1] - eval[0];
-    
-     
+}
+
+double Board::evaluateInPercent(player_t player) 
+{
+  //TODO programm the function - call evaluate and express in percentage
+  return 0.5;
 }

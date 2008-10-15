@@ -35,13 +35,13 @@ void Node::addChild(Node* newChild)
   
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild->sibling_;
-  
 }
 
 
 void Node::removeChild(Node* delChild)
 {
-  assert(this->firstChild_ == NULL);
+  assert(this->firstChild_ != NULL);
+  assert(delChild->firstChild_ == NULL);
 
   //TODO implement removal
   return;
@@ -66,6 +66,11 @@ Node* Node::getMostExploredChild()
 }
 
 
+Step Node::getStep()
+{
+  return step_;
+}
+
 /*
  * Recursive method for freeing nodes children
  */
@@ -88,13 +93,37 @@ void Node::update(float sample)
 }
 
 
+bool Node::isMature() 
+{
+  //TODO use constant
+  return visits_ > 100;
+}
+
+bool Node::hasChildren() 
+{
+  return firstChild_ != NULL;
+}
+
 string Node::toString()
 {
   stringstream ss;
 
   ss << step_.toString() << " " << visits_ << " " << value_ << endl;
   return ss.str();
+}
 
+string Node::recToString(int depth)
+{
+  stringstream ss; 
+  for (int i = 0; i < depth; i++ )
+    ss << " ";
+  ss << toString();
+  Node* actNode = firstChild_;
+  while(actNode != NULL){
+    ss << actNode->recToString(depth + 1);
+    actNode = actNode->sibling_;
+  }
+  return ss.str();
 }
 
 
@@ -108,6 +137,11 @@ Tree::~Tree()
 {
   history[0]->freeChildren();
   delete history[0];
+}
+
+Node* Tree::root() 
+{
+  return history[0];
 }
 
 Node* Tree::actNode() 
@@ -132,8 +166,75 @@ void Tree::updateHistory(float sample)
   for(int i = historyTop; i >= 0; i--)
     history[i]->update(sample);
   historyReset();
-
 } 
+
+
+string Tree::toString()
+{
+  return root()->recToString(0);
+}
+
+
+Uct::Uct()
+{
+}
+
+Uct::Uct(Board* board) 
+{
+  board_ = board;
+}
+
+void Uct::doPlayout()
+{
+  //TODO ... change playBoard to an object not pointer
+  Board *playBoard = new Board(*board_);
+  playoutStatus_e playoutStatus;
+  
+  tree_.historyReset();     //point tree's actNode to the root 
+
+  //TODO ... what if the node in the tree is the end of the game already ? 
+
+  do { 
+
+    if (! tree_.actNode()->hasChildren()) { 
+      if (tree_.actNode()->isMature()) {
+        //TODO node expansion
+        continue;
+      }
+
+      //random playout
+      SimplePlayout simplePlayout(playBoard);
+      playoutStatus = simplePlayout.doPlayout();
+      break;
+    }
+
+    tree_.uctDescend(); 
+    Step step = tree_.actNode()->getStep();
+    playBoard->makeStep(step);
+    //TODO makeStep needs wrapper to watch the whole moves, maybe hash them as well
+    //maybe add stepCorrectness check and delete node when it is not correct ( i.e. position repetition, wrong passing, etc.)
+  } while(true);
+
+  
+  tree_.updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
+}
+
+
+int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
+{
+  return -1;  
+  //TODO change function so it returns 1/-1
+  if IS_PLAYER(playBoard->getWinner())
+    return playBoard->getWinner();
+
+  float evalGold = playBoard->evaluateInPercent(GOLD);
+  double r = ((double)rand()/(double)(RAND_MAX) + (double)(1));
+  if (r < evalGold)
+    return GOLD;
+  else
+    return SILVER;
+}
+
 
 SimplePlayout::SimplePlayout(Board* board)
 {

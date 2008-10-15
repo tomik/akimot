@@ -192,6 +192,7 @@ class Board
 		void testPieceArray();
 
     int evaluate(player_t);
+    double evaluateInPercent(player_t);
 
 };
 
