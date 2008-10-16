@@ -223,8 +223,6 @@ void Board::testPieceArray()
       cerr << pieceArray[playerIndex][i] << " ";
     }
   }
-  
-
 }
 
 bool Board::isEmpty() 
@@ -759,6 +757,13 @@ uint Board::getAllStepsNum(player_t player)
 {
   return stepArrayLen[PLAYER_TO_INDEX(player)];
 }
+
+
+/*wrapper around generateAllSteps - fills inner array stepArray, lenStepArray
+void Board::fillStepArrayToMove()
+{
+}
+*/
 
 
 int Board::generateAllSteps(player_t player, StepArray oldStepArray) const

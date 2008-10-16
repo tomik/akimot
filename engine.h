@@ -4,17 +4,14 @@
 #include "utils.h"
 #include "board.h"
 
-class Engine
-{
-	Logger logger_;
-public:
-	string doSearch(Board&);		
-	string initialSetup(bool); 
-};
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define EVAL_AFTER_LENGTH 15    //length of playout after which we evaluate
-#define UCT_MAX_DEPTH 30
+#define UCT_MAX_DEPTH 50
+
+
+#define MATURE_LEVEL  10
+#define GEN_MOVE_PLAYOUTS 150
 
 enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL }; 
 
@@ -32,9 +29,10 @@ class Node
 
   public:
     Node();
-    Node(Step&);
+    Node(const Step&);
     void  addChild(Node*);
     void  removeChild(Node*);
+    void  expand(const StepArray& stepArray, uint len);
     Node* getUctChild();
     Node* getMostExploredChild(); 
     Step  getStep();
@@ -62,6 +60,7 @@ class Tree
     void updateHistory(float);
     Node* actNode();
     Node* root();
+    string getBestMove();
     string toString();
 };
 
@@ -73,8 +72,9 @@ class Uct
   public:
     Uct();
     Uct(Board*);
-    void doPlayout();
     int decidePlayoutWinner(Board*, playoutStatus_e);
+    void doPlayout();
+    string generateMove();
 };
 
 
@@ -89,4 +89,11 @@ class SimplePlayout
 		uint getPlayoutLength();  
 };
 
+class Engine
+{
+	Logger logger_;
+public:
+	string doSearch(Board*);		
+	string initialSetup(bool); 
+};
 #endif

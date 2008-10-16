@@ -11,9 +11,13 @@ string Engine::initialSetup(bool isGold)
 }
 
 
-string Engine::doSearch(Board&) 
+string Engine::doSearch(Board* board) 
 { 
-	return "here will be some search soon";
+  Uct* uct_ = new Uct(board);
+  string result = uct_->generateMove();  
+  delete uct_;
+  return result;
+  //return "here will be some search soon";
 }
 
 
@@ -22,8 +26,13 @@ Node::Node()
 }
 
 
-Node::Node(Step& step)
+Node::Node(const Step& step)
 {
+  firstChild_ = NULL;
+  sibling_    = NULL;
+  visits_     = 0;
+  value_      = 0;
+  
   step_ = step;
 }
 
@@ -34,7 +43,7 @@ void Node::addChild(Node* newChild)
   assert(newChild->firstChild_ == NULL);
   
   newChild->sibling_ = this->firstChild_;
-  this->firstChild_ = newChild->sibling_;
+  this->firstChild_ = newChild;
 }
 
 
@@ -48,19 +57,39 @@ void Node::removeChild(Node* delChild)
   
 }
 
+void Node::expand(const StepArray& stepArray, uint len)
+{
+  cout << "Expanding node" << endl;
+  Node* newChild;
+  for (uint i = 0; i < len; i++){
+    newChild = new Node(stepArray[i]);
+    addChild(newChild);
+  }
+  
+}
+
 
 Node* Node::getUctChild()
 {
   assert(this->firstChild_ != NULL);
 
+  Node* best = this->firstChild_;
+  Node* act = this->firstChild_;
   //TODO implement UCB1
-  return this->firstChild_;
+  while (act != NULL) {
+    if (act->value_ > best->value_)
+      best = act;
+    act = act->sibling_;
+  }
+
+  return best;
 
 }
 
 
 Node* Node::getMostExploredChild()
 {
+  assert(this->firstChild_ != NULL);
   //TODO implement get most explored
   return this->firstChild_;
 }
@@ -86,6 +115,7 @@ void Node::freeChildren()
   }
 }
 
+
 void Node::update(float sample)
 {
   visits_++;
@@ -95,22 +125,24 @@ void Node::update(float sample)
 
 bool Node::isMature() 
 {
-  //TODO use constant
-  return visits_ > 100;
+  return visits_ > MATURE_LEVEL;
 }
+
 
 bool Node::hasChildren() 
 {
   return firstChild_ != NULL;
 }
 
+
 string Node::toString()
 {
   stringstream ss;
 
-  ss << step_.toString() << " " << visits_ << " " << value_ << endl;
+  ss << step_.toString() << " " << value_ << "/" << visits_ << endl;
   return ss.str();
 }
+
 
 string Node::recToString(int depth)
 {
@@ -133,26 +165,31 @@ Tree::Tree()
   history[historyTop] = new Node();
 }
 
+
 Tree::~Tree()
 {
   history[0]->freeChildren();
   delete history[0];
 }
 
+
 Node* Tree::root() 
 {
   return history[0];
 }
+
 
 Node* Tree::actNode() 
 {
   return history[historyTop];
 }
 
+
 void Tree::historyReset()
 {
   historyTop = 0;
 }
+
 
 void Tree::uctDescend()
 {
@@ -161,12 +198,20 @@ void Tree::uctDescend()
   assert(actNode() != NULL);
 }
 
+
 void Tree::updateHistory(float sample)
 {
   for(int i = historyTop; i >= 0; i--)
     history[i]->update(sample);
   historyReset();
 } 
+
+
+string Tree::getBestMove()
+{
+  //TODO ... create move object and "undummyfy" this method 
+  return root()->getMostExploredChild()->toString();
+}
 
 
 string Tree::toString()
@@ -179,16 +224,21 @@ Uct::Uct()
 {
 }
 
+
 Uct::Uct(Board* board) 
 {
   board_ = board;
 }
+
 
 void Uct::doPlayout()
 {
   //TODO ... change playBoard to an object not pointer
   Board *playBoard = new Board(*board_);
   playoutStatus_e playoutStatus;
+
+  StepArray stepArray;    
+  uint      stepArrayLen;
   
   tree_.historyReset();     //point tree's actNode to the root 
 
@@ -199,6 +249,8 @@ void Uct::doPlayout()
     if (! tree_.actNode()->hasChildren()) { 
       if (tree_.actNode()->isMature()) {
         //TODO node expansion
+        stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
+        tree_.actNode()->expand(stepArray,stepArrayLen);
         continue;
       }
 
@@ -217,22 +269,36 @@ void Uct::doPlayout()
 
   
   tree_.updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
+  delete playBoard;
 }
 
 
+string Uct::generateMove()
+{
+  cout << "Starting uct" << endl;
+  for ( int i = 0; i < GEN_MOVE_PLAYOUTS; i++) {
+    cout << i << " | "; 
+    doPlayout();
+  }
+  cout << "Playout over" << endl;
+  cout << tree_.toString();
+  return tree_.getBestMove();
+}
+
+
+/*if winner is known returns 1 for Gold, -1 for Silver 
+ * otherwise flips the coin according to the evaluationPercentage estimate and returns 1/-1 as above*/
 int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 {
-  return -1;  
-  //TODO change function so it returns 1/-1
   if IS_PLAYER(playBoard->getWinner())
-    return playBoard->getWinner();
+    return playBoard->getWinner() == GOLD ? 1 : 0;
 
   float evalGold = playBoard->evaluateInPercent(GOLD);
-  double r = ((double)rand()/(double)(RAND_MAX) + (double)(1));
+  double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
-    return GOLD;
+    return 1;
   else
-    return SILVER;
+    return 0;
 }
 
 
