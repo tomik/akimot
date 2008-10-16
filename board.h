@@ -172,6 +172,7 @@ class Board
 
 		void makeStep(Step&);
 		void commitMove();
+		void makeStepTryCommit(Step&);
 
 		Step getRandomStep();
 		bool createRandomStep(Step&);

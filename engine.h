@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "board.h"
 
+#include <cmath>
+
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define EVAL_AFTER_LENGTH 15    //length of playout after which we evaluate
@@ -11,14 +13,15 @@
 
 
 #define MATURE_LEVEL  10
-#define GEN_MOVE_PLAYOUTS 150
+#define GEN_MOVE_PLAYOUTS 15000
+#define EXPLORE_RATE 0.2
 
 enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL }; 
 
 
 class Node
 {
-  int         value_; 
+  float       value_; 
   int         visits_;
   Step        step_;
 
@@ -33,6 +36,7 @@ class Node
     void  addChild(Node*);
     void  removeChild(Node*);
     void  expand(const StepArray& stepArray, uint len);
+    float ucb(float);
     Node* getUctChild();
     Node* getMostExploredChild(); 
     Step  getStep();

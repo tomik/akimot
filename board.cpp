@@ -242,6 +242,14 @@ player_t Board::getPlayerToMove()
 }
 
 
+
+/*calls makeStep and then tries to commit move*/
+void Board::makeStepTryCommit(Step& step) {
+  makeStep(step);
+	if (stepCount_ >= 4 || ! step.pieceMoved()) 
+    commitMove();
+}
+
 void Board::makeStep(Step& step){
 
   #ifdef DEBUG_3
@@ -490,7 +498,7 @@ Step Board::getRandomStep()
   index = rand() % len;
   assert( index >= 0 && index < len );
 
-  /*step verification - is it reasonable ?*/
+  /*step verification - is it reasonable ?
   for (int i = 0; i < 20; i++){
     index = rand() % len;
     step = stepArray[playerIndex][index]; 
@@ -506,6 +514,7 @@ Step Board::getRandomStep()
       if ( suicide )
           continue;
     }
+  
 
     if ( (step.piece_ == PIECE_RABBIT  &&  rand() % 99 > 70 ) )
           continue;
@@ -525,6 +534,8 @@ Step Board::getRandomStep()
       continue;
     break;
   }
+
+  */
 
   return( stepArray[playerIndex][index]);
 

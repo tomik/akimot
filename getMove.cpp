@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		cout << engine.doSearch(&board) << endl;
 	}
 
+	board.dump();
  //test(&board);
 	
 	return 0;

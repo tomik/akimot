@@ -57,15 +57,22 @@ void Node::removeChild(Node* delChild)
   
 }
 
+
 void Node::expand(const StepArray& stepArray, uint len)
 {
-  cout << "Expanding node" << endl;
+  //cout << "Expanding node" << endl;
   Node* newChild;
   for (uint i = 0; i < len; i++){
     newChild = new Node(stepArray[i]);
     addChild(newChild);
   }
-  
+}
+
+
+float Node::ucb(float exploreCoeff)
+{
+  //TODO ... decide upon player in the father 
+  return (true ? value_ : - value_) + sqrt(exploreCoeff/visits_);
 }
 
 
@@ -73,25 +80,38 @@ Node* Node::getUctChild()
 {
   assert(this->firstChild_ != NULL);
 
-  Node* best = this->firstChild_;
   Node* act = this->firstChild_;
-  //TODO implement UCB1
+  Node* best = this->firstChild_;
+  float bestUrgency = -100;       //TODO - something very large ! 
+  float actUrgency = 0;
+
+  float exploreCoeff = EXPLORE_RATE * log(visits_);
+
   while (act != NULL) {
-    if (act->value_ > best->value_)
+    actUrgency = act->ucb(exploreCoeff);
+    if ( actUrgency > bestUrgency ){
       best = act;
+      bestUrgency = actUrgency;
+    }
     act = act->sibling_;
   }
 
   return best;
-
 }
 
 
 Node* Node::getMostExploredChild()
 {
   assert(this->firstChild_ != NULL);
-  //TODO implement get most explored
-  return this->firstChild_;
+
+  Node* best = this->firstChild_;
+  Node* act = this->firstChild_;
+  while (act != NULL) {
+    if ( act->visits_ > best->visits_ )
+      best = act;
+    act = act->sibling_;
+  }
+  return best;
 }
 
 
@@ -99,6 +119,7 @@ Step Node::getStep()
 {
   return step_;
 }
+
 
 /*
  * Recursive method for freeing nodes children
@@ -119,7 +140,7 @@ void Node::freeChildren()
 void Node::update(float sample)
 {
   visits_++;
-  value_ += sample;
+  value_ += (sample - value_)/visits_;         //TODO how this works ? 
 }
 
 
@@ -148,7 +169,7 @@ string Node::recToString(int depth)
 {
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
-    ss << " ";
+    ss << "-";
   ss << toString();
   Node* actNode = firstChild_;
   while(actNode != NULL){
@@ -243,12 +264,9 @@ void Uct::doPlayout()
   tree_.historyReset();     //point tree's actNode to the root 
 
   //TODO ... what if the node in the tree is the end of the game already ? 
-
   do { 
-
     if (! tree_.actNode()->hasChildren()) { 
       if (tree_.actNode()->isMature()) {
-        //TODO node expansion
         stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
         tree_.actNode()->expand(stepArray,stepArrayLen);
         continue;
@@ -262,9 +280,8 @@ void Uct::doPlayout()
 
     tree_.uctDescend(); 
     Step step = tree_.actNode()->getStep();
-    playBoard->makeStep(step);
-    //TODO makeStep needs wrapper to watch the whole moves, maybe hash them as well
-    //maybe add stepCorrectness check and delete node when it is not correct ( i.e. position repetition, wrong passing, etc.)
+    playBoard->makeStepTryCommit(step);
+    //TODO add stepCorrectness check and delete node when it is not correct ( i.e. position repetition, wrong passing, etc.)
   } while(true);
 
   
@@ -277,7 +294,7 @@ string Uct::generateMove()
 {
   cout << "Starting uct" << endl;
   for ( int i = 0; i < GEN_MOVE_PLAYOUTS; i++) {
-    cout << i << " | "; 
+    //cout << i << " | "; 
     doPlayout();
   }
   cout << "Playout over" << endl;
@@ -291,14 +308,14 @@ string Uct::generateMove()
 int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 {
   if IS_PLAYER(playBoard->getWinner())
-    return playBoard->getWinner() == GOLD ? 1 : 0;
+    return playBoard->getWinner() == GOLD ? 1 : -1;
 
   float evalGold = playBoard->evaluateInPercent(GOLD);
   double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
     return 1;
   else
-    return 0;
+    return -1;
 }
 
 
@@ -323,11 +340,8 @@ void SimplePlayout::playOne()
 		#endif
 		step = board_->getRandomStep();
 		board_->makeStep(step);
- // step.dump();
-	//board_->dump();
-
 	}
-	while ( board_->getStepCount() < 4 && step.pieceMoved()); 
+	while (board_->getStepCount() < 4 && step.pieceMoved()); 
 	board_->commitMove();
 	return;
 }
@@ -352,8 +366,8 @@ playoutStatus_e SimplePlayout::doPlayout()
 	}
 }
 
+
 uint SimplePlayout::getPlayoutLength()
 {
 	return playoutLength_/2;
 }
- //pointer debug
