@@ -106,6 +106,11 @@ void Step::setValues( stepType_t stepType, player_t player, piece_t piece, squar
 }
 
 
+player_t Step::getStepPlayer() const 
+{
+  return player_;
+}
+
 const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) const
   /**prints step string for given values */
 {

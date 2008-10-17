@@ -34,6 +34,7 @@ Node::Node(const Step& step)
   value_      = 0;
   
   step_ = step;
+  nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
 
@@ -71,8 +72,7 @@ void Node::expand(const StepArray& stepArray, uint len)
 
 float Node::ucb(float exploreCoeff)
 {
-  //TODO ... decide upon player in the father 
-  return (true ? value_ : - value_) + sqrt(exploreCoeff/visits_);
+  return ( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt(exploreCoeff/visits_);
 }
 
 
@@ -160,7 +160,7 @@ string Node::toString()
 {
   stringstream ss;
 
-  ss << step_.toString() << " " << value_ << "/" << visits_ << endl;
+  ss << step_.toString() << "(" <<  ( nodeType_  == NODE_MAX ? "NODE_MAX" : "NODE_MIN" )  << ") " << value_ << "/" << visits_ << endl;
   return ss.str();
 }
 
@@ -243,12 +243,20 @@ string Tree::toString()
 
 Uct::Uct()
 {
+  assert(false);      //use only constructore with board ! 
 }
 
 
 Uct::Uct(Board* board) 
 {
   board_ = board;
+  tree_  = new Tree();
+}
+
+
+Uct::~Uct()
+{
+  delete tree_;
 }
 
 
@@ -261,14 +269,14 @@ void Uct::doPlayout()
   StepArray stepArray;    
   uint      stepArrayLen;
   
-  tree_.historyReset();     //point tree's actNode to the root 
+  tree_->historyReset();     //point tree's actNode to the root 
 
   //TODO ... what if the node in the tree is the end of the game already ? 
   do { 
-    if (! tree_.actNode()->hasChildren()) { 
-      if (tree_.actNode()->isMature()) {
+    if (! tree_->actNode()->hasChildren()) { 
+      if (tree_->actNode()->isMature()) {
         stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
-        tree_.actNode()->expand(stepArray,stepArrayLen);
+        tree_->actNode()->expand(stepArray,stepArrayLen);
         continue;
       }
 
@@ -278,14 +286,14 @@ void Uct::doPlayout()
       break;
     }
 
-    tree_.uctDescend(); 
-    Step step = tree_.actNode()->getStep();
+    tree_->uctDescend(); 
+    Step step = tree_->actNode()->getStep();
     playBoard->makeStepTryCommit(step);
     //TODO add stepCorrectness check and delete node when it is not correct ( i.e. position repetition, wrong passing, etc.)
   } while(true);
 
   
-  tree_.updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
+  tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
   delete playBoard;
 }
 
@@ -298,8 +306,8 @@ string Uct::generateMove()
     doPlayout();
   }
   cout << "Playout over" << endl;
-  cout << tree_.toString();
-  return tree_.getBestMove();
+  cout << tree_->toString();
+  return tree_->getBestMove();
 }
 
 

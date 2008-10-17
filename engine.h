@@ -16,8 +16,12 @@
 #define GEN_MOVE_PLAYOUTS 15000
 #define EXPLORE_RATE 0.2
 
-enum playoutStatus_e { PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL }; 
+enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
+enum NodeType_e {NODE_MAX, NODE_MIN};   
 
+// values in the node express: -1 sure win for Silver ... 0 equal ... 1 sure win for gold 
+// nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
+// NODE_MIN ( ~ siler node )  where we maximize -value + uncertainty_term
 
 class Node
 {
@@ -26,7 +30,8 @@ class Node
   Step        step_;
 
   Node*       sibling_;
-  Node*       firstChild_;
+  Node*       firstChild_;  
+  NodeType_e  nodeType_;
 
   Logger      log_;
 
@@ -57,7 +62,7 @@ class Tree
   Logger     log_;
 
   public:
-    Tree();
+    Tree();   
     ~Tree();
     void historyReset();
     void uctDescend();
@@ -72,10 +77,11 @@ class Tree
 class Uct
 {
   Board* board_;
-  Tree tree_;
+  Tree* tree_;
   public:
     Uct();
     Uct(Board*);
+    ~Uct();
     int decidePlayoutWinner(Board*, playoutStatus_e);
     void doPlayout();
     string generateMove();

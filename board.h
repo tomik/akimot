@@ -107,6 +107,7 @@ class Step
 		bool pieceMoved();
 		bool operator== ( const Step&);
 
+    player_t getStepPlayer() const;
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
     const string toString() const;
     void dump(); 
