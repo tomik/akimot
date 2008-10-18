@@ -8,7 +8,8 @@ dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
-src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp')
+
+src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp config.cpp')
 
 if ARGUMENTS.get('opt'):
   env = opt.Clone()
@@ -25,6 +26,6 @@ else:   #standard
   env = std.Clone()
 
 if not ARGUMENTS.get('doc'):      #dirty - change !
-  env.Program(target = 'akimot', source = src_files,CPPPATH='.')
+  env.Program(target = 'akimot', source = src_files, CPPPATH = '.')
   print "CCCOM is ",  env.subst('$CCCOM')
 

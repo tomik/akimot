@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "config.h"
 #include "board.h"
 #include "engine.h"
 #include "benchmark.h"
@@ -17,6 +18,9 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	Board board;
 	Engine engine;
 	Logger logger;
+
+  config.parse(argc, (const char **) (argv));
+  config.printAll();
 	
 	if (argc < 2) {
 		logger() << "Program requires an argument (name of file containing position).\n";
