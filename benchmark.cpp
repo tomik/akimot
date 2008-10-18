@@ -63,10 +63,6 @@ void Benchmark::playoutBenchmark() const
     evalCount = 1;
   
   clockEnd = clock();
-  
-//  out << "Initial board:" << endl;
-//  out << board_->dump (); todo add to_string method to board
-  
 	timeTotal = float (clockEnd - clockBegin) / CLOCKS_PER_SEC;
   
   log_()

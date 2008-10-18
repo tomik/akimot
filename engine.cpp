@@ -16,6 +16,7 @@ string Engine::doSearch(Board* board)
   Uct* uct_ = new Uct(board);
   string result = uct_->generateMove();  
   delete uct_;
+  
   return result;
   //return "here will be some search soon";
 }
@@ -23,6 +24,7 @@ string Engine::doSearch(Board* board)
 
 Node::Node()
 {
+  assert(false);
 }
 
 
@@ -160,7 +162,7 @@ string Node::toString()
 {
   stringstream ss;
 
-  ss << step_.toString() << "(" <<  ( nodeType_  == NODE_MAX ? "NODE_MAX" : "NODE_MIN" )  << ") " << value_ << "/" << visits_ << endl;
+  ss << step_.toString() << "(" <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << endl;
   return ss.str();
 }
 
@@ -183,7 +185,7 @@ string Node::recToString(int depth)
 Tree::Tree()
 {
   historyTop = 0;
-  history[historyTop] = new Node();
+  history[historyTop] = new Node(Step(STEP_NO_STEP));
 }
 
 
@@ -300,13 +302,24 @@ void Uct::doPlayout()
 
 string Uct::generateMove()
 {
-  cout << "Starting uct" << endl;
+  clock_t clockBegin; 
+  float timeTotal; 
+  clockBegin = clock();
+  log_() << "Starting uct" << endl;
   for ( int i = 0; i < GEN_MOVE_PLAYOUTS; i++) {
-    //cout << i << " | "; 
     doPlayout();
   }
-  cout << "Playout over" << endl;
-  cout << tree_->toString();
+  log_() << "Uct is over" << endl;
+  timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
+  
+//  log_() << tree_->toString();
+  log_()
+			<< "Performance: " << endl
+      << "  " << GEN_MOVE_PLAYOUTS << " playouts" << endl 
+      << "  " << timeTotal << " seconds" << endl
+      << "  " << int ( float(GEN_MOVE_PLAYOUTS) / timeTotal) << " pps" << endl
+    ;
+ 
   return tree_->getBestMove();
 }
 

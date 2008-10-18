@@ -749,12 +749,9 @@ string Board::toString()
    ss << "| " << endl;
   }
 
-
   ss << " +-----------------+" << endl;
   ss << "   a b c d e f g h" << endl;
 
-  //ss << "Hashkey: %#.8X%.8X\n",(unsigned long int)(bp->hashkey>>32),(unsigned long int)(bp->hashkey&0xFFFFFFFFULL);
-  
   return ss.str();
 } //Board::dump
 

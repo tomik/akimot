@@ -78,6 +78,7 @@ class Uct
 {
   Board* board_;
   Tree* tree_;
+  Logger log_;
   public:
     Uct();
     Uct(Board*);
@@ -99,9 +100,10 @@ class SimplePlayout
 		uint getPlayoutLength();  
 };
 
+
 class Engine
 {
-	Logger logger_;
+	Logger log_;
 public:
 	string doSearch(Board*);		
 	string initialSetup(bool); 

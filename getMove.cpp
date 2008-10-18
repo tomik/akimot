@@ -30,13 +30,15 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		return 1;
 	} 
 
+	cout << board.toString();
+  
 	if (board.isEmpty()) { //first step
 		cout << engine.initialSetup(board.getPlayerToMove() == GOLD);
 	}else {
 		cout << engine.doSearch(&board) << endl;
 	}
 
-	board.dump();
+
  //test(&board);
 	
 	return 0;
