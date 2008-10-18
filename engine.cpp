@@ -253,11 +253,13 @@ Uct::Uct(Board* board)
 {
   board_ = board;
   tree_  = new Tree();
+  eval_  = new Eval();
 }
 
 
 Uct::~Uct()
 {
+  delete eval_;
   delete tree_;
 }
 
@@ -331,7 +333,7 @@ int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
   if IS_PLAYER(playBoard->getWinner())
     return playBoard->getWinner() == GOLD ? 1 : -1;
 
-  float evalGold = playBoard->evaluateInPercent(GOLD);
+  float evalGold = eval_->evaluateInPercent(playBoard);
   double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
     return 1;

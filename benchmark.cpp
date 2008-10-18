@@ -22,6 +22,7 @@ void Benchmark::playoutBenchmark() const
   int           evalGold = 0;
   int           evalCount = 0;
   int           initEval = 0;
+  Eval          eval;
   
   playoutStatus_e  playoutStatus;
   uint			 winCount[2] = { 0, 0};
@@ -37,7 +38,7 @@ void Benchmark::playoutBenchmark() const
     //here we copy the given board
     Board *playBoard = new Board(*board_);
 
-    initEval = playBoard->evaluate(GOLD);
+    initEval = eval.evaluate(playBoard);
 
     SimplePlayout simplePlayout(playBoard);
     playoutStatus = simplePlayout.doPlayout ();
@@ -50,7 +51,7 @@ void Benchmark::playoutBenchmark() const
 			playoutTooLong++;
       break;
     case PLAYOUT_EVAL:
-      evalGold += playBoard->evaluate(GOLD);
+      evalGold += eval.evaluate(playBoard);
       evalCount++;
       break;
     }

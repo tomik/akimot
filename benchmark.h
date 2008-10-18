@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "board.h"
 #include "engine.h"
+#include "eval.h"
 
 class Benchmark
 {

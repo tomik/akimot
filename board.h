@@ -49,12 +49,6 @@
 
 
 
-#define ELEPHANT_VALUE 20000
-#define CAMEL_VALUE 5000
-#define HORSE_VALUE 3000
-#define DOG_VALUE 1800
-#define CAT_VALUE 1500
-#define RABBIT_VALUE 1000
 
 extern const int direction[4];
 extern const int trap[4];
@@ -115,6 +109,7 @@ class Step
 };
 
 class Board;
+class Eval;
 
 #define HASH_ITEMS 78
 
@@ -139,7 +134,7 @@ class Board
     StepArray     stepArray[2];
     uint          stepArrayLen[2];
 
-    uint          rabbitsNum[2];        //kept number of rabbits for each player
+    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
 
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
@@ -157,6 +152,7 @@ class Board
 
     uint  generateAllCount;   //how many times generateAll was called :)
 
+    friend class Eval;
   public:
 		Board(){stepArrayLen[0] = 0; stepArrayLen[1] = 0;};
 
@@ -192,9 +188,6 @@ class Board
 		string allStepsToString();
 
 		void testPieceArray();
-
-    int evaluate(player_t);
-    double evaluateInPercent(player_t);
 
 };
 

@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "board.h"
+#include "eval.h"
 
 #include <cmath>
 
@@ -78,6 +79,7 @@ class Uct
 {
   Board* board_;
   Tree* tree_;
+  Eval* eval_;
   Logger log_;
   public:
     Uct();
