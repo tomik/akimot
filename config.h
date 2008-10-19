@@ -18,7 +18,7 @@ class OptionFather
   public:
     OptionFather(){};
     OptionFather(string shortName, string longName, string description, optionType_e type):
-      shortName_(shortName), longName_(longName), description_(description), type_(type) {}
+      shortName_(shortName), longName_(longName), description_(description), type_(type) {};
     virtual void setValue(bool){};
     virtual void setValue(string){};
     virtual void setValue(int){};

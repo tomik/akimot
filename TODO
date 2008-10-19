@@ -5,5 +5,6 @@
 [5,gen] implement hashing and step correctness check in uct 
 [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
 [4,eval] mapping evaluation -> win percentage is dummy -> improve
+[3,uct] remove father from node ? better best move management( take steps from history ? ) 
 
 === Long Term Ideas === 

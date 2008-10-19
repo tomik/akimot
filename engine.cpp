@@ -34,7 +34,8 @@ Node::Node(const Step& step)
   sibling_    = NULL;
   visits_     = 0;
   value_      = 0;
-  
+  father_     = NULL;  
+
   step_ = step;
   nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
@@ -47,6 +48,7 @@ void Node::addChild(Node* newChild)
   
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild;
+  newChild->father_ = this;
 }
 
 
@@ -158,6 +160,23 @@ bool Node::hasChildren()
 }
 
 
+Node* Node::getFather()
+{
+  return father_;
+}
+
+
+int Node::getVisits()
+{
+  return visits_;
+}
+
+nodeType_e Node::getNodeType()
+{
+  return nodeType_;
+}
+
+
 string Node::toString()
 {
   stringstream ss;
@@ -182,10 +201,10 @@ string Node::recToString(int depth)
 }
 
 
-Tree::Tree()
+Tree::Tree(player_t firstPlayer)
 {
   historyTop = 0;
-  history[historyTop] = new Node(Step(STEP_NO_STEP));
+  history[historyTop] = new Node(Step(STEP_NO_STEP, firstPlayer));
 }
 
 
@@ -230,10 +249,24 @@ void Tree::updateHistory(float sample)
 } 
 
 
-string Tree::getBestMove()
+string Tree::getBestMove(Node* bestMoveNode)
 {
-  //TODO ... create move object and "undummyfy" this method 
-  return root()->getMostExploredChild()->toString();
+  //TODO ... create move object ?
+  Node* act = bestMoveNode; 
+
+  if (! act)      //what to do ? he hasn't reached 4th level in  
+    assert(false);
+
+  stringstream ss;
+  ss << bestMoveNode->getVisits();
+  string s = ss.str();
+
+  while (act != root()) {
+    s = act->getStep().toString() + s;
+    act = act->getFather();
+  }
+ 
+  return s;
 }
 
 
@@ -252,8 +285,9 @@ Uct::Uct()
 Uct::Uct(Board* board) 
 {
   board_ = board;
-  tree_  = new Tree();
+  tree_  = new Tree(board->getPlayerToMove());
   eval_  = new Eval();
+  bestMoveNode_ = NULL;
 }
 
 
@@ -269,6 +303,7 @@ void Uct::doPlayout()
   //TODO ... change playBoard to an object not pointer
   Board *playBoard = new Board(*board_);
   playoutStatus_e playoutStatus;
+  Node* MoveNode = NULL;
 
   StepArray stepArray;    
   uint      stepArrayLen;
@@ -284,16 +319,25 @@ void Uct::doPlayout()
         continue;
       }
 
-      //random playout
+      //"random" playout
       SimplePlayout simplePlayout(playBoard);
       playoutStatus = simplePlayout.doPlayout();
       break;
     }
 
     tree_->uctDescend(); 
+    
+    if ( MoveNode == NULL && tree_->actNode()->getNodeType() != tree_->root()->getNodeType()){
+      MoveNode = tree_->actNode()->getFather();
+      assert(MoveNode->getFather() != NULL);
+      if ( ! bestMoveNode_ || bestMoveNode_->getVisits() < MoveNode->getVisits() + 1 )
+        bestMoveNode_ = MoveNode;
+    }
+
     Step step = tree_->actNode()->getStep();
     playBoard->makeStepTryCommit(step);
-    //TODO add stepCorrectness check and delete node when it is not correct ( i.e. position repetition, wrong passing, etc.)
+
+    //TODO add stepCorrectness check ( i.e. position repetition, wrong passing, etc.) and delete when not correct
   } while(true);
 
   
@@ -322,7 +366,7 @@ string Uct::generateMove()
       << "  " << int ( float(GEN_MOVE_PLAYOUTS) / timeTotal) << " pps" << endl
     ;
  
-  return tree_->getBestMove();
+  return tree_->getBestMove(bestMoveNode_);
 }
 
 

@@ -92,7 +92,7 @@ class Step
     friend class  Board;
   public:
 		Step(){};
-		Step( stepType_t );
+		Step( stepType_t, player_t );
     Step( stepType_t, player_t, piece_t, square_t, square_t );
     Step( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );

@@ -14,11 +14,11 @@
 
 
 #define MATURE_LEVEL  10
-#define GEN_MOVE_PLAYOUTS 15000
+#define GEN_MOVE_PLAYOUTS 10000
 #define EXPLORE_RATE 0.2
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
-enum NodeType_e {NODE_MAX, NODE_MIN};   
+enum nodeType_e {NODE_MAX, NODE_MIN};   
 
 // values in the node express: -1 sure win for Silver ... 0 equal ... 1 sure win for gold 
 // nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
@@ -32,9 +32,8 @@ class Node
 
   Node*       sibling_;
   Node*       firstChild_;  
-  NodeType_e  nodeType_;
-
-  Logger      log_;
+  nodeType_e  nodeType_;
+  Node*       father_;
 
   public:
     Node();
@@ -50,10 +49,15 @@ class Node
     void  update(float);
     bool  isMature();
     bool  hasChildren();
+    Node* getFather();
+
+    int   getVisits();
+    nodeType_e getNodeType();
 
     string toString(); 
     string recToString(int);
 };
+
 
 class Tree
 {
@@ -63,14 +67,15 @@ class Tree
   Logger     log_;
 
   public:
-    Tree();   
+    Tree(){};
+    Tree(player_t);   
     ~Tree();
     void historyReset();
     void uctDescend();
     void updateHistory(float);
     Node* actNode();
     Node* root();
-    string getBestMove();
+    string getBestMove(Node* bestFirstNode = NULL);
     string toString();
 };
 
@@ -81,6 +86,7 @@ class Uct
   Tree* tree_;
   Eval* eval_;
   Logger log_;
+  Node* bestMoveNode_;  //pointer to the most visited last step of first move
   public:
     Uct();
     Uct(Board*);

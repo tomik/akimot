@@ -46,11 +46,12 @@ square_t PieceArray::operator[](uint index) const
 }
 
 
-Step::Step( stepType_t stepType )
+Step::Step( stepType_t stepType, player_t player )
   /*this constructor is mainly used for 
    *step_no_step or step_pass which don't use other values than stepType*/
 {
   stepType_ = stepType;
+  player_   = player;
 }
 
 
@@ -470,7 +471,7 @@ Step Board::getRandomStep()
   assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); //it's not possible to have 0 rabbits in the beginning of move
 
   if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
-    return Step(STEP_PASS);                   //step_pass since the player with no pieces still might win 
+    return Step(STEP_PASS, toMove_);          //step_pass since the player with no pieces still might win 
                                               //if he managed to kill opponent's last rabbit before he lost his last piece
   //if (createRandomStep(step))
   //  return step;
@@ -483,13 +484,13 @@ Step Board::getRandomStep()
 
   if (len == 0 && stepCount_ == 0){ //player to move has no step to play and cannot play pass => he lost
     winner_ = OPP(toMove_);
-    return Step(STEP_NO_STEP); 
+    return Step(STEP_NO_STEP,toMove_); 
   }
 
   uint index = 0;
 
   if ( len == 0 && stepCount_ > 0 ) 
-    return Step(STEP_PASS);
+    return Step(STEP_PASS,toMove_);
   /*
   if ( stepCount_ != 0) {       //check pass move
     index = rand() % (len + 1);
