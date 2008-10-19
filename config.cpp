@@ -5,6 +5,13 @@ Option::Option(string shortName, string longName, string description):
 {
 }
 
+string Option::toString()
+{
+  stringstream ss;
+  ss << "short: " << shortName_ << " long: " << longName_ << " value: " << valueToString() << endl;
+  return ss.str();
+}
+
 
 OptionInt::OptionInt(string shortName, string longName, string description, int defaultValue): 
   Option(shortName, longName, description), value_(defaultValue)
@@ -58,6 +65,8 @@ bool Config::parseToken(string token, string value) {
 					options_[i]->setValue(value); break;
 				default : break;
 			}
+      if ((value != "") && (options_[i]->type_ == OT_BOOL_POS || options_[i]->type_ == OT_BOOL_NEG))
+        parseValue(value);
 		} // if 
 		if ( consistent ) 
 			return true;
@@ -65,6 +74,14 @@ bool Config::parseToken(string token, string value) {
 			log_() << "Unknown option " << token << ", program terminated." << endl; 
 			return false;
     }
+}
+
+bool Config::parseValue(string value)
+{
+  //todo ... quite dummy - just sets value for file input - undummyfy 
+  //for instance - mark options without name ( and go through them and parse values to them ) 
+  fnInput_.setValue(value);
+  return true;
 }
 
 
@@ -79,8 +96,21 @@ bool Config::parse(const int argc, const char ** argv )
         return false;
       token = argv[i]; // set new actual token 
       value.clear();
-    }else                          //argument is a token's value
-      value = argv[i];
+    }else  {                        //argument is a token's value
+      if ( token != "" && value != "" )   //there already was a token and it's value => parse them first 
+        if (parseToken(token, value) ){
+          token.clear();
+          value.clear();
+        }
+        else {
+          return false;
+        }
+      else {                      //token is =="" or value ==""
+        value = argv[i];
+        if ( token == "" ) 
+          parseValue(value);
+      }
+    }
   }
   if ( token != "" && ! parseToken(token, value) )    //something failed 
     return false;
@@ -91,9 +121,9 @@ bool Config::parse(const int argc, const char ** argv )
 
 void Config::printAll()
 {
-  ;
-  //for (int i = 0; i < optionsNum_; i++)
-    //log_() << "shortName: " << options_[i]->shortName_ << " longName: " << options_[i]->longName_ << " value: " << options_[i]->value_ << endl;
+  log_() << "Program configuration: " << endl;
+  for (int i = 0; i < optionsNum_; i++)
+   log_() <<  options_[i]->toString();
 }
 
 

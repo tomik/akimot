@@ -9,17 +9,22 @@ class Config;
 
 class Option 
 {
-  public:
+  protected:
     string shortName_;
     string longName_;
     string description_;
     optionType_e  type_;
 
+    friend class Config;
+  public:
     Option(){};
     Option(string, string, string);
     virtual void setValue(bool value){};
     virtual void setValue(string value){};
+    string toString();
+    virtual string valueToString(){ return "";};
 };
+
 
 class OptionInt: public Option 
 {
@@ -29,6 +34,7 @@ class OptionInt: public Option
     OptionInt(string, string, string, int);
     int getValue() { return value_; } 
     void setValue(string value) {value_ = atoi(value.c_str()); }      //todo change this
+    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
 };
 
 
@@ -40,6 +46,7 @@ class OptionString: public Option
     OptionString(string, string, string, string);
     string getValue() { return value_; } 
     void setValue(string value) {value_ = value; } 
+    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
 };
 
 
@@ -52,6 +59,7 @@ class OptionBool: public Option
     bool getValue() { return value_; } 
     void setValue(bool value) {value_ = value; } 
     string toString();
+    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
 };
 
 #define MAX_OPTIONS 30
@@ -68,11 +76,12 @@ class Config
   public:
     Config();
     bool parseToken(string, string);
+    bool parseValue(string);
     bool parse(const int, const char **);
     void printAll();
 
-    bool getFoo(){ return foo_.getValue(); } 
-    string getFnInput() { return fnInput_.getValue(); }
+    bool foo(){ return foo_.getValue(); } 
+    const char * fnInput() { return fnInput_.getValue().c_str(); }
     
 };
 

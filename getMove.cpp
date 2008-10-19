@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 
 	srand((unsigned) time(NULL));
 
-	if (! board.init(argv[1])) {
+	if (! board.init(config.fnInput())) {
 		logger() << "Couldn't read position from file.\n";
 		return 1;
 	} 
