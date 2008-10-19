@@ -7,66 +7,51 @@ enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };
   
 class Config;
 
-class Option 
+class OptionFather
 {
-  protected:
+  protected: 
     string shortName_;
     string longName_;
     string description_;
     optionType_e  type_;
-
     friend class Config;
   public:
+    OptionFather(){};
+    OptionFather(string shortName, string longName, string description, optionType_e type):
+      shortName_(shortName), longName_(longName), description_(description), type_(type) {}
+    virtual void setValue(bool){};
+    virtual void setValue(string){};
+    virtual void setValue(int){};
+    virtual string toString(){ return "";};
+};
+
+template <typename T> class Option: public OptionFather
+{
+    T   value_;
+
+  public:
     Option(){};
-    Option(string, string, string);
-    virtual void setValue(bool value){};
-    virtual void setValue(string value){};
-    string toString();
-    virtual string valueToString(){ return "";};
+    Option(string shortName, string longName, string description, optionType_e type, T defaultValue):
+     OptionFather(shortName, longName, description, type), value_(defaultValue) {}
+    T getValue() { return value_;}
+    void setValue(T value) { value_ = value;}
+    string toString() {
+      stringstream ss;
+      ss << "short: " << shortName_ << " long: " << longName_ << " value: " << value_ << endl;
+      return ss.str();
+    }
+
 };
 
-
-class OptionInt: public Option 
-{
-  int value_;
-  public: 
-    OptionInt(){};
-    OptionInt(string, string, string, int);
-    int getValue() { return value_; } 
-    void setValue(string value) {value_ = atoi(value.c_str()); }      //todo change this
-    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
-};
-
-
-class OptionString: public Option 
-{
-  string value_;
-  public: 
-    OptionString(){};
-    OptionString(string, string, string, string);
-    string getValue() { return value_; } 
-    void setValue(string value) {value_ = value; } 
-    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
-};
-
-
-class OptionBool: public Option 
-{
-  bool value_;
-  public: 
-    OptionBool(){};
-    OptionBool(string, string, string, bool, bool);
-    bool getValue() { return value_; } 
-    void setValue(bool value) {value_ = value; } 
-    string toString();
-    string valueToString(){ stringstream ss; ss << value_; return ss.str();};
-};
+typedef Option<int> OptionInt;
+typedef Option<bool> OptionBool;
+typedef Option<string> OptionString;
 
 #define MAX_OPTIONS 30
 
 class Config
 {
-  Option*     options_[MAX_OPTIONS];
+  OptionFather*     options_[MAX_OPTIONS];
   int         optionsNum_;
   OptionBool  foo_;
   OptionString fnInput_;

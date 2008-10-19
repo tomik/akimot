@@ -1,46 +1,9 @@
 #include "config.h"
 
-Option::Option(string shortName, string longName, string description):
- shortName_(shortName), longName_(longName), description_(description)
-{
-}
-
-string Option::toString()
-{
-  stringstream ss;
-  ss << "short: " << shortName_ << " long: " << longName_ << " value: " << valueToString() << endl;
-  return ss.str();
-}
-
-
-OptionInt::OptionInt(string shortName, string longName, string description, int defaultValue): 
-  Option(shortName, longName, description), value_(defaultValue)
-{
-  type_ = OT_INT;
-}
-
-
-OptionString::OptionString(string shortName, string longName, string description, string defaultValue): 
-  Option(shortName, longName, description), value_(defaultValue)
-{
-  type_ = OT_STRING;
-}
-
-
-OptionBool::OptionBool(string shortName, string longName, string description, bool defaultValue, bool positive): 
-  Option(shortName, longName, description), value_(defaultValue)
-{
-  if (positive)
-    type_ = OT_BOOL_POS;
-  else
-    type_ = OT_BOOL_NEG;
-}
-
-
 Config::Config()
 {
-  foo_ = OptionBool("f","foo","Foo variable",true, true);
-  fnInput_ = OptionString("i","input","Input file","");
+  foo_ = OptionBool("f","foo","Foo variable",OT_BOOL_POS, true);
+  fnInput_ = OptionString("i","input","Input file", OT_STRING, "");
 
   options_[0] =  &foo_;
   options_[1] =  &fnInput_;
@@ -62,7 +25,7 @@ bool Config::parseToken(string token, string value) {
 				case OT_BOOL_NEG :
 					options_[i]->setValue(false); break;
 				case OT_INT :
-					options_[i]->setValue(value); break;
+					options_[i]->setValue(atoi(value.c_str())); break;
 				default : break;
 			}
       if ((value != "") && (options_[i]->type_ == OT_BOOL_POS || options_[i]->type_ == OT_BOOL_NEG))
