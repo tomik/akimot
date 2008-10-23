@@ -23,6 +23,8 @@
 //#define DEBUG_2
 //#define DEBUG_3
 
+typedef unsigned long long u64;
+
 using namespace std;
 
 enum logLevel_e { LOG_INFO, LOG_DEBUG1, LOG_DEBUG2, LOG_DEBUG3  };

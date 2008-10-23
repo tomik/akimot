@@ -3,6 +3,7 @@
 
 #include "utils.h"
 
+
 #define MAX_STEPS  200
 #define MAX_PIECES  16      //max number of pieces per player 
 
@@ -41,13 +42,15 @@
 #define ROW(square) (9-square/10)
 #define COL(square) (square%10)
 
+#define PLAYER_NUM    2
+#define PIECE_NUM     7
+#define SQUARE_NUM    100
+
 #define STEP_PASS     0
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
-
-
 
 
 extern const int direction[4];
@@ -88,7 +91,7 @@ class Step
     piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
     square_t      oppFrom_;
     square_t      oppTo_;
-    
+
     friend class  Board;
   public:
 		Step(){};
@@ -111,8 +114,6 @@ class Step
 class Board;
 class Eval;
 
-#define HASH_ITEMS 78
-
 typedef Step  StepArray[MAX_STEPS];
 
 class Board
@@ -125,8 +126,8 @@ class Board
 	private:
     Logger        log_; 
 
-		uint					board_[100];					//actual pieces are stored here 
-		bool					frozenBoard_[100];			//keep information on frozen pieces, false == notfrozen, true == frozen
+		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
+		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
     PieceArray    pieceArray[2];  
 		square_t  	  piecesList[MAX_PIECES];					//actual pieces are stored here 
@@ -135,6 +136,9 @@ class Board
     uint          stepArrayLen[2];
 
     uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
+
+    static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+    u64           signature;            //position signature - for hash tables, corectness checks, etc. 
 
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
@@ -153,10 +157,13 @@ class Board
     uint  generateAllCount;   //how many times generateAll was called :)
 
     friend class Eval;
-  public:
-		Board(){stepArrayLen[0] = 0; stepArrayLen[1] = 0;};
 
-    bool init(const char* fn); 
+  public:
+    Board();
+
+    void  initZobrist();
+    void  makeSignature();
+    bool  init(const char* fn); 
 
     bool		 isEmpty();
     player_t getPlayerToMove();
@@ -170,6 +177,9 @@ class Board
 		void makeStep(Step&);
 		void commitMove();
 		void makeStepTryCommit(Step&);
+
+    void setSquare(square_t, player_t, piece_t);
+    void clearSquare(square_t);
 
 		Step getRandomStep();
 		bool createRandomStep(Step&);
@@ -190,5 +200,6 @@ class Board
 		void testPieceArray();
 
 };
+
 
 #endif

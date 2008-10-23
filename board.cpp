@@ -5,6 +5,8 @@
  *  \brief Most important ! 
  */
 
+u64  Board::zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+
 const int direction[4]={NORTH,EAST,SOUTH,WEST};
 const int trap[4]={33,36,63,66};
 
@@ -194,6 +196,12 @@ bool Step::operator== ( const Step& other)
 }
 
 
+Board::Board()
+{
+  stepArrayLen[0] = 0;
+  stepArrayLen[1] = 0;
+}
+
 void Board::dumpAllSteps()
 {
   log_() << allStepsToString(); 
@@ -256,6 +264,7 @@ void Board::makeStepTryCommit(Step& step) {
     commitMove();
 }
 
+
 void Board::makeStep(Step& step){
 
   #ifdef DEBUG_3
@@ -277,8 +286,8 @@ void Board::makeStep(Step& step){
     //in STEP_PUSH victim's move must be made first ! 
     if (step.stepType_ == STEP_PUSH ){  
       assert( stepCount_ < 3 ); 
-      board_[step.oppTo_] = ( OPP(toMove_) | step.oppPiece_);
-      board_[step.oppFrom_] = EMPTY_SQUARE;
+      setSquare( step.oppTo_, OPP(toMove_), step.oppPiece_);
+      clearSquare(step.oppFrom_);
       stepCount_++;
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
@@ -286,8 +295,8 @@ void Board::makeStep(Step& step){
     }
 
     //update board after single step
-     board_[step.to_] = ( toMove_ | step.piece_);
-     board_[step.from_] = EMPTY_SQUARE;
+     setSquare( step.to_, toMove_, step.piece_);
+     clearSquare(step.from_);
      checkTrap[0] = step.from_;
      stepCount_++;
     //updateAfterStep(step.from_,step.to_);
@@ -299,8 +308,8 @@ void Board::makeStep(Step& step){
     //pull steps
     if (step.stepType_ == STEP_PULL) {  
       assert( stepCount_ < 4 ); 
-      board_[step.oppTo_] = ( OPP(toMove_) | step.oppPiece_);
-      board_[step.oppFrom_] = EMPTY_SQUARE;
+      setSquare( step.oppTo_, OPP(toMove_), step.oppPiece_);
+      clearSquare(step.oppFrom_);
       stepCount_++;
       checkTrap[1] = step.oppFrom_;
       checkTrapNum=2;
@@ -547,6 +556,23 @@ Step Board::getRandomStep()
 
 }
 
+
+/*places piece at given position and updates signature*/
+void Board::setSquare( square_t square, player_t player, piece_t piece)  
+{
+  signature ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square];
+  board_[square] = ( player | piece );
+}
+
+
+/*removes piece from given position and updates signature*/
+void Board::clearSquare( square_t square) 
+{
+  signature ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square];
+  board_[square] = EMPTY_SQUARE;
+} 
+
+
 bool Board::hasFriend(square_t square) const
   /* checks whether piece at given square has adjacent friendly pieces*/
 {
@@ -558,6 +584,7 @@ bool Board::hasFriend(square_t square) const
 
   return false;
 }
+
 
 bool Board::hasStrongerEnemy(square_t square) const
   /* checks whether piece at given square has adjacent stronger enemy pieces*/
@@ -573,11 +600,33 @@ bool Board::hasStrongerEnemy(square_t square) const
   
 }
 
+
 bool Board::isFrozen(square_t square) const
   /*checks whether piece at given square is frozen == !combination of hasFriend and hasStrongerEnemy
    * optimize: actually code the function, not use the hasFriend,hasStrongerEnemy */
 {
   return (!hasFriend(square) && hasStrongerEnemy(square)); 
+}
+
+
+void Board::initZobrist()
+{
+   for (int i = 0; i < PLAYER_NUM; i++)
+    for (int j = 0; j < PIECE_NUM; j++)
+      for (int k = 0; k < SQUARE_NUM; k++)
+        zobrist[i][j][k] = (((u64) random()) << 40) ^ 
+                           (((u64) random()) << 20) ^ 
+                           ((u64) random() );
+}
+
+
+void Board::makeSignature()
+{
+  signature = 0;
+  for (int i = 0; i < 100; i++)  
+    if IS_PLAYER(board_[i])
+      signature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
+    
 }
 
 
@@ -592,6 +641,9 @@ bool Board::init(const char* fn)
 
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
+
+  //this is the only place in program to call initZobrist ... 
+  initZobrist();  
 
   for (int i = 0; i < 100; i++)  
     board_[i] = OFF_BOARD_SQUARE;
@@ -608,8 +660,6 @@ bool Board::init(const char* fn)
   winner_    = EMPTY;
   generateAllCount = 0;
 
- // BOARD_Calculate_Hashkey(bp);
- 
 
   fstream f;
   char side;
@@ -666,6 +716,9 @@ bool Board::init(const char* fn)
       f.ignore(1024,'\n'); //finish the line
     } //for 
       f.close();
+
+      makeSignature();    //(unique) position identification
+
   } //try
   catch(int e) {
     return false; //initialization from file failed
@@ -701,8 +754,20 @@ string Board::toString()
 
   
   ss << endl;
+
+
+  //print zobrist
+  /*
+  for (int i = 0; i < PLAYER_NUM; i++)
+   for (int j = 0; j < PIECE_NUM; j++)
+     for (int k = 0; k < SQUARE_NUM; k++)
+        ss << zobrist[i][j][k] << endl;
+  */
+
+
   //ss << "board at: " << this << endl; //pointer debug
-  ss << "Move " << moveCount_  << ", Step " << stepCount_ << ", ";
+  ss << "Move " << moveCount_  << ", Step " << stepCount_ << ", " << endl;
+  ss << "Signature " << signature << endl;
 
   if (toMove_ == GOLD) 
     ss << "Gold to move." << endl;
