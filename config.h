@@ -68,7 +68,7 @@ class Config
     bool parseToken(string, string);
     bool parseValue(string);
     bool parse(const int, const char **);
-    void printAll();
+    void logAll();
 
     bool useTimeControl(){ return useTimeControl_.getValue(); } 
     int secPerMove(){ return secPerMove_.getValue(); } 

@@ -27,5 +27,5 @@ ostream& Logger::operator()(unsigned int messageLevel) const{
   #endif
 
   */
-  return cout;
+  return cerr;
 }

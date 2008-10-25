@@ -85,7 +85,7 @@ bool Config::parse(const int argc, const char ** argv )
   return true;
 }
 
-void Config::printAll()
+void Config::logAll()
 {
   log_() << "Program configuration: " << endl;
   for (int i = 0; i < optionsNum_; i++)

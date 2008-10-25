@@ -101,12 +101,14 @@ class Step
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
 
-		bool pieceMoved();
+		bool pieceMoved() const;
+    bool isPass() const;
+    bool isPushPull() const;
 		bool operator== ( const Step&);
 
     player_t getStepPlayer() const;
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
-    const string toString() const;
+    const string toString(bool resultPrint = false) const;
     void dump(); 
 
 };
@@ -140,6 +142,7 @@ class Board
     static bool   classInit;
     static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
     u64           signature;            //position signature - for hash tables, corectness checks, etc. 
+    u64           preMoveSignature;     //signature of position from when the current move started
 
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
@@ -166,14 +169,15 @@ class Board
     void  makeSignature();
     bool  init(const char* fn); 
 
-    bool		 isEmpty();
-    player_t getPlayerToMove();
-    uint     getGenerateAllCount();
-
+    bool		  isEmpty();
+    player_t  getPlayerToMove();
+    uint      getGenerateAllCount();
+		uint			getAllStepsNum(uint);
 		uint			getStepCount();
 		player_t	getWinner();
+    int       getPreMoveSignature();
 
-		uint			getAllStepsNum(uint);
+    u64 getAfterStepSignature(Step& step) const;
 
 		void makeStep(Step&);
 		void commitMove();
@@ -185,11 +189,15 @@ class Board
 		Step getRandomStep();
 		bool createRandomStep(Step&);
 
+		inline bool hasTwoFriends(square_t, player_t) const;
 		inline bool hasFriend(square_t) const;
 		inline bool hasStrongerEnemy(square_t) const;
 		inline bool isFrozen(square_t) const;
+    inline bool stepIsVirtualPass( Step& ) const;
+    inline bool stepIsThirdRepetition( Step& ) const;
 		
-		int generateAllSteps(player_t, StepArray) const;
+    int filterRepetitions(StepArray&, int ) const;
+		int generateAllSteps(player_t, StepArray&) const;
 		void updateAfterStep(square_t from, square_t to);
 		void updateAfterKill(square_t square);
 
@@ -199,7 +207,6 @@ class Board
 		string allStepsToString();
 
 		void testPieceArray();
-
 };
 
 

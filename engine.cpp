@@ -251,27 +251,24 @@ void Tree::updateHistory(float sample)
 
 string Tree::getBestMove(Node* bestMoveNode)
 {
-  //TODO ... create move object ?
   Node* act = bestMoveNode; 
 
-  if (! act)      //what to do ? he hasn't reached 4th level in  
+  if (! act) {     //what to do ? he hasn't reached 4th level in  
     assert(false);
+  }
 
   stringstream ss;
-  ss << bestMoveNode->getVisits();
+  log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
   string s = ss.str();
 
   while (act != root()) {
-    s = act->getStep().toString() + s;
-    act = act->getFather();
-  }
- 
-  return s;
-}
+    s = act->getStep().toString(true) + s;  //resultPrint of move
+    act = act->getFather(); 
+  } 
+  return s; 
+} 
 
-
-string Tree::toString()
-{
+string Tree::toString() {
   return root()->recToString(0);
 }
 
@@ -288,6 +285,8 @@ Uct::Uct(Board* board)
   tree_  = new Tree(board->getPlayerToMove());
   eval_  = new Eval();
   bestMoveNode_ = NULL;
+  nodesExpanded_ = 0;
+  nodesInTheTree_ = 1;
 }
 
 
@@ -297,6 +296,17 @@ Uct::~Uct()
   delete tree_;
 }
 
+string Tree::pathToActToString(bool onlyLastMove )
+{
+  Node* act = actNode();
+  string s;
+  while (act != root() && ( ! onlyLastMove || act->getNodeType() == actNode()->getNodeType())) {
+    s = act->getStep().toString() + s; 
+    act = act->getFather(); 
+  } 
+
+  return s;
+}
 
 void Uct::doPlayout()
 {
@@ -315,7 +325,16 @@ void Uct::doPlayout()
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
         stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
+
+        #ifdef DEBUG3
+          log_() << "Expanding node : " << tree_->pathToActToString() << endl;
+        #endif
+
+        stepArrayLen = playBoard->filterRepetitions(stepArray, stepArrayLen);
         tree_->actNode()->expand(stepArray,stepArrayLen);
+
+        nodesExpanded_++;
+        nodesInTheTree_+= stepArrayLen;
         continue;
       }
 
@@ -337,7 +356,6 @@ void Uct::doPlayout()
     Step step = tree_->actNode()->getStep();
     playBoard->makeStepTryCommit(step);
 
-    //TODO add stepCorrectness check ( i.e. position repetition, wrong passing, etc.) and delete when not correct
   } while(true);
 
   
@@ -370,13 +388,20 @@ string Uct::generateMove()
   log_() << "Uct is over" << endl;
   timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
   
-//  log_() << tree_->toString();
+//log_() << tree_->toString();
   log_()
 			<< "Performance: " << endl
       << "  " << iteration << " playouts" << endl 
       << "  " << timeTotal << " seconds" << endl
       << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
     ;
+
+  log_()
+			<< "UCT: " << endl
+      << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
+      << "  " << nodesExpanded_ << " nodes expanded" << endl 
+    ;
+ 
  
   return tree_->getBestMove(bestMoveNode_);
 }

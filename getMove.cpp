@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
   srand(time(0));
 
   config.parse(argc, (const char **) (argv));
-  config.printAll();
+  config.logAll();
 	
 	if (argc < 2) {
 		logger() << "Program requires an argument (name of file containing position).\n";
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		return 1;
 	} 
 
-	cout << board.toString();
+	logger() << board.toString();
   
 	if (board.isEmpty()) { //first step
 		cout << engine.initialSetup(board.getPlayerToMove() == GOLD);

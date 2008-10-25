@@ -78,6 +78,7 @@ class Tree
     Node* root();
     string getBestMove(Node* bestFirstNode = NULL);
     string toString();
+    string pathToActToString(bool onlyLastMove = false);
 };
 
 
@@ -88,6 +89,9 @@ class Uct
   Eval* eval_;
   Logger log_;
   Node* bestMoveNode_;  //pointer to the most visited last step of first move
+  int nodesExpanded_;
+  int nodesInTheTree_;
+
   public:
     Uct();
     Uct(Board*);

@@ -7,4 +7,8 @@
 [4,eval] mapping evaluation -> win percentage is dummy -> improve
 [3,uct] remove father from node ? better best move management( take steps from history ? ) 
 
+=== Small Issues ===
+
 === Long Term Ideas === 
+[uct] check and optimize ( pointers vs. objects, ... ) 
+

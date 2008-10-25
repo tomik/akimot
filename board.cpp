@@ -60,11 +60,23 @@ Step::Step( stepType_t stepType, player_t player )
 }
 
 
-bool Step::pieceMoved() 
   /* returns true if any piece was moved
    * i.e. returns false if pass or no_step */
+bool Step::pieceMoved() const 
 {
   return (! (stepType_ == STEP_PASS || stepType_ == STEP_NO_STEP));
+}
+
+
+bool Step::isPass() const
+{
+  return stepType_ == STEP_PASS;
+}
+
+
+bool Step::isPushPull() const
+{
+  return (stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
 }
 
 Step::Step( stepType_t stepType, player_t player, piece_t piece, square_t from, square_t to){
@@ -146,15 +158,18 @@ void Step::dump()
 }
 
 
-const string Step::toString() const
+const string Step::toString(bool resultPrint) const
 {
   stringstream ss;
   ss.clear(); 
 
-  ss << "(";
+  if ( ! resultPrint)
+    ss << "(";
+
   switch (stepType_) {
     case STEP_PASS: 
-      ss << "pass";     
+      if ( ! resultPrint ) 
+        ss << "pass";     
       break;
     case STEP_SINGLE: 
       ss << oneSteptoString(player_, piece_, from_, to_) ; 
@@ -174,7 +189,8 @@ const string Step::toString() const
       assert(false);
 
   }
-  ss << ") ";
+  if ( ! resultPrint ) 
+    ss << ") ";
 
   return ss.str();
 }
@@ -240,16 +256,19 @@ void Board::testPieceArray()
   }
 }
 
+
 bool Board::isEmpty() 
   /* this check is used in the beginning for pieces positioning*/
 {
  return moveCount_ == 1; //TODO ... really check whether the board is empty 
 }
 
+
 player_t Board::getGenerateAllCount() 
 {
  return generateAllCount;
 }
+
 
 player_t Board::getPlayerToMove() 
 {
@@ -257,12 +276,51 @@ player_t Board::getPlayerToMove()
 }
 
 
-
 /*calls makeStep and then tries to commit move*/
 void Board::makeStepTryCommit(Step& step) {
   makeStep(step);
 	if (stepCount_ >= 4 || ! step.pieceMoved()) 
     commitMove();
+}
+
+
+/* Imitates makeStep function without altering board_ array and gets an afterStep signature.*/
+u64 Board::getAfterStepSignature(Step& step) const
+{
+  if (step.stepType_ == STEP_PASS)
+    return signature;
+
+  assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
+
+  int checkTrap[2];         //squares in whose vicinity we check the traps
+  int checkTrapNum = 0;
+
+  u64 newSignature = signature;
+
+  if (step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL){
+    newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppFrom_];  //erase previous location
+    if ( ! IS_TRAP(step.oppTo_) || hasTwoFriends(step.oppTo_, OPP(toMove_)) ){              //if not killed in the trap
+      newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppTo_];  //add new location 
+      checkTrap[checkTrapNum++] = step.oppFrom_;
+    }
+  }
+
+  newSignature ^= zobrist[PLAYER_TO_INDEX(toMove_)][step.piece_][step.from_];               //erase previous location 
+  if ( ! IS_TRAP(step.to_) || hasTwoFriends(step.to_, toMove_) ){                   //if not killed in the trap
+    newSignature ^= zobrist[PLAYER_TO_INDEX(toMove_)][step.piece_][step.to_];               //add new location 
+    checkTrap[checkTrapNum++] = step.from_;
+  }
+  
+  //now check only for cases when moving a piece causes another (friendly) piece die in the trap because of lack of friends
+  int actTrap;
+  for (int j = 0; j < checkTrapNum; j++)
+    for (int i = 0; i < 4; i++){
+      actTrap = checkTrap[j] + direction[i];
+      if ( IS_TRAP(actTrap) && board_[actTrap] != EMPTY_SQUARE && ! hasTwoFriends(actTrap, OWNER(board_[actTrap])) )
+        newSignature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[actTrap]))][PIECE(board_[actTrap])][actTrap];      //erase 
+    } 
+
+  return newSignature;
 }
 
 
@@ -400,6 +458,9 @@ void Board::commitMove()
   toMoveIndex_ = 1 - toMoveIndex_;
   assert(toMoveIndex_ == PLAYER_TO_INDEX(toMove_));
   stepCount_ = 0;
+
+  //preMoveSignature of the next move is the actual signature
+  preMoveSignature = signature;
 }
 
 bool Board::createRandomStep(Step& step)
@@ -576,6 +637,23 @@ bool Board::hasFriend(square_t square) const
 }
 
 
+/* checks whether piece at given square has at least 2 adjacent friendly pieces
+ * this function is good for determination of position signature after one step - see getAfterStepSignature */ 
+bool Board::hasTwoFriends(square_t square, player_t player) const 
+{ 
+  assert( player == GOLD || player == SILVER );
+  bool hasFriend = false;
+  for(int i = 0; i < 4; i++)
+    if (OWNER(board_[square + direction[i]]) == player) {
+      if (hasFriend)
+        return true;
+      hasFriend = true;
+    }
+  return false;
+}
+
+
+
 bool Board::hasStrongerEnemy(square_t square) const
   /* checks whether piece at given square has adjacent stronger enemy pieces*/
 {
@@ -662,7 +740,8 @@ bool Board::init(const char* fn)
   char c;
   
   try { 
-     f.open(fn,fstream::in);
+    f.open(fn,fstream::in);
+
     if (! f.good()){
       f.close();
        return false;
@@ -712,13 +791,13 @@ bool Board::init(const char* fn)
       f.ignore(1024,'\n'); //finish the line
     } //for 
       f.close();
-
-      makeSignature();    //(unique) position identification
-
   } //try
   catch(int e) {
     return false; //initialization from file failed
   }
+
+  makeSignature();    //(unique) position identification
+  preMoveSignature = signature;
 
   //init pieceArray and rabbitsNum
   rabbitsNum[0] = 0;
@@ -830,10 +909,18 @@ player_t Board::getWinner()
 }
 
 
+/*returns number of all steps for given player - not index but player ! GOLD/SILVER */
 uint Board::getAllStepsNum(player_t player)
-  /*returns number of all steps for given player - not index but player ! GOLD/SILVER */
 {
   return stepArrayLen[PLAYER_TO_INDEX(player)];
+}
+
+
+
+/*returns number of all steps for given player - not index but player ! GOLD/SILVER */
+int Board::getPreMoveSignature()
+{
+  return preMoveSignature; 
 }
 
 
@@ -841,7 +928,7 @@ uint Board::getAllStepsNum(player_t player)
  * Generates all (syntatically) legal steps from the position ( doesn't check 3 - repetitions rule / virtual pass ) 
  * Pass move is always generated as a last move.
  * */
-int Board::generateAllSteps(player_t player, StepArray stepArray) const
+int Board::generateAllSteps(player_t player, StepArray& stepArray) const
 {
   int stepsNum;
   int i,j;
@@ -886,14 +973,82 @@ int Board::generateAllSteps(player_t player, StepArray stepArray) const
             continue;
         }
         //create move
-        stepArray[stepsNum++].setValues( STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
+        stepArray[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
       }
   } //for pieces on board
 
-//add step pass, if it's legal
+  //add step pass, if it's legal
+  //other methods ( filterRepetitions ) are relying on fact, that stepPass is listed as a last one ! 
   if (stepCount_ > 0 )
-    stepArray[stepsNum++] = Step( STEP_PASS, player);
+    stepArray[stepsNum++] = Step(STEP_PASS, player);
   
   return stepsNum;
 }
 
+
+/*
+ * Takes step array and filters out illegal moves considering:
+ * Careful - presumes that if there is a pass move 
+ *    then it is not pass at stepCount == 0 and this pass move is in the very end ! 
+ * 1) virtual pass repetition
+ * 2) 3 moves same position repetition
+ *
+ * TODO so far just 1) !!!
+ * */
+int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const 
+{
+  //third time repetition check for pass move 
+  //it is presumed, that pass move is in the very end ! TODO - cancel the presumption ? 
+  if ( stepsNum > 0 && stepArray[stepsNum - 1].isPass() && stepIsThirdRepetition(stepArray[stepsNum - 1])) 
+    stepsNum--;
+
+  //check virtual passes ( immediate repetetitions ) 
+  //these might be checked and pruned even if the move is not over yet 
+  //e.g. (Eg5n) (Eg5s) is pruned 
+  
+  int i = 0;
+  while (i < stepsNum) 
+    if (stepIsVirtualPass(stepArray[i]))
+      stepArray[i] = stepArray[stepsNum-- - 1];
+    else
+      i++;  
+
+  //check third time repetitions
+  //this can be checked only for steps that finish the move
+  //these are : pass, step_single for stepCount == 3, push/pull for stepCount == 2 
+  
+
+  if ( stepCount_ < 2 ) 
+    return stepsNum;
+
+  i = 0;
+  while (i < stepsNum)
+    if ((stepCount_ == 3 || stepArray[i].isPushPull()) &&  stepIsThirdRepetition(stepArray[i]))
+      stepArray[i] = stepArray[stepsNum-- - 1];
+    else
+      i++;  
+
+
+  return stepsNum;
+}
+
+
+bool Board::stepIsVirtualPass( Step& step ) const 
+{
+  u64 afterStepSignature = getAfterStepSignature(step);
+  if (afterStepSignature == preMoveSignature) 
+    return true;
+  return false;
+  
+}
+
+
+bool Board::stepIsThirdRepetition( Step& step ) const 
+{
+  //TODO check afterStepSignature is in 3rd repetition table ! 
+  //u64 afterStepSignature = getAfterStepSignature(step);
+  //if (afterStepSignature == preMoveSignature) 
+  //  return false;
+  return false;
+  
+}
