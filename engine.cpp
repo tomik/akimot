@@ -352,18 +352,30 @@ string Uct::generateMove()
   float timeTotal; 
   clockBegin = clock();
   log_() << "Starting uct" << endl;
-  for ( int i = 0; i < GEN_MOVE_PLAYOUTS; i++) {
-    doPlayout();
-  }
+
+  int iteration = 0;
+
+  if (config.useTimeControl()) {
+    while ( true ) {
+      doPlayout();
+      iteration++;
+      if (( float(clock() - clockBegin)/CLOCKS_PER_SEC ) > config.secPerMove() )
+        break;
+    }
+  }  
+  else  //no time control - just do predefined number of playouts
+    for ( iteration = 0; iteration < config.playoutsPerMove(); iteration++) 
+      doPlayout();
+
   log_() << "Uct is over" << endl;
   timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
   
 //  log_() << tree_->toString();
   log_()
 			<< "Performance: " << endl
-      << "  " << GEN_MOVE_PLAYOUTS << " playouts" << endl 
+      << "  " << iteration << " playouts" << endl 
       << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(GEN_MOVE_PLAYOUTS) / timeTotal) << " pps" << endl
+      << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
     ;
  
   return tree_->getBestMove(bestMoveNode_);

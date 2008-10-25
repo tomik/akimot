@@ -137,6 +137,7 @@ class Board
 
     uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
 
+    static bool   classInit;
     static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
     u64           signature;            //position signature - for hash tables, corectness checks, etc. 
 

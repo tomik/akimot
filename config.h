@@ -3,6 +3,8 @@
 
 #include "utils.h"
 
+#define PLAYOUTS_PER_MOVE 10000
+
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };
   
 class Config;
@@ -53,7 +55,10 @@ class Config
 {
   OptionFather*     options_[MAX_OPTIONS];
   int         optionsNum_;
-  OptionBool  foo_;
+
+  OptionBool  useTimeControl_;
+  OptionInt   secPerMove_;
+  OptionInt   playoutsPerMove_;
   OptionString fnInput_;
  //
   Logger      log_;
@@ -65,7 +70,9 @@ class Config
     bool parse(const int, const char **);
     void printAll();
 
-    bool foo(){ return foo_.getValue(); } 
+    bool useTimeControl(){ return useTimeControl_.getValue(); } 
+    int secPerMove(){ return secPerMove_.getValue(); } 
+    int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
     const char * fnInput() { return fnInput_.getValue().c_str(); }
     
 };

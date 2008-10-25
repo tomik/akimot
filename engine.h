@@ -2,8 +2,10 @@
 #define ENGINE_H
 
 #include "utils.h"
+#include "config.h"
 #include "board.h"
 #include "eval.h"
+
 
 #include <cmath>
 
@@ -14,7 +16,6 @@
 
 
 #define MATURE_LEVEL  10
-#define GEN_MOVE_PLAYOUTS 10000
 #define EXPLORE_RATE 0.2
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 

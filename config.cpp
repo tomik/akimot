@@ -2,12 +2,16 @@
 
 Config::Config()
 {
-  foo_ = OptionBool("f","foo","Foo variable",OT_BOOL_POS, true);
+  useTimeControl_ = OptionBool("t","useTimeControl","use time control",OT_BOOL_POS, false);
   fnInput_ = OptionString("i","input","Input file", OT_STRING, "");
+  secPerMove_ = OptionInt("s","sec_per_move","Seconds per move - trivial time control", OT_INT, 3);
+  playoutsPerMove_ = OptionInt("p","playouts_per_move","Playouts per move - mostly for debugging", OT_INT, PLAYOUTS_PER_MOVE);
 
-  options_[0] =  &foo_;
+  options_[0] =  &useTimeControl_;
   options_[1] =  &fnInput_;
-  optionsNum_ = 2;
+  options_[2] =  &secPerMove_;
+  options_[3] =  &playoutsPerMove_;
+  optionsNum_ = 4;
 
 }
 
@@ -60,18 +64,17 @@ bool Config::parse(const int argc, const char ** argv )
       token = argv[i]; // set new actual token 
       value.clear();
     }else  {                        //argument is a token's value
-      if ( token != "" && value != "" )   //there already was a token and it's value => parse them first 
+      value = argv[i];
+      if ( token != "" ){   //there already was a token and it's value => parse them first 
         if (parseToken(token, value) ){
           token.clear();
           value.clear();
         }
-        else {
+        else 
           return false;
-        }
+      }
       else {                      //token is =="" or value ==""
-        value = argv[i];
-        if ( token == "" ) 
-          parseValue(value);
+        parseValue(value);
       }
     }
   }

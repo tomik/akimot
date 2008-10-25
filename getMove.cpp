@@ -10,8 +10,8 @@ void test(Board* board)
 
 	Benchmark benchmark(board,1);
   benchmark.playoutBenchmark();
-
 }
+
 
 int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 {
@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	Logger logger;
 
   srand(time(0));
-  cout << random() << " " <<  random();
 
   config.parse(argc, (const char **) (argv));
   config.printAll();
@@ -44,7 +43,6 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	}else {
 		cout << engine.doSearch(&board) << endl;
 	}
-
 
  //test(&board);
 	

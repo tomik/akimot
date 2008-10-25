@@ -6,6 +6,7 @@
  */
 
 u64  Board::zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+bool Board::classInit = false;
 
 const int direction[4]={NORTH,EAST,SOUTH,WEST};
 const int trap[4]={33,36,63,66};
@@ -17,11 +18,13 @@ PieceArray::PieceArray()
   len = 0;
 }
 
+
 void PieceArray::add(square_t elem)
 {
   elems[len++] = elem;
   assert(MAX_PIECES >= len);
 }
+
 
 void PieceArray::del(square_t elem)
 {
@@ -198,8 +201,6 @@ bool Step::operator== ( const Step& other)
 
 Board::Board()
 {
-  stepArrayLen[0] = 0;
-  stepArrayLen[1] = 0;
 }
 
 void Board::dumpAllSteps()
@@ -486,31 +487,21 @@ Step Board::getRandomStep()
   //  return step;
 
   generateAllCount++;   
+  /* STEP_PASS is always last move generated in generateAllSteps 
+   * it can be simply removed to get "no-pass" move */
   stepArrayLen[playerIndex] = generateAllSteps(toMove_,stepArray[playerIndex]);
   uint len = stepArrayLen[playerIndex];
 
   assert(stepArrayLen[playerIndex] < MAX_STEPS);
 
-  if (len == 0 && stepCount_ == 0){ //player to move has no step to play and cannot play pass => he lost
+  if (len == 0 ){ //player to move has no step to play - not even pass
     winner_ = OPP(toMove_);
     return Step(STEP_NO_STEP,toMove_); 
   }
 
-  uint index = 0;
-
-  if ( len == 0 && stepCount_ > 0 ) 
-    return Step(STEP_PASS,toMove_);
-  /*
-  if ( stepCount_ != 0) {       //check pass move
-    index = rand() % (len + 1);
-    if ( index == 0 )
-      return Step(STEP_PASS);
-   // index--;  //not nece
-  }
-  */
 
   assert(len > 0);
-  index = rand() % len;
+  uint index = rand() % len;
   assert( index >= 0 && index < len );
 
   /*step verification - is it reasonable ?
@@ -552,31 +543,30 @@ Step Board::getRandomStep()
 
   */
 
-  return( stepArray[playerIndex][index]);
-
-}
+  return( stepArray[playerIndex][index]); 
+} 
 
 
 /*places piece at given position and updates signature*/
 void Board::setSquare( square_t square, player_t player, piece_t piece)  
 {
-  signature ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square];
-  board_[square] = ( player | piece );
+  signature ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square]; 
+  board_[square] = ( player | piece ); 
 }
 
 
-/*removes piece from given position and updates signature*/
+/*removes piece from given position and updates signature*/ 
 void Board::clearSquare( square_t square) 
 {
-  signature ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square];
-  board_[square] = EMPTY_SQUARE;
+  signature ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square]; 
+  board_[square] = EMPTY_SQUARE; 
 } 
 
 
-bool Board::hasFriend(square_t square) const
-  /* checks whether piece at given square has adjacent friendly pieces*/
-{
-  uint owner = OWNER(board_[square]);
+/* checks whether piece at given square has adjacent friendly pieces*/ 
+bool Board::hasFriend(square_t square) const 
+{ 
+  uint owner = OWNER(board_[square]); 
   assert( owner == GOLD || owner == SILVER );
   for(int i = 0; i < 4; i++)
     if (OWNER(board_[square + direction[i]]) == owner)
@@ -626,7 +616,6 @@ void Board::makeSignature()
   for (int i = 0; i < 100; i++)  
     if IS_PLAYER(board_[i])
       signature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
-    
 }
 
 
@@ -639,11 +628,18 @@ bool Board::init(const char* fn)
  */
 {
 
+  stepArrayLen[0] = 0;
+  stepArrayLen[1] = 0;
+
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
 
   //this is the only place in program to call initZobrist ... 
-  initZobrist();  
+  //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
+  if (! classInit ) {
+    initZobrist();  
+    classInit = true;
+  }
 
   for (int i = 0; i < 100; i++)  
     board_[i] = OFF_BOARD_SQUARE;
@@ -664,7 +660,7 @@ bool Board::init(const char* fn)
   fstream f;
   char side;
   char c;
-
+  
   try { 
      f.open(fn,fstream::in);
     if (! f.good()){
@@ -821,15 +817,18 @@ string Board::toString()
   return ss.str();
 } //Board::dump
 
+
 uint Board::getStepCount() 
 {
   return stepCount_;
 }
 
+
 player_t Board::getWinner()
 {
   return winner_;
 }
+
 
 uint Board::getAllStepsNum(player_t player)
   /*returns number of all steps for given player - not index but player ! GOLD/SILVER */
@@ -838,16 +837,13 @@ uint Board::getAllStepsNum(player_t player)
 }
 
 
-/*wrapper around generateAllSteps - fills inner array stepArray, lenStepArray
-void Board::fillStepArrayToMove()
+/*
+ * Generates all (syntatically) legal steps from the position ( doesn't check 3 - repetitions rule / virtual pass ) 
+ * Pass move is always generated as a last move.
+ * */
+int Board::generateAllSteps(player_t player, StepArray stepArray) const
 {
-}
-*/
-
-
-int Board::generateAllSteps(player_t player, StepArray oldStepArray) const
-{
-    int stepsNum;
+  int stepsNum;
   int i,j;
   int square;
   
@@ -867,12 +863,12 @@ int Board::generateAllSteps(player_t player, StepArray oldStepArray) const
             && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
           for (j=0; j<4; j++)  // pull
             if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
-                oldStepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
+                stepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
                       square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
             }
           for (j=0; j<4; j++)  //push
             if (board_[square + direction[i] + direction[j]] == EMPTY_SQUARE) { //create move
-                oldStepArray[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
+                stepArray[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
                       square + direction[i], PIECE(board_[square + direction[i]]),
                       square + direction[i], square + direction[i] + direction[j]);
           }
@@ -890,9 +886,14 @@ int Board::generateAllSteps(player_t player, StepArray oldStepArray) const
             continue;
         }
         //create move
-        oldStepArray[stepsNum++].setValues( STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
+        stepArray[stepsNum++].setValues( STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
       }
   } //for pieces on board
+
+//add step pass, if it's legal
+  if (stepCount_ > 0 )
+    stepArray[stepsNum++] = Step( STEP_PASS, player);
+  
   return stepsNum;
 }
 
