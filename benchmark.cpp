@@ -1,9 +1,14 @@
 #include "benchmark.h"
 
+//---------------------------------------------------------------------
+//  section Benchmark
+//---------------------------------------------------------------------- 
 
 Benchmark::Benchmark()
 {
 }
+
+//--------------------------------------------------------------------- 
 
 Benchmark::Benchmark(Board* board, uint playoutCount)
 {
@@ -11,6 +16,7 @@ Benchmark::Benchmark(Board* board, uint playoutCount)
 	playoutCount_ = playoutCount;
 }
 
+//--------------------------------------------------------------------- 
 
 void Benchmark::playoutBenchmark() const
 {
@@ -29,8 +35,6 @@ void Benchmark::playoutBenchmark() const
 	uint			 playoutTooLong = 0;
 	uint			 playoutAvgLen = 0;
 
-  uint      avgGenerateAllCount = 0;
-  
   clockBegin = clock();
   
   for (uint i = 0 ; i < playoutCount_; i++)  {
@@ -57,7 +61,6 @@ void Benchmark::playoutBenchmark() const
     }
     
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
-		avgGenerateAllCount += playBoard -> getGenerateAllCount();
   }
 
   if (evalCount == 0)
@@ -70,8 +73,7 @@ void Benchmark::playoutBenchmark() const
 			<< "Performance: " << endl
       << "  " <<playoutCount_ << " playouts" << endl 
       << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl
-      << "  " << float(avgGenerateAllCount)/playoutCount_ << " average amg" << endl;
+      << "  " << int ( float(playoutCount_) / timeTotal) << " pps" << endl;
   
   log_()
 			<< "Gold init eval = " << initEval << endl 
@@ -85,4 +87,6 @@ void Benchmark::playoutBenchmark() const
 			<< "Average playout length = " << float (playoutAvgLen) / float (playoutCount_) << endl;
 }
 
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
 

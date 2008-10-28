@@ -1,5 +1,9 @@
 #include "eval.h"
 
+//---------------------------------------------------------------------
+//  section Eval
+//---------------------------------------------------------------------- 
+
 int Eval::evaluate(const Board* board_){
   static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
   int eval[2] = {0,0};
@@ -8,13 +12,14 @@ int Eval::evaluate(const Board* board_){
     for ( uint j = 0; j < board_->pieceArray[i].getLen(); j++){
       assert(PIECE(board_->board_[board_->pieceArray[i][j]]) > 0 && PIECE(board_->board_[board_->pieceArray[i][j]]) < 7);
       eval[i] += piece_value[PIECE(board_->board_[board_->pieceArray[i][j]])];
-  //    cerr << i << "+ " << piece_value[PIECE(board_[pieceArray[i][j]])] << endl;
+  //  cerr << i << "+ " << piece_value[PIECE(board_[pieceArray[i][j]])] << endl;
     }
    // cerr <<endl;
   }
   return eval[0] - eval[1];
 }
 
+//--------------------------------------------------------------------- 
 
 float Eval::evaluateInPercent(const Board* board_) 
 {
@@ -26,3 +31,7 @@ float Eval::evaluateInPercent(const Board* board_)
   else 
     return 0.1;
 }
+
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+

@@ -3,3 +3,4 @@ PROJECT_NAME           = akimot
 OUTPUT_DIRECTORY       = doc
 FILE_PATTERNS          = *.h *.cpp 
 INPUT                  = .
+JAVADOC_AUTOBRIEF      = YES 

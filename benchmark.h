@@ -8,13 +8,16 @@
 
 class Benchmark
 {
-	const Board * board_; //todo return const
-	uint playoutCount_;
-	Logger log_;
+  private:
+    const Board * board_; 
+    uint playoutCount_;
+
+    Logger log_;
+
 	public: 
 		Benchmark();
 		Benchmark(Board*,uint);
+
 		void playoutBenchmark() const;
 };
-
 #endif

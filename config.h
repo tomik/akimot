@@ -16,7 +16,9 @@ class OptionFather
     string longName_;
     string description_;
     optionType_e  type_;
+
     friend class Config;
+
   public:
     OptionFather(){};
     OptionFather(string shortName, string longName, string description, optionType_e type):
@@ -35,11 +37,13 @@ template <typename T> class Option: public OptionFather
     Option(){};
     Option(string shortName, string longName, string description, optionType_e type, T defaultValue):
      OptionFather(shortName, longName, description, type), value_(defaultValue) {}
+
     T getValue() { return value_;}
     void setValue(T value) { value_ = value;}
+    
     string toString() {
       stringstream ss;
-      ss << "short: " << shortName_ << " long: " << longName_ << " value: " << value_ << endl;
+      ss << "[" << shortName_ << ", " << longName_ << ", " << description_ << ", " << value_ << "]" << endl;
       return ss.str();
     }
 
@@ -53,27 +57,30 @@ typedef Option<string> OptionString;
 
 class Config
 {
-  OptionFather*     options_[MAX_OPTIONS];
-  int         optionsNum_;
+  private:
+    OptionFather*     options_[MAX_OPTIONS];
+    int         optionsNum_;
 
-  OptionBool  useTimeControl_;
-  OptionInt   secPerMove_;
-  OptionInt   playoutsPerMove_;
-  OptionString fnInput_;
- //
-  Logger      log_;
+    OptionBool  useTimeControl_;
+    OptionInt   secPerMove_;
+    OptionInt   playoutsPerMove_;
+    OptionString fnInput_;
+
+    Logger      log_;
 
   public:
     Config();
+
+    bool parse(const int, const char **);
     bool parseToken(string, string);
     bool parseValue(string);
-    bool parse(const int, const char **);
-    void logAll();
 
     bool useTimeControl(){ return useTimeControl_.getValue(); } 
     int secPerMove(){ return secPerMove_.getValue(); } 
     int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
     const char * fnInput() { return fnInput_.getValue().c_str(); }
+
+    void logAll();
     
 };
 

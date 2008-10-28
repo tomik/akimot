@@ -23,9 +23,6 @@
 #define PIECE_EMPTY 0x0U
 #define PIECE_MASK 0x7U
 #define OWNER_MASK 0x18U
-#define FLIP_SIDE GOLD^SILVER
-#define TRUE 1
-#define FALSE 0
 #define NORTH -10
 #define SOUTH 10
 #define EAST 1
@@ -34,9 +31,13 @@
 #define OWNER(square) (square & OWNER_MASK) 
 #define PIECE(square) (square & PIECE_MASK) 
 #define OPP(player) ((16 - player) + 8)
-#define PLAYER_TO_INDEX(player)	((16-player)/8)	//0 for GOLD, 1 for SILVER - for indexation
-#define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	//0 -> GOLD, 1 -> SILVER - reverse indexation
-#define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) //sets up a boolean expression
+
+//Player to indexation ... 0 for GOLD, 1 for SILVER - for indexation
+#define PLAYER_TO_INDEX(player)	((16-player)/8)	
+//Index to player 0 -> GOLD, 1 -> SILVER 
+#define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
+
+#define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
 
 #define ROW(square) (9-square/10)
@@ -52,65 +53,83 @@
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
 
-
 extern const int direction[4];
 extern const int trap[4];
 
 typedef uint player_t;
-typedef int square_t;
+typedef int  square_t;
 typedef uint piece_t;		
 typedef uint stepType_t;
 
 
+/**
+ * Array-like structure to hold pieces.
+ *
+ * This class is used to hold squares where pieces for 
+ * one of the players are positioned.
+ */
 class PieceArray
 { 
+
   private:
     square_t elems[MAX_PIECES];      
     uint len;
 
   public: 
     PieceArray();
+
     void add(square_t);
     void del(square_t);
+
     uint getLen() const;
     square_t operator[](uint) const;
 };
 
+/**
+ * One step of a player.
+ *
+ * Represents one of the following:
+ *   single-step steps - i.e. move of the piece
+ *   double-step steps - i.e. push/pulls
+ *   pass moves
+ *   no step moves     - i.e. resignation 
+*/ 
 class Step
-  /** Class representing a step of one player. 
-   */ 
 {
-	private:
-    Logger        log_; 
 
+	private:
     stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
     player_t      player_;      
     piece_t       piece_;  
     square_t      from_;     
     square_t      to_;        
+
     piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
     square_t      oppFrom_;
     square_t      oppTo_;
 
+    Logger        log_; 
+
     friend class  Board;
+
   public:
 		Step(){};
-		Step( stepType_t, player_t );
-    Step( stepType_t, player_t, piece_t, square_t, square_t );
-    Step( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
+		Step(stepType_t, player_t);
+    Step(stepType_t, player_t, piece_t, square_t, square_t);
+    Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
+
+    player_t getStepPlayer() const;
+    bool isPass() const;
+    bool isPushPull() const;
+		bool pieceMoved() const;
+		bool operator== (const Step&) const;
+
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
     inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
 
-		bool pieceMoved() const;
-    bool isPass() const;
-    bool isPushPull() const;
-		bool operator== ( const Step&);
-
-    player_t getStepPlayer() const;
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
     const string toString(bool resultPrint = false) const;
     void dump(); 
-
 };
 
 class Board;
@@ -118,35 +137,31 @@ class Eval;
 
 typedef Step  StepArray[MAX_STEPS];
 
+/**
+ * Board representation.
+ *
+ * Crucial building block of the whole program. 
+ */
 class Board
-		/*This is a crucial class - representing the board. 
-		 *
-		 * step is either pass or single piece step or push/pull step
-		 * move consists of up to 4 steps ( push/pull  counting for 2 )
-		 */
 {
+
 	private:
-    Logger        log_; 
+    static bool   classInit;
+    static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
 
 		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
 		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
     PieceArray    pieceArray[2];  
-		square_t  	  piecesList[MAX_PIECES];					//actual pieces are stored here 
+    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
   
     StepArray     stepArray[2];
     uint          stepArrayLen[2];
 
-    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
-
-    static bool   classInit;
-    static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
     u64           signature;            //position signature - for hash tables, corectness checks, etc. 
     u64           preMoveSignature;     //signature of position from when the current move started
 
-
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
-		// thus moveCount_ expresses how far in the game position is 
     uint  moveCount_;
 
 		// step is either pass or single piece step or push/pull step,
@@ -155,59 +170,82 @@ class Board
 
     player_t toMove_;
     uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
-
 		player_t winner_;
 
-    uint  generateAllCount;   //how many times generateAll was called :)
+    Logger        log_; 
 
     friend class Eval;
 
   public:
     Board();
 
-    void  initZobrist();
-    void  makeSignature();
+    /**
+    * Inits position from a method in file.
+    *
+    * returns true if initialization went right 
+    * otherwise returns false
+    */
     bool  init(const char* fn); 
+    void  initZobrist() const;
+    void  makeSignature();
 
-    bool		  isEmpty();
-    player_t  getPlayerToMove();
-    uint      getGenerateAllCount();
-		uint			getAllStepsNum(uint);
-		uint			getStepCount();
-		player_t	getWinner();
-    int       getPreMoveSignature();
-
-    u64 getAfterStepSignature(Step& step) const;
+		Step findStepToPlay();
+		bool findRandomStep(Step&) const;
 
 		void makeStep(Step&);
+		void makeStepTryCommitMove(Step&);
+    /**
+     * Commits the move.
+     *
+     * Handles switching the sides, checking the winner, etc.*/
 		void commitMove();
-		void makeStepTryCommit(Step&);
 
+    /**
+     * Calculater signature for one step forward. 
+     */
+    u64 calcAfterStepSignature(Step& step) const;
+
+    /**
+     * Generates all (syntatically) legal steps from the position.
+     *
+     * Doesn't check 3 - repetitions rule / virtual pass. 
+     * Pass move is always generated as a last move.
+     * */
+		int generateAllSteps(player_t, StepArray&) const;
+
+    /**
+     * Repetition check.
+     *
+     * Takes step array and filters out illegal moves considering:
+     * 1) virtual pass repetition
+     * 2) 3 moves same position repetition
+     * */
+    int filterRepetitions(StepArray&, int ) const;
+
+    inline bool stepIsVirtualPass( Step& ) const;
+    inline bool stepIsThirdRepetition( Step& ) const;
+
+		inline bool hasFriend(square_t) const;
+		inline bool hasTwoFriends(square_t, player_t) const;
+		inline bool hasStrongerEnemy(square_t) const;
+		inline bool isFrozen(square_t) const;
+
+    bool		  isEmpty();
+		uint			getAllStepsNum(uint);
+		uint			getStepCount();
+    int       getPreMoveSignature();
+    player_t  getPlayerToMove();
+		player_t	getWinner();
+		
     void setSquare(square_t, player_t, piece_t);
     void clearSquare(square_t);
 
-		Step getRandomStep();
-		bool createRandomStep(Step&);
-
-		inline bool hasTwoFriends(square_t, player_t) const;
-		inline bool hasFriend(square_t) const;
-		inline bool hasStrongerEnemy(square_t) const;
-		inline bool isFrozen(square_t) const;
-    inline bool stepIsVirtualPass( Step& ) const;
-    inline bool stepIsThirdRepetition( Step& ) const;
-		
-    int filterRepetitions(StepArray&, int ) const;
-		int generateAllSteps(player_t, StepArray&) const;
-		void updateAfterStep(square_t from, square_t to);
-		void updateAfterKill(square_t square);
-
-    void dump();
 		string toString();
-		void dumpAllSteps();
 		string allStepsToString();
+    void dump();
+		void dumpAllSteps();
 
 		void testPieceArray();
 };
-
 
 #endif

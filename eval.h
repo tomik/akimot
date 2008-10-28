@@ -13,13 +13,17 @@
 #define EVAL_MAX 
 #define EVAL_MIN
 
-class Eval
-/*board evaluation class 
- *it is declared as a friend in the board class - thus it can access it's private items
- *always returns evaluation from the point of view of GOLD player
+/**
+ * Board evaluation class.
+ * 
+ * It is declared as a friend in the board class - thus it can access it's private items.
+ * Always returns evaluation from the point of view of GOLD player.
  */
+class Eval
 {
-  Logger log_;
+  private:
+    Logger log_;
+
 	public:
     int evaluate(const Board*);
     float evaluateInPercent(const Board*); 

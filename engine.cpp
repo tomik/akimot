@@ -1,32 +1,22 @@
 
 #include "engine.h"
 
+/** 
+ *  @file engine.cpp
+ *  @brief Searching engine. 
+ *  @full Implementation of UCT and supporting components.
+ */
 
-string Engine::initialSetup(bool isGold)
-{
-	if (isGold)
-		return "Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2\n";
-	else
-		return "ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7\n";
-}
-
-
-string Engine::doSearch(Board* board) 
-{ 
-  Uct* uct_ = new Uct(board);
-  string result = uct_->generateMove();  
-  delete uct_;
-  
-  return result;
-  //return "here will be some search soon";
-}
-
+//---------------------------------------------------------------------
+/* section Node*/
+//---------------------------------------------------------------------
 
 Node::Node()
 {
   assert(false);
 }
 
+//---------------------------------------------------------------------
 
 Node::Node(const Step& step)
 {
@@ -40,28 +30,7 @@ Node::Node(const Step& step)
   nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
-
-void Node::addChild(Node* newChild)
-{
-  assert(newChild->sibling_ == NULL);
-  assert(newChild->firstChild_ == NULL);
-  
-  newChild->sibling_ = this->firstChild_;
-  this->firstChild_ = newChild;
-  newChild->father_ = this;
-}
-
-
-void Node::removeChild(Node* delChild)
-{
-  assert(this->firstChild_ != NULL);
-  assert(delChild->firstChild_ == NULL);
-
-  //TODO implement removal
-  return;
-  
-}
-
+//---------------------------------------------------------------------
 
 void Node::expand(const StepArray& stepArray, uint len)
 {
@@ -73,14 +42,9 @@ void Node::expand(const StepArray& stepArray, uint len)
   }
 }
 
+//---------------------------------------------------------------------
 
-float Node::ucb(float exploreCoeff)
-{
-  return ( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt(exploreCoeff/visits_);
-}
-
-
-Node* Node::getUctChild()
+Node* Node::findUctChild()
 {
   assert(this->firstChild_ != NULL);
 
@@ -103,8 +67,9 @@ Node* Node::getUctChild()
   return best;
 }
 
+//---------------------------------------------------------------------
 
-Node* Node::getMostExploredChild()
+Node* Node::findMostExploredChild()
 {
   assert(this->firstChild_ != NULL);
 
@@ -118,16 +83,39 @@ Node* Node::getMostExploredChild()
   return best;
 }
 
+//---------------------------------------------------------------------
 
-Step Node::getStep()
+float Node::ucb(float exploreCoeff)
 {
-  return step_;
+  return ( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt(exploreCoeff/visits_);
 }
 
+//---------------------------------------------------------------------
 
-/*
- * Recursive method for freeing nodes children
- */
+void Node::addChild(Node* newChild)
+{
+  assert(newChild->sibling_ == NULL);
+  assert(newChild->firstChild_ == NULL);
+  
+  newChild->sibling_ = this->firstChild_;
+  this->firstChild_ = newChild;
+  newChild->father_ = this;
+}
+
+//---------------------------------------------------------------------
+
+void Node::removeChild(Node* delChild)
+{
+  assert(this->firstChild_ != NULL);
+  assert(delChild->firstChild_ == NULL);
+
+  //TODO implement removal
+  return;
+  
+}
+
+//---------------------------------------------------------------------
+
 void Node::freeChildren()
 {
   Node* actNode = firstChild_;
@@ -140,6 +128,7 @@ void Node::freeChildren()
   }
 }
 
+//---------------------------------------------------------------------
 
 void Node::update(float sample)
 {
@@ -147,35 +136,49 @@ void Node::update(float sample)
   value_ += (sample - value_)/visits_;         //TODO how this works ? 
 }
 
+//---------------------------------------------------------------------
 
 bool Node::isMature() 
 {
   return visits_ > MATURE_LEVEL;
 }
 
+//---------------------------------------------------------------------
 
 bool Node::hasChildren() 
 {
   return firstChild_ != NULL;
 }
 
+//---------------------------------------------------------------------
 
 Node* Node::getFather()
 {
   return father_;
 }
 
+//---------------------------------------------------------------------
+
+Step Node::getStep()
+{
+  return step_;
+}
+
+//---------------------------------------------------------------------
 
 int Node::getVisits()
 {
   return visits_;
 }
 
+//---------------------------------------------------------------------
+
 nodeType_e Node::getNodeType()
 {
   return nodeType_;
 }
 
+//---------------------------------------------------------------------
 
 string Node::toString()
 {
@@ -185,6 +188,7 @@ string Node::toString()
   return ss.str();
 }
 
+//---------------------------------------------------------------------
 
 string Node::recToString(int depth)
 {
@@ -200,6 +204,15 @@ string Node::recToString(int depth)
   return ss.str();
 }
 
+//---------------------------------------------------------------------
+//  section Tree
+//---------------------------------------------------------------------
+
+Tree::Tree()
+{
+}
+
+//---------------------------------------------------------------------
 
 Tree::Tree(player_t firstPlayer)
 {
@@ -207,6 +220,7 @@ Tree::Tree(player_t firstPlayer)
   history[historyTop] = new Node(Step(STEP_NO_STEP, firstPlayer));
 }
 
+//---------------------------------------------------------------------
 
 Tree::~Tree()
 {
@@ -214,46 +228,22 @@ Tree::~Tree()
   delete history[0];
 }
 
-
-Node* Tree::root() 
-{
-  return history[0];
-}
-
-
-Node* Tree::actNode() 
-{
-  return history[historyTop];
-}
-
-
-void Tree::historyReset()
-{
-  historyTop = 0;
-}
-
+//---------------------------------------------------------------------
 
 void Tree::uctDescend()
 {
-  history[historyTop + 1]= actNode()->getUctChild();
+  history[historyTop + 1]= actNode()->findUctChild();
   historyTop++;
   assert(actNode() != NULL);
 }
 
+//---------------------------------------------------------------------
 
-void Tree::updateHistory(float sample)
-{
-  for(int i = historyTop; i >= 0; i--)
-    history[i]->update(sample);
-  historyReset();
-} 
-
-
-string Tree::getBestMove(Node* bestMoveNode)
+string Tree::findBestMove(Node* bestMoveNode)
 {
   Node* act = bestMoveNode; 
 
-  if (! act) {     //what to do ? he hasn't reached 4th level in  
+  if (! act) {     //TODO what to do ? he hasn't reached 4th level in  
     assert(false);
   }
 
@@ -268,33 +258,43 @@ string Tree::getBestMove(Node* bestMoveNode)
   return s; 
 } 
 
+//---------------------------------------------------------------------
+
+void Tree::historyReset()
+{
+  historyTop = 0;
+}
+
+//---------------------------------------------------------------------
+
+void Tree::updateHistory(float sample)
+{
+  for(int i = historyTop; i >= 0; i--)
+    history[i]->update(sample);
+  historyReset();
+} 
+
+//---------------------------------------------------------------------
+
+Node* Tree::root() 
+{
+  return history[0];
+}
+
+//---------------------------------------------------------------------
+
+Node* Tree::actNode() 
+{
+  return history[historyTop];
+}
+
+//---------------------------------------------------------------------
+
 string Tree::toString() {
   return root()->recToString(0);
 }
 
-
-Uct::Uct()
-{
-  assert(false);      //use only constructore with board ! 
-}
-
-
-Uct::Uct(Board* board) 
-{
-  board_ = board;
-  tree_  = new Tree(board->getPlayerToMove());
-  eval_  = new Eval();
-  bestMoveNode_ = NULL;
-  nodesExpanded_ = 0;
-  nodesInTheTree_ = 1;
-}
-
-
-Uct::~Uct()
-{
-  delete eval_;
-  delete tree_;
-}
+//---------------------------------------------------------------------
 
 string Tree::pathToActToString(bool onlyLastMove )
 {
@@ -307,6 +307,147 @@ string Tree::pathToActToString(bool onlyLastMove )
 
   return s;
 }
+
+//---------------------------------------------------------------------
+/* section SimplePlayout*/
+//---------------------------------------------------------------------
+
+SimplePlayout::SimplePlayout()
+{
+}
+
+//---------------------------------------------------------------------
+
+SimplePlayout::SimplePlayout(Board* board)
+{
+	board_ = board;
+	playoutLength_ = 0;
+}
+
+//---------------------------------------------------------------------
+
+playoutStatus_e SimplePlayout::doPlayout()
+{
+  int moves = 0;
+
+  while (true) {  
+		playOne();
+		playoutLength_++;
+
+		if ( board_->getWinner() != EMPTY ) //somebody won
+			return PLAYOUT_OK;
+
+		if ( playoutLength_ > 2 * MAX_PLAYOUT_LENGTH ) 
+			return PLAYOUT_TOO_LONG;
+
+    if (++moves > EVAL_AFTER_LENGTH  )
+      return PLAYOUT_EVAL;
+	}
+}
+
+//---------------------------------------------------------------------
+
+void SimplePlayout::playOne()
+{
+	Step step;
+
+	do {
+		#ifdef DEBUG_3
+			board_->dump();
+  		board_->dumpAllSteps();
+		#endif
+		#ifdef DEBUG_2
+      board_->testPieceArray();  
+		#endif
+		step = board_->findStepToPlay();
+		board_->makeStep(step);
+	}
+	while (board_->getStepCount() < 4 && step.pieceMoved()); 
+	board_->commitMove();
+	return;
+}
+
+//---------------------------------------------------------------------
+
+uint SimplePlayout::getPlayoutLength()
+{
+	return playoutLength_/2;
+}
+
+//---------------------------------------------------------------------
+/* section Uct*/
+//---------------------------------------------------------------------
+
+Uct::Uct()
+{
+  assert(false);      //use only constructor with board ! 
+}
+
+//---------------------------------------------------------------------
+
+Uct::Uct(Board* board) 
+{
+  board_ = board;
+  tree_  = new Tree(board->getPlayerToMove());
+  eval_  = new Eval();
+  bestMoveNode_ = NULL;
+  nodesExpanded_ = 0;
+  nodesInTheTree_ = 1;
+}
+
+//---------------------------------------------------------------------
+
+Uct::~Uct()
+{
+  delete eval_;
+  delete tree_;
+}
+
+//---------------------------------------------------------------------
+
+string Uct::generateMove()
+{
+  clock_t clockBegin; 
+  float timeTotal; 
+  clockBegin = clock();
+  log_() << "Starting uct" << endl;
+
+  int iteration = 0;
+
+  if (config.useTimeControl()) {
+    while ( true ) {
+      doPlayout();
+      iteration++;
+      if (( float(clock() - clockBegin)/CLOCKS_PER_SEC ) > config.secPerMove() )
+        break;
+    }
+  }  
+  else  //no time control - just do predefined number of playouts
+    for ( iteration = 0; iteration < config.playoutsPerMove(); iteration++) 
+      doPlayout();
+
+  log_() << "Uct is over" << endl;
+  timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
+  
+//log_() << tree_->toString();
+
+  log_()
+			<< "Performance: " << endl
+      << "  " << iteration << " playouts" << endl 
+      << "  " << timeTotal << " seconds" << endl
+      << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
+    ;
+
+  log_()
+			<< "UCT: " << endl
+      << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
+      << "  " << nodesExpanded_ << " nodes expanded" << endl 
+    ;
+ 
+  return tree_->findBestMove(bestMoveNode_);
+}
+
+//---------------------------------------------------------------------
 
 void Uct::doPlayout()
 {
@@ -354,7 +495,7 @@ void Uct::doPlayout()
     }
 
     Step step = tree_->actNode()->getStep();
-    playBoard->makeStepTryCommit(step);
+    playBoard->makeStepTryCommitMove(step);
 
   } while(true);
 
@@ -363,52 +504,8 @@ void Uct::doPlayout()
   delete playBoard;
 }
 
+//---------------------------------------------------------------------
 
-string Uct::generateMove()
-{
-  clock_t clockBegin; 
-  float timeTotal; 
-  clockBegin = clock();
-  log_() << "Starting uct" << endl;
-
-  int iteration = 0;
-
-  if (config.useTimeControl()) {
-    while ( true ) {
-      doPlayout();
-      iteration++;
-      if (( float(clock() - clockBegin)/CLOCKS_PER_SEC ) > config.secPerMove() )
-        break;
-    }
-  }  
-  else  //no time control - just do predefined number of playouts
-    for ( iteration = 0; iteration < config.playoutsPerMove(); iteration++) 
-      doPlayout();
-
-  log_() << "Uct is over" << endl;
-  timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
-  
-//log_() << tree_->toString();
-  log_()
-			<< "Performance: " << endl
-      << "  " << iteration << " playouts" << endl 
-      << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
-    ;
-
-  log_()
-			<< "UCT: " << endl
-      << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
-      << "  " << nodesExpanded_ << " nodes expanded" << endl 
-    ;
- 
- 
-  return tree_->getBestMove(bestMoveNode_);
-}
-
-
-/*if winner is known returns 1 for Gold, -1 for Silver 
- * otherwise flips the coin according to the evaluationPercentage estimate and returns 1/-1 as above*/
 int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 {
   if IS_PLAYER(playBoard->getWinner())
@@ -422,56 +519,28 @@ int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
     return -1;
 }
 
+//---------------------------------------------------------------------
+//  section Engine
+//---------------------------------------------------------------------
 
-SimplePlayout::SimplePlayout(Board* board)
+string Engine::initialSetup(bool isGold)
 {
-	board_ = board;
-	playoutLength_ = 0;
+	if (isGold)
+		return "Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2\n";
+	else
+		return "ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7\n";
 }
 
+//---------------------------------------------------------------------
 
-void SimplePlayout::playOne()
-{
-	Step step;
-
-	do {
-		#ifdef DEBUG_3
-			board_->dump();
-  		board_->dumpAllSteps();
-		#endif
-		#ifdef DEBUG_2
-      board_->testPieceArray();  
-		#endif
-		step = board_->getRandomStep();
-		board_->makeStep(step);
-	}
-	while (board_->getStepCount() < 4 && step.pieceMoved()); 
-	board_->commitMove();
-	return;
+string Engine::doSearch(Board* board) 
+{ 
+  Uct* uct_ = new Uct(board);
+  string result = uct_->generateMove();  
+  delete uct_;
+  
+  return result;
 }
 
-
-playoutStatus_e SimplePlayout::doPlayout()
-{
-  int moves = 0;
-
-  while (true) {  
-		playOne();
-		playoutLength_++;
-
-		if ( board_->getWinner() != EMPTY ) //somebody won
-			return PLAYOUT_OK;
-
-		if ( playoutLength_ > 2 * MAX_PLAYOUT_LENGTH ) 
-			return PLAYOUT_TOO_LONG;
-
-    if (++moves > EVAL_AFTER_LENGTH  )
-      return PLAYOUT_EVAL;
-	}
-}
-
-
-uint SimplePlayout::getPlayoutLength()
-{
-	return playoutLength_/2;
-}
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------

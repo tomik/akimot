@@ -6,14 +6,11 @@
 #include "board.h"
 #include "eval.h"
 
-
 #include <cmath>
-
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define EVAL_AFTER_LENGTH 15    //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
-
 
 #define MATURE_LEVEL  10
 #define EXPLORE_RATE 0.2
@@ -27,31 +24,35 @@ enum nodeType_e {NODE_MAX, NODE_MIN};
 
 class Node
 {
-  float       value_; 
-  int         visits_;
-  Step        step_;
+  private:
+    float       value_; 
+    int         visits_;
+    Step        step_;
 
-  Node*       sibling_;
-  Node*       firstChild_;  
-  nodeType_e  nodeType_;
-  Node*       father_;
+    Node*       sibling_;
+    Node*       firstChild_;  
+    Node*       father_;
+    nodeType_e  nodeType_;
 
   public:
     Node();
     Node(const Step&);
+
+    void  expand(const StepArray& stepArray, uint len);
+    Node* findUctChild();
+    Node* findMostExploredChild(); 
+
+    float ucb(float);
+
     void  addChild(Node*);
     void  removeChild(Node*);
-    void  expand(const StepArray& stepArray, uint len);
-    float ucb(float);
-    Node* getUctChild();
-    Node* getMostExploredChild(); 
-    Step  getStep();
     void  freeChildren();
     void  update(float);
+
     bool  isMature();
     bool  hasChildren();
     Node* getFather();
-
+    Step  getStep();
     int   getVisits();
     nodeType_e getNodeType();
 
@@ -62,63 +63,81 @@ class Node
 
 class Tree
 {
-  Node*      history[UCT_MAX_DEPTH];
-  uint       historyTop;
-  
-  Logger     log_;
+  private:
+    Node*      history[UCT_MAX_DEPTH];
+    uint       historyTop;
+    
+    Logger     log_;
 
   public:
-    Tree(){};
+    Tree();
     Tree(player_t);   
     ~Tree();
-    void historyReset();
+
     void uctDescend();
+    string findBestMove(Node* bestFirstNode = NULL);
+
     void updateHistory(float);
+    void historyReset();
+
     Node* actNode();
     Node* root();
-    string getBestMove(Node* bestFirstNode = NULL);
+
     string toString();
     string pathToActToString(bool onlyLastMove = false);
 };
 
+class SimplePlayout
+{
+  private:
+    Board*				board_;
+    uint					playoutLength_;
+
+	public:
+		SimplePlayout();
+		SimplePlayout(Board*);
+
+		playoutStatus_e doPlayout();	
+    void playOne();	
+
+		uint getPlayoutLength();  
+};
 
 class Uct
 {
-  Board* board_;
-  Tree* tree_;
-  Eval* eval_;
-  Logger log_;
-  Node* bestMoveNode_;  //pointer to the most visited last step of first move
-  int nodesExpanded_;
-  int nodesInTheTree_;
+  private:
+    Board* board_;
+    Tree* tree_;
+    Eval* eval_;
+    Logger log_;
+    Node* bestMoveNode_;  //pointer to the most visited last step of first move
+    int nodesExpanded_;
+    int nodesInTheTree_;
 
   public:
     Uct();
     Uct(Board*);
     ~Uct();
-    int decidePlayoutWinner(Board*, playoutStatus_e);
-    void doPlayout();
+
     string generateMove();
+    void doPlayout();
+
+    /**
+     * Decide winner of the game. 
+     * 
+     * Always returns 1 ( GOLD wins ) or -1 (SILVER wins). If winner is not known ( no winning criteria reached )
+     * position is evaluated and biased coin si flipped to estimate the winner 
+     */
+    int decidePlayoutWinner(Board*, playoutStatus_e);
 };
-
-
-class SimplePlayout
-{
-	Board*				board_;
-	uint					playoutLength_;
-	void playOne();	
-	public:
-		SimplePlayout(Board*);
-		playoutStatus_e doPlayout();	
-		uint getPlayoutLength();  
-};
-
 
 class Engine
 {
-	Logger log_;
-public:
-	string doSearch(Board*);		
-	string initialSetup(bool); 
+  private:
+	  Logger log_;
+
+  public:
+  	string initialSetup(bool); 
+  	string doSearch(Board*);		
 };
 #endif
