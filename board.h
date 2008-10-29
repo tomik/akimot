@@ -23,8 +23,8 @@
 #define PIECE_EMPTY 0x0U
 #define PIECE_MASK 0x7U
 #define OWNER_MASK 0x18U
-#define NORTH -10
-#define SOUTH 10
+#define NORTH 10
+#define SOUTH -10
 #define EAST 1
 #define WEST -1
 
@@ -40,8 +40,8 @@
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
 
-#define ROW(square) (9-square/10)
-#define COL(square) (square%10)
+//#define ROW(square) (9-square/10)
+//#define COL(square) (square%10)
 
 #define PLAYER_NUM    2
 #define PIECE_NUM     7

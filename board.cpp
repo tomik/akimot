@@ -308,7 +308,7 @@ bool Board::init(const char* fn)
 
     f.ignore(1024,'\n'); //ignores the top of the border till EOF 
 
-    for (int i = 1; i < 9; i++) { // do this for each of the 8 lines of the board
+    for (int i = 8; i > 0; i--) { // do this for each of the 8 lines of the board
       f.ignore(2); //ignore trailing characters
 
       for (int j = 1; j < 9; j++) {
@@ -598,11 +598,11 @@ void Board::commitMove()
 {
   //winner might be set already ( when player to move has no move ) 
   for (int i = 11; i <= 19; i++)
-    if (board_[i] == (GOLD | PIECE_RABBIT) )
-      winner_ = GOLD;
-  for (int i = 81; i <= 88; i++)
     if (board_[i] == (SILVER | PIECE_RABBIT) )
       winner_ = SILVER;
+  for (int i = 81; i <= 88; i++)
+    if (board_[i] == (GOLD | PIECE_RABBIT) )
+      winner_ = GOLD;
 
   if (rabbitsNum[toMoveIndex_] == 0)  //if player lost his last rabbit in his move - he loses ... 
     winner_ = OPP(toMove_);
@@ -940,7 +940,7 @@ string Board::toString()
 
   ss << " +-----------------+\n";
 
-  for (int i=1; i<9; i++) {
+  for (int i=8; i>0; i--) {
     ss << i <<"| ";
     for (int j=1; j<9; j++) {
 

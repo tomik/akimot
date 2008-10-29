@@ -62,7 +62,6 @@ bool Config::parse(const int argc, const char ** argv )
   return true;
 }
 
-
 //--------------------------------------------------------------------- 
 
 bool Config::parseToken(string token, string value) {

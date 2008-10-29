@@ -1,5 +1,6 @@
 #!/usr/bin/python 
 
+AKIMOT_TEST_DIR = '/home/tomik/src/tmp/arimaa/matchOffline/bot_akimot/akimot'
 common = Environment(CC='g++', CCFLAGS = '-Wall ')
 opt = common.Clone()
 opt.Append(CCFLAGS = '-O3 -DNDEBUG -march=native -ffast-math -fomit-frame-pointer -frename-registers')
@@ -11,7 +12,7 @@ std.Append(CCFLAGS = '')
 
 src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp config.cpp')
 
-if ARGUMENTS.get('opt'):
+if ARGUMENTS.get('opt') or ARGUMENTS.get('out'):
   env = opt.Clone()
 elif ARGUMENTS.get('dbg'):
   env = dbg.Clone()
@@ -28,4 +29,7 @@ else:   #standard
 if not ARGUMENTS.get('doc'):      #dirty - change !
   env.Program(target = 'akimot', source = src_files, CPPPATH = '.')
   print "CCCOM is ",  env.subst('$CCCOM')
+  if ARGUMENTS.get('out'):
+    import shutil
+    shutil.copy('akimot',AKIMOT_TEST_DIR);
 

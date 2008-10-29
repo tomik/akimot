@@ -16,13 +16,14 @@ class OptionFather
     string longName_;
     string description_;
     optionType_e  type_;
+    bool parsed_;
 
     friend class Config;
 
   public:
     OptionFather(){};
     OptionFather(string shortName, string longName, string description, optionType_e type):
-      shortName_(shortName), longName_(longName), description_(description), type_(type) {};
+      shortName_(shortName), longName_(longName), description_(description), type_(type) { parsed_ = false;};
     virtual void setValue(bool){};
     virtual void setValue(string){};
     virtual void setValue(int){};
@@ -39,8 +40,8 @@ template <typename T> class Option: public OptionFather
      OptionFather(shortName, longName, description, type), value_(defaultValue) {}
 
     T getValue() { return value_;}
-    void setValue(T value) { value_ = value;}
-    
+    void setValue(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
+     
     string toString() {
       stringstream ss;
       ss << "[" << shortName_ << ", " << longName_ << ", " << description_ << ", " << value_ << "]" << endl;
