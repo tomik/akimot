@@ -257,6 +257,28 @@ KillInfo::KillInfo( player_t player, piece_t piece, square_t square):
 {
 }
 
+//--------------------------------------------------------------------- 
+
+void KillInfo::setValues( player_t player, piece_t piece, square_t square)
+{
+  player_ = player;
+  piece_  = piece;
+  square_ = square;
+}
+
+//--------------------------------------------------------------------- 
+
+const string KillInfo::toString() const
+{
+  stringstream s;
+  string pieceRefStr(" RCDHMErcdhme");
+  string columnRefStr("abcdefgh");
+
+  s << pieceRefStr[piece_ + 6 * PLAYER_TO_INDEX(player_)] << columnRefStr[square_ % 10 - 1] << square_ / 10; 
+  s << "x ";
+  return s.str();
+}
+
 //---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
@@ -532,51 +554,71 @@ bool Board::findRandomStep(Step& step) const
 void Board::makeStep(Step& step)
 {
 
+  int playerIndex = PLAYER_TO_INDEX(step.player_);
+  if (step.stepType_ == STEP_NO_STEP)
+    return;
 
-    int playerIndex = PLAYER_TO_INDEX(step.player_);
-    if (step.stepType_ == STEP_NO_STEP)
-      return;
+  if (step.stepType_ == STEP_PASS ){
+    stepCount_++; 
+    return;
+  }
 
-    if (step.stepType_ == STEP_PASS ){
-      stepCount_++; 
-      return;
-    }
+  assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
 
-    assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
-
-    //in STEP_PUSH victim's move must be made first ! 
-    if (step.stepType_ == STEP_PUSH ){  
-      assert( stepCount_ < 3 ); 
-      setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
-      clearSquare(step.oppFrom_);
-      stepCount_++;
-      pieceArray[1 - playerIndex].del(step.oppFrom_);
-      pieceArray[1 - playerIndex].add(step.oppTo_);
-
-      checkKill(step.oppFrom_);
-    }
-
-    //single step
-    setSquare( step.to_, step.player_, step.piece_);
-    clearSquare(step.from_);
+  //in STEP_PUSH victim's move must be made first ! 
+  if (step.stepType_ == STEP_PUSH ){  
+    assert( stepCount_ < 3 ); 
+    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    clearSquare(step.oppFrom_);
     stepCount_++;
-    pieceArray[playerIndex].del(step.from_);
-    pieceArray[playerIndex].add(step.to_);
+    pieceArray[1 - playerIndex].del(step.oppFrom_);
+    pieceArray[1 - playerIndex].add(step.oppTo_);
 
-    checkKill(step.from_);
+    checkKill(step.oppFrom_);
+  }
 
-    //pull steps
-    if (step.stepType_ == STEP_PULL) {  
-      assert( stepCount_ < 4 ); 
-      setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
-      clearSquare(step.oppFrom_);
-      stepCount_++;
-      pieceArray[1 - playerIndex].del(step.oppFrom_);
-      pieceArray[1 - playerIndex].add(step.oppTo_);
+  //single step
+  setSquare( step.to_, step.player_, step.piece_);
+  clearSquare(step.from_);
+  stepCount_++;
+  pieceArray[playerIndex].del(step.from_);
+  pieceArray[playerIndex].add(step.to_);
 
-      checkKill(step.oppFrom_);
+  checkKill(step.from_);
+
+  //pull steps
+  if (step.stepType_ == STEP_PULL) {  
+    assert( stepCount_ < 4 ); 
+    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    clearSquare(step.oppFrom_);
+    stepCount_++;
+    pieceArray[1 - playerIndex].del(step.oppFrom_);
+    pieceArray[1 - playerIndex].add(step.oppTo_);
+
+    checkKill(step.oppFrom_);
+  }
+
+}
+
+//--------------------------------------------------------------------- 
+
+bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo)
+{
+
+  if ( IS_TRAP(to) && ! hasTwoFriends(to, OWNER(board_[from])) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
+    killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to);
+    return true;
+  }
+
+  int actTrapPos;
+  for (int i = 0; i < 4; i++){
+    actTrapPos = from + direction[i];
+    if ( IS_TRAP(actTrapPos) &&  board_[actTrapPos] != EMPTY_SQUARE && ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){
+        killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);   
+        return true;
     }
-
+  }
+  return false;
 }
 
 //--------------------------------------------------------------------- 

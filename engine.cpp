@@ -243,6 +243,10 @@ string Tree::findBestMove(Node* bestMoveNode)
 {
   Node* act = bestMoveNode; 
 
+  //steps in best Move
+  Step  steps[4];
+  uint stepNum = 0;
+
   if (! act) {     //TODO what to do ? he hasn't reached 4th level in  
     assert(false);
   }
@@ -252,9 +256,17 @@ string Tree::findBestMove(Node* bestMoveNode)
   string s = ss.str();
 
   while (act != root()) {
-    s = act->getStep().toString(true) + s;  //resultPrint of move
+    assert(stepNum < 4);
+    steps[stepNum++] = act->getStep();
     act = act->getFather(); 
   } 
+
+  assert(stepNum > 0);
+
+  //print the steps 
+  for (int i = stepNum - 1; i >= 0; i--)
+    s = s + steps[i].toString(true);   //resultPrint of move
+
   return s; 
 } 
 

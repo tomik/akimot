@@ -85,6 +85,24 @@ class PieceArray
     square_t operator[](uint) const;
 };
 
+
+/**
+ * Information about a kill in the trep. 
+ */
+class KillInfo 
+{
+  private:
+    player_t player_;
+    piece_t  piece_;
+    square_t square_;
+  public:
+    KillInfo();
+    KillInfo( player_t player, piece_t piece, square_t square);
+    void setValues( player_t player, piece_t piece, square_t square);
+
+    const string toString() const;
+};
+
 /**
  * One step of a player.
  *
@@ -130,21 +148,9 @@ class Step
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
     const string toString(bool resultPrint = false) const;
     void dump(); 
+
 };
 
-/**
- * Information about a kill in the trep. 
- */
-class KillInfo 
-{
-  private:
-    player_t player_;
-    piece_t  piece_;
-    square_t square_;
-  public:
-    KillInfo();
-    KillInfo( player_t player, piece_t piece, square_t square);
-};
 
 
 class Board;
@@ -214,6 +220,13 @@ class Board
      *
      * Handles switching the sides, checking the winner, etc.*/
 		void commitMove();
+
+    /**
+     * Forward check. 
+     *
+     * No board update.
+     */
+    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo);
 
     /**
      * Kill checker.
