@@ -248,6 +248,7 @@ void Step::dump()
 
 KillInfo::KillInfo()
 {
+  active_ = false;
 }
 
 //--------------------------------------------------------------------- 
@@ -255,12 +256,14 @@ KillInfo::KillInfo()
 KillInfo::KillInfo( player_t player, piece_t piece, square_t square):
   player_ (player), piece_ (piece), square_(square)
 {
+  active_ = false;
 }
 
 //--------------------------------------------------------------------- 
 
 void KillInfo::setValues( player_t player, piece_t piece, square_t square)
 {
+  active_ = true;
   player_ = player;
   piece_  = piece;
   square_ = square;
@@ -270,6 +273,8 @@ void KillInfo::setValues( player_t player, piece_t piece, square_t square)
 
 const string KillInfo::toString() const
 {
+  if (! active_ ) 
+    return "";
   stringstream s;
   string pieceRefStr(" RCDHMErcdhme");
   string columnRefStr("abcdefgh");
@@ -280,8 +285,62 @@ const string KillInfo::toString() const
 }
 
 //---------------------------------------------------------------------
+//  section StepWithKills
+//---------------------------------------------------------------------
+
+StepWithKills::StepWithKills()
+{
+}
+
+//--------------------------------------------------------------------- 
+
+StepWithKills::StepWithKills(Step step):
+  Step(step)
+{
+  
+}
+
+//--------------------------------------------------------------------- 
+
+void StepWithKills::addKills(Board* board)
+{
+  switch (stepType_) {
+    case STEP_SINGLE:
+      board->checkKillForward(from_, to_, &kills[0]);
+      break;
+    case STEP_PUSH:
+      board->checkKillForward(oppFrom_, oppTo_, &kills[0]);
+      board->checkKillForward(from_, to_, &kills[1]);
+      break;
+    case STEP_PULL:
+      board->checkKillForward(from_, to_, &kills[0]);
+      board->checkKillForward(oppFrom_, oppTo_, &kills[1]);
+      break;
+  }
+  
+}
+
+//--------------------------------------------------------------------- 
+
+const string StepWithKills::toString() const
+{
+  stringstream ss;
+  stringstream ssOut;
+  ss << Step::toString(true);
+
+  string firstPart, secondPart;
+  ss >> firstPart; 
+  ss >> secondPart;
+
+  ssOut << firstPart << " " << kills[0].toString() << secondPart << " " << kills[1].toString();
+  return ssOut.str();
+  //return ss.str(); 
+}
+
+//---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
+//
 
 Board::Board()
 {
@@ -606,7 +665,7 @@ bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo)
 {
 
   if ( IS_TRAP(to) && ! hasTwoFriends(to, OWNER(board_[from])) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
-    killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to);
+    killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
     return true;
   }
 

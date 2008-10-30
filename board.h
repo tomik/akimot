@@ -62,6 +62,9 @@ typedef uint piece_t;
 typedef uint stepType_t;
 
 
+class Board;
+class Eval;
+
 /**
  * Array-like structure to hold pieces.
  *
@@ -92,6 +95,7 @@ class PieceArray
 class KillInfo 
 {
   private:
+    bool     active_;
     player_t player_;
     piece_t  piece_;
     square_t square_;
@@ -115,7 +119,7 @@ class KillInfo
 class Step
 {
 
-	private:
+	protected:
     stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
     player_t      player_;      
     piece_t       piece_;  
@@ -152,9 +156,18 @@ class Step
 };
 
 
+class StepWithKills: public Step
+{
+  private:
+    KillInfo kills[2];
+  public:
+    StepWithKills();
+    StepWithKills(Step step);
+    void addKills(Board* board);
+    const string toString() const;
+};
 
-class Board;
-class Eval;
+
 
 typedef Step  StepArray[MAX_STEPS];
 

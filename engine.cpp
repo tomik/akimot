@@ -239,12 +239,15 @@ void Tree::uctDescend()
 
 //---------------------------------------------------------------------
 
-string Tree::findBestMove(Node* bestMoveNode)
+string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
 {
+
+  Board *board = new Board (*boardGiven);
+
   Node* act = bestMoveNode; 
 
   //steps in best Move
-  Step  steps[4];
+  StepWithKills  steps[4];
   uint stepNum = 0;
 
   if (! act) {     //TODO what to do ? he hasn't reached 4th level in  
@@ -257,16 +260,20 @@ string Tree::findBestMove(Node* bestMoveNode)
 
   while (act != root()) {
     assert(stepNum < 4);
-    steps[stepNum++] = act->getStep();
+    steps[stepNum++] = StepWithKills(act->getStep());
     act = act->getFather(); 
   } 
 
   assert(stepNum > 0);
 
   //print the steps 
-  for (int i = stepNum - 1; i >= 0; i--)
-    s = s + steps[i].toString(true);   //resultPrint of move
+  for (int i = stepNum - 1; i >= 0; i--){
+    steps[i].addKills(board);
+    board->makeStep(steps[i]);
+    s = s + steps[i].toString();   //resultPrint of move
+  } 
 
+  delete(board);
   return s; 
 } 
 
@@ -456,7 +463,7 @@ string Uct::generateMove()
       << "  " << nodesExpanded_ << " nodes expanded" << endl 
     ;
  
-  return tree_->findBestMove(bestMoveNode_);
+  return tree_->findBestMove(bestMoveNode_, board_);
 }
 
 //---------------------------------------------------------------------

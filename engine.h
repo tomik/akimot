@@ -75,7 +75,7 @@ class Tree
     ~Tree();
 
     void uctDescend();
-    string findBestMove(Node* bestFirstNode = NULL);
+    string findBestMove(Node* bestFirstNode = NULL, const Board* boardGiven = NULL);
 
     void updateHistory(float);
     void historyReset();
