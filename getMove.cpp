@@ -12,7 +12,6 @@ void test(Board* board)
   benchmark.playoutBenchmark();
 }
 
-
 int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 {
 	Board board;

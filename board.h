@@ -132,6 +132,21 @@ class Step
     void dump(); 
 };
 
+/**
+ * Information about a kill in the trep. 
+ */
+class KillInfo 
+{
+  private:
+    player_t player_;
+    piece_t  piece_;
+    square_t square_;
+  public:
+    KillInfo();
+    KillInfo( player_t player, piece_t piece, square_t square);
+};
+
+
 class Board;
 class Eval;
 
@@ -199,6 +214,20 @@ class Board
      *
      * Handles switching the sides, checking the winner, etc.*/
 		void commitMove();
+
+    /**
+     * Kill checker.
+     *
+     * Checks whether kill is happening in the vicinity of given square.
+     */
+    bool checkKill(square_t square);
+
+    /**
+     * Performs kill.
+     *
+     * Performs operation connected to kill - board update, rabbits num update, etc.
+     */
+    void performKill(square_t trapPos);
 
     /**
      * Calculater signature for one step forward. 

@@ -242,6 +242,21 @@ void Step::dump()
   log_() << toString();
 }
 
+//--------------------------------------------------------------------- 
+//  section KillInfo
+//--------------------------------------------------------------------- 
+
+KillInfo::KillInfo()
+{
+}
+
+//--------------------------------------------------------------------- 
+
+KillInfo::KillInfo( player_t player, piece_t piece, square_t square):
+  player_ (player), piece_ (piece), square_(square)
+{
+}
+
 //---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
@@ -517,10 +532,8 @@ bool Board::findRandomStep(Step& step) const
 void Board::makeStep(Step& step)
 {
 
-  int checkTrap[2];         //squares in whose vicinity we check the traps
-  int checkTrapNum = 1;
-  int actTrapPos;
 
+    int playerIndex = PLAYER_TO_INDEX(step.player_);
     if (step.stepType_ == STEP_NO_STEP)
       return;
 
@@ -529,64 +542,77 @@ void Board::makeStep(Step& step)
       return;
     }
 
+    assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
+
     //in STEP_PUSH victim's move must be made first ! 
     if (step.stepType_ == STEP_PUSH ){  
       assert( stepCount_ < 3 ); 
-      setSquare( step.oppTo_, OPP(toMove_), step.oppPiece_);
+      setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
       clearSquare(step.oppFrom_);
       stepCount_++;
-      checkTrap[1] = step.oppFrom_;
-      checkTrapNum=2;
+      pieceArray[1 - playerIndex].del(step.oppFrom_);
+      pieceArray[1 - playerIndex].add(step.oppTo_);
+
+      checkKill(step.oppFrom_);
     }
 
-    //update board after single step
-     setSquare( step.to_, toMove_, step.piece_);
-     clearSquare(step.from_);
-     checkTrap[0] = step.from_;
-     stepCount_++;
-   
-     pieceArray[toMoveIndex_].del(step.from_);
-     pieceArray[toMoveIndex_].add(step.to_);
+    //single step
+    setSquare( step.to_, step.player_, step.piece_);
+    clearSquare(step.from_);
+    stepCount_++;
+    pieceArray[playerIndex].del(step.from_);
+    pieceArray[playerIndex].add(step.to_);
 
+    checkKill(step.from_);
 
     //pull steps
     if (step.stepType_ == STEP_PULL) {  
       assert( stepCount_ < 4 ); 
-      setSquare( step.oppTo_, OPP(toMove_), step.oppPiece_);
+      setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
       clearSquare(step.oppFrom_);
       stepCount_++;
-      checkTrap[1] = step.oppFrom_;
-      checkTrapNum=2;
+      pieceArray[1 - playerIndex].del(step.oppFrom_);
+      pieceArray[1 - playerIndex].add(step.oppTo_);
+
+      checkKill(step.oppFrom_);
     }
 
-    if (step.stepType_ != STEP_SINGLE) {  
-     pieceArray[1 - toMoveIndex_].del(step.oppFrom_);
-     pieceArray[1 - toMoveIndex_].add(step.oppTo_);
-    }
+}
 
-    //check traps (o) at most 2 traps "kill" after a push/pull step, otherwise just one
-    for (int j = 0; j < checkTrapNum; j++)
-      for (int i = 0; i < 4; i++){
-        actTrapPos = checkTrap[j] + direction[i];
-        if ( IS_TRAP(actTrapPos) ){    
-          if ( board_[actTrapPos] != EMPTY_SQUARE && ! hasFriend(actTrapPos) ){
-            //trap is not empty and piece in there has no friends around => KILL
-            if (PIECE(board_[actTrapPos]) == PIECE_RABBIT)              //update rabbitsNum - for gameEnd check 
-              rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[actTrapPos]))]--;
-            board_[actTrapPos] = EMPTY_SQUARE; 
-           if ( j == 0 ) 
-             pieceArray[toMoveIndex_].del(actTrapPos);
-           else
-             pieceArray[1 - toMoveIndex_].del(actTrapPos);
-          }
-          break;
-        }
+//--------------------------------------------------------------------- 
+
+bool Board::checkKill(square_t square) 
+{
+  int actTrapPos;
+  for (int i = 0; i < 4; i++){
+    actTrapPos = square + direction[i];
+    if ( IS_TRAP(actTrapPos) ){    
+      if ( board_[actTrapPos] != EMPTY_SQUARE && ! hasFriend(actTrapPos) ){
+        performKill(actTrapPos);
+        return true;
       }
+      return false;
+    }
+  }
+  return false;
+}
+
+//--------------------------------------------------------------------- 
+
+void Board::performKill(square_t trapPos)
+{
+  int playerIndex = PLAYER_TO_INDEX(OWNER(board_[trapPos]));
+
+  if (PIECE(board_[trapPos]) == PIECE_RABBIT)              //update rabbitsNum - for gameEnd check 
+     rabbitsNum[playerIndex]--;
+  board_[trapPos] = EMPTY_SQUARE; 
+  pieceArray[playerIndex].del(trapPos);
 }
 
 //---------------------------------------------------------------------
 
-void Board::makeStepTryCommitMove(Step& step) {
+void Board::makeStepTryCommitMove(Step& step) 
+{
   makeStep(step);
 	if (stepCount_ >= 4 || ! step.pieceMoved()) 
     commitMove();
