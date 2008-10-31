@@ -255,7 +255,9 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
   }
 
   stringstream ss;
-  log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
+  #ifdef DEBUG
+    log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
+  #endif
   string s = ss.str();
 
   while (act != root()) {
@@ -429,7 +431,9 @@ string Uct::generateMove()
   clock_t clockBegin; 
   float timeTotal; 
   clockBegin = clock();
-  log_() << "Starting uct" << endl;
+  #ifdef DEBUG
+    log_() << "Starting uct" << endl;
+  #endif
 
   int iteration = 0;
 
@@ -445,23 +449,27 @@ string Uct::generateMove()
     for ( iteration = 0; iteration < config.playoutsPerMove(); iteration++) 
       doPlayout();
 
-  log_() << "Uct is over" << endl;
+  #ifdef DEBUG
+    log_() << "Uct is over" << endl;
+  #endif
   timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
   
 //log_() << tree_->toString();
 
-  log_()
-			<< "Performance: " << endl
-      << "  " << iteration << " playouts" << endl 
-      << "  " << timeTotal << " seconds" << endl
-      << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
-    ;
+  #ifdef DEBUG
+    log_()
+      << "Performance: " << endl
+        << "  " << iteration << " playouts" << endl 
+        << "  " << timeTotal << " seconds" << endl
+        << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
+      ;
 
-  log_()
-			<< "UCT: " << endl
-      << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
-      << "  " << nodesExpanded_ << " nodes expanded" << endl 
-    ;
+    log_()
+      << "UCT: " << endl
+        << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
+        << "  " << nodesExpanded_ << " nodes expanded" << endl 
+      ;
+  #endif
  
   return tree_->findBestMove(bestMoveNode_, board_);
 }
@@ -480,13 +488,12 @@ void Uct::doPlayout()
   
   tree_->historyReset();     //point tree's actNode to the root 
 
-  //TODO ... what if the node in the tree is the end of the game already ? 
   do { 
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
         stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
 
-        #ifdef DEBUG3
+        #ifdef DEBUG_3
           log_() << "Expanding node : " << tree_->pathToActToString() << endl;
         #endif
 
@@ -514,7 +521,12 @@ void Uct::doPlayout()
     }
 
     Step step = tree_->actNode()->getStep();
-    playBoard->makeStepTryCommitMove(step);
+    //perform the step and try commit
+    if ( playBoard->makeStepTryCommitMove(step) )   {
+      //commit was successful - check whether winning criteria are not reached already
+      if ( playBoard->getWinner() != EMPTY ) 
+        break;      //winner is known already in the uct tree -> no need to go deeper
+    }
 
   } while(true);
 

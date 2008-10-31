@@ -24,7 +24,9 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 //    cout << argv[i] << endl;
 
   config.parse(argc, (const char **) (argv));
-  config.logAll();
+  #ifdef DEBUG_2
+    config.logAll();
+  #endif
 
 	if (argc < 2) {
 		logger() << "Program requires an argument (name of file containing position).\n";

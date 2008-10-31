@@ -226,8 +226,22 @@ class Board
 		Step findStepToPlay();
 		bool findRandomStep(Step&) const;
 
+    /**
+     * Making the step.
+     *
+     * One of the crucial methods in the boardstructure.
+     * Takes given step and performs it. Updates board structure and resolves kills.
+     */
 		void makeStep(Step&);
-		void makeStepTryCommitMove(Step&);
+
+    /**
+     *  Wraper for makeStep with commiting.
+     *
+     *  Performs makestep on given step. If the move is over it commits.
+     *  @return true if commited false otherwise
+     */
+		bool makeStepTryCommitMove(Step&);
+
     /**
      * Commits the move.
      *

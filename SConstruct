@@ -12,7 +12,7 @@ std.Append(CCFLAGS = '')
 
 src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp config.cpp')
 
-if ARGUMENTS.get('opt') or ARGUMENTS.get('out'):
+if ARGUMENTS.get('opt'): #or ARGUMENTS.get('out'):
   env = opt.Clone()
 elif ARGUMENTS.get('dbg'):
   env = dbg.Clone()

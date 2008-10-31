@@ -191,6 +191,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
     case SOUTH : s << "s"; break;
     default :
       assert(false);
+      break;
   }
   s << " ";
   return s.str();
@@ -227,6 +228,7 @@ const string Step::toString(bool resultPrint) const
       break;
     default:
       assert(false);
+      break;
 
   }
   if ( ! resultPrint ) 
@@ -664,16 +666,21 @@ void Board::makeStep(Step& step)
 bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo)
 {
 
-  if ( IS_TRAP(to) && ! hasTwoFriends(to, OWNER(board_[from])) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
-    killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
-    return true;
+  if ( IS_TRAP(to) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
+    if ( ! hasTwoFriends(to, OWNER(board_[from])) ) { 
+      killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
+      return true;
+    }
+    else //piece was moved into the trap but hasn't died -> no kill
+      return false;
   }
 
   int actTrapPos;
   for (int i = 0; i < 4; i++){
     actTrapPos = from + direction[i];
-    if ( IS_TRAP(actTrapPos) &&  board_[actTrapPos] != EMPTY_SQUARE && ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){
-        killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);   
+    if ( IS_TRAP(actTrapPos) && board_[actTrapPos] != EMPTY_SQUARE            //it is a trap where piece is standing
+      && OWNER(board_[actTrapPos]) == OWNER(from) && ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){  //piece is ours and has < 2 friends
+        killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);                   
         return true;
     }
   }
@@ -712,11 +719,14 @@ void Board::performKill(square_t trapPos)
 
 //---------------------------------------------------------------------
 
-void Board::makeStepTryCommitMove(Step& step) 
+bool Board::makeStepTryCommitMove(Step& step) 
 {
   makeStep(step);
-	if (stepCount_ >= 4 || ! step.pieceMoved()) 
+	if (stepCount_ >= 4 || ! step.pieceMoved()) {
     commitMove();
+    return true;
+  }
+  return false;
 }
 
 //---------------------------------------------------------------------
@@ -731,21 +741,23 @@ void Board::commitMove()
     if (board_[i] == (GOLD | PIECE_RABBIT) )
       winner_ = GOLD;
 
-  if (rabbitsNum[toMoveIndex_] == 0)  //if player lost his last rabbit in his move - he loses ... 
+  if (rabbitsNum[toMoveIndex_] <= 0)  //if player lost his last rabbit in his move - he loses ... 
     winner_ = OPP(toMove_);
-  if (rabbitsNum[1 - toMoveIndex_] == 0)  //unless the other also lost his last rabbit 
+  if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
     winner_ = toMove_;
 
   #ifdef DEBUG_3
     log_() << "COMITTING MOVE" <<endl;
-    log_() << "TO MOVE: " << toMove_ << endl;
+    log_() << "toMove: " << toMove_ << endl;
+    log_() << "toMoveIndex: " << toMoveIndex_ << " rabbits num: " << rabbitsNum[toMoveIndex_] << endl;
     log_() << "move count: " << moveCount_ << endl;
   #endif
 
   if (toMove_ == SILVER) 
     moveCount_++;
-  else 
+  else{ 
     assert(toMove_ == GOLD);
+  }
 
   toMove_ = OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
@@ -1056,13 +1068,16 @@ string Board::toString()
 
 
   //ss << "board at: " << this << endl; //pointer debug
-  ss << "Move " << moveCount_  << ", Step " << stepCount_ << ", " << endl;
-  ss << "Signature " << signature << endl;
+  #ifdef DEBUG_1
+    ss << "Signature " << signature << endl;
+  #endif
 
-  if (toMove_ == GOLD) 
-    ss << "Gold to move." << endl;
-  else
-    ss << "Silver to move." << endl;
+  ss << "Move " << (toMove_ == GOLD ? "g" : "s") << moveCount_ ;
+  #ifdef DEBUG_2
+    ss << ", Step " << stepCount_ << ", ";
+  #endif 
+  ss << endl;
+    
   assert(toMove_ == GOLD || toMove_ == SILVER );
 
   ss << " +-----------------+\n";
