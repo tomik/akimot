@@ -9,8 +9,12 @@ dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
+if ARGUMENTS.get('out'):
+  import shutil
+  shutil.copy('akimot',AKIMOT_TEST_DIR);
+  quit()
 
-src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp config.cpp')
+src_files = Split('board.cpp engine.cpp utils.cpp getMove.cpp benchmark.cpp eval.cpp config.cpp hash.cpp')
 
 if ARGUMENTS.get('opt'): #or ARGUMENTS.get('out'):
   env = opt.Clone()
@@ -29,7 +33,4 @@ else:   #standard
 if not ARGUMENTS.get('doc'):      #dirty - change !
   env.Program(target = 'akimot', source = src_files, CPPPATH = '.')
   print "CCCOM is ",  env.subst('$CCCOM')
-  if ARGUMENTS.get('out'):
-    import shutil
-    shutil.copy('akimot',AKIMOT_TEST_DIR);
 

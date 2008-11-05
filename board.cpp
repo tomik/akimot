@@ -9,6 +9,10 @@
 
 // zobrist base table for signature creating 
 u64  Board::zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+
+//thirdRepetition class
+ThirdRep*  Board::thirdRep_;
+
 // switch to know when to init static variables in class Board
 bool Board::classInit = false;
 
@@ -364,6 +368,7 @@ bool Board::init(const char* fn)
   if (! classInit ) {
     initZobrist();  
     classInit = true;
+    thirdRep_ = &thirdRep;
   }
 
   for (int i = 0; i < 100; i++)  
@@ -468,9 +473,7 @@ void Board::initZobrist() const
    for (int i = 0; i < PLAYER_NUM; i++)
     for (int j = 0; j < PIECE_NUM; j++)
       for (int k = 0; k < SQUARE_NUM; k++)
-        zobrist[i][j][k] = (((u64) random()) << 40) ^ 
-                           (((u64) random()) << 20) ^ 
-                           ((u64) random() );
+        zobrist[i][j][k] = getRandomU64(); 
 }
 
 //---------------------------------------------------------------------
@@ -921,10 +924,10 @@ bool Board::stepIsVirtualPass( Step& step ) const
 
 bool Board::stepIsThirdRepetition( Step& step ) const 
 {
-  //TODO check afterStepSignature is in 3rd repetition table ! 
-  //u64 afterStepSignature = calcAfterStepSignature(step);
-  //if (afterStepSignature == preMoveSignature) 
-  //  return false;
+  u64 afterStepSignature = calcAfterStepSignature(step);
+  //check whether position with opponent to move won't be a repetition
+  if ( thirdRep_->check(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
+    return true;
   return false;
   
 }
@@ -1008,9 +1011,16 @@ uint Board::getStepCount()
   return stepCount_;
 }
 
+//--------------------------------------------------------------------- 
+
+u64 Board::getSignature()
+{
+  return signature;
+}
+
 //---------------------------------------------------------------------
 
-int Board::getPreMoveSignature()
+u64 Board::getPreMoveSignature()
 {
   return preMoveSignature; 
 }

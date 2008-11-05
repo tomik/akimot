@@ -39,4 +39,5 @@ class Logger
 		ostream& operator()(unsigned int = 0) const;
 }; 
 
+
 #endif

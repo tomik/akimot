@@ -3,13 +3,14 @@
 
 === Actual ===
 [5,gen] implement hashing and step correctness check in uct 
-[5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
-[5,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
-[4,eval] mapping evaluation -> win percentage is dummy -> improve
-[3,uct] remove father from node ? better best move management( take steps from history ? ) 
+[4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
+[3,eval] mapping evaluation -> win percentage is dummy -> improve
+  === Done  ===
+  [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
 
 === Small Issues ===
+[3,board-hash] move playerSignatures to board and update it in commitMove ? 
+[3,uct] remove father from node ? better best move management( take steps from history ? ) 
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 
-

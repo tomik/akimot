@@ -275,6 +275,10 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
     s = s + steps[i].toString();   //resultPrint of move
   } 
 
+  //add signature of final position ! -> for future thirdRepetitionCheck
+  //move is not commited - therefore it is 1 - index_of_player_to_move
+  thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
+
   delete(board);
   return s; 
 } 

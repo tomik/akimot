@@ -2,7 +2,7 @@
 #define BOARD_H
 
 #include "utils.h"
-
+#include "hash.h"
 
 #define MAX_STEPS  200
 #define MAX_PIECES  16      //max number of pieces per player 
@@ -55,6 +55,8 @@
 
 extern const int direction[4];
 extern const int trap[4];
+
+extern ThirdRep thirdRep;
 
 typedef uint player_t;
 typedef int  square_t;
@@ -180,8 +182,9 @@ class Board
 {
 
 	private:
-    static bool   classInit;
-    static u64    zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+    static bool       classInit;
+    static u64        zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+    static ThirdRep*  thirdRep_;
 
 		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
 		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
@@ -216,8 +219,8 @@ class Board
     /**
     * Inits position from a method in file.
     *
-    * returns true if initialization went right 
-    * otherwise returns false
+    * @return true if initialization went right 
+    * otherwise false
     */
     bool  init(const char* fn); 
     void  initZobrist() const;
@@ -238,6 +241,7 @@ class Board
      *  Wraper for makeStep with commiting.
      *
      *  Performs makestep on given step. If the move is over it commits.
+     *  @param step given step 
      *  @return true if commited false otherwise
      */
 		bool makeStepTryCommitMove(Step&);
@@ -302,7 +306,8 @@ class Board
     bool		  isEmpty();
 		uint			getAllStepsNum(uint);
 		uint			getStepCount();
-    int       getPreMoveSignature();
+    u64       getPreMoveSignature();
+    u64       getSignature();
     player_t  getPlayerToMove();
 		player_t	getWinner();
 		

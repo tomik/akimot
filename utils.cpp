@@ -29,3 +29,4 @@ ostream& Logger::operator()(unsigned int messageLevel) const{
   */
   return cerr;
 }
+
