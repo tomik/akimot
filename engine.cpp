@@ -87,7 +87,8 @@ Node* Node::findMostExploredChild()
 
 float Node::ucb(float exploreCoeff)
 {
-  return ( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt(exploreCoeff/visits_);
+  //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
+  return (( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt((exploreCoeff/visits_)));
 }
 
 //---------------------------------------------------------------------
@@ -101,7 +102,7 @@ void Node::addChild(Node* newChild)
   this->firstChild_ = newChild;
   newChild->father_ = this;
 }
-
+ 
 //---------------------------------------------------------------------
 
 void Node::removeChild(Node* delChild)
@@ -458,9 +459,9 @@ string Uct::generateMove()
   #endif
   timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
   
-//log_() << tree_->toString();
 
-  #ifdef DEBUG
+  //#ifdef DEBUG
+  //log_() << tree_->toString();
     log_()
       << "Performance: " << endl
         << "  " << iteration << " playouts" << endl 
@@ -473,7 +474,7 @@ string Uct::generateMove()
         << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
         << "  " << nodesExpanded_ << " nodes expanded" << endl 
       ;
-  #endif
+  //#endif
  
   return tree_->findBestMove(bestMoveNode_, board_);
 }

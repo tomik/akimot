@@ -9,7 +9,7 @@
 #include <cmath>
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-#define EVAL_AFTER_LENGTH 4    //length of playout after which we evaluate
+#define EVAL_AFTER_LENGTH 8    //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
 #define MATURE_LEVEL  10
