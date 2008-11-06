@@ -63,6 +63,7 @@ class Config
     int         optionsNum_;
 
     OptionBool  useTimeControl_;
+    OptionBool  inputIsRecord_;
     OptionInt   secPerMove_;
     OptionInt   playoutsPerMove_;
     OptionString fnInput_;
@@ -77,6 +78,7 @@ class Config
     bool parseValue(string);
 
     bool useTimeControl(){ return useTimeControl_.getValue(); } 
+    bool inputIsRecord(){ return inputIsRecord_.getValue(); } 
     int secPerMove(){ return secPerMove_.getValue(); } 
     int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
     const char * fnInput() { return fnInput_.getValue().c_str(); }

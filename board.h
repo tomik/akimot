@@ -217,16 +217,57 @@ class Board
     Board();
 
     /**
-    * Inits position from a method in file.
+     * General init - nullifies variables.
+     * Inits static variables if neccessary, etc.
+     */
+    void  init();
+
+    /**
+    * Inits board from a game record in file.
     *
     * @return true if initialization went right 
     * otherwise false
     */
-    bool  init(const char* fn); 
+    bool  initFromRecord(const char* fn); 
+
+    /**
+    * Inits board from a position in file.
+    *
+    * @return true if initialization went right 
+    * otherwise false
+    */
+    bool  initFromPosition(const char* fn); 
+
+    /**
+     * Init zobrist table.
+     *
+     * Fills zobrist table with random u64 numbers. 
+     * Zobrist algorithm is used for making position signatures.
+     */
     void  initZobrist() const;
+
+    /**
+     * Take (hopefully) unique signature of position - u64 number. 
+     *
+     * Done by XOR-ing signatures for all pieces on the board.
+     */
     void  makeSignature();
 
+    /**
+     * Step generation for Monte Carlo playouts.
+     *
+     * Generates (random) step with some restrictions ( i.e. no pass in the first step ).
+     * Random step is generated either by calling findRandomStep method or ( if the former 
+     * one is unsuccessfull ) by generating all steps and selecting one in random.
+     */
 		Step findStepToPlay();
+
+    /**
+     * "Random" step generator.
+     *
+     * Generates random step ( random type, from, to, ... ) and returns it if it's correctness
+     * is verified (might try to generate the step more times).
+     */
 		bool findRandomStep(Step&) const;
 
     /**
@@ -249,15 +290,17 @@ class Board
     /**
      * Commits the move.
      *
-     * Handles switching the sides, checking the winner, etc.*/
+     * Handles switching the sides, checking the winner, etc.
+     */
 		void commitMove();
 
     /**
      * Forward check. 
      *
-     * No board update.
+     * Checking whether step defined by from, to is causing a kill (suicide, being pushed/pulled to trap, stops protecting piece on the trap).
+     * This function causes no board update ! 
      */
-    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo);
+    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo) const;
 
     /**
      * Kill checker.

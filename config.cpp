@@ -14,16 +14,18 @@
 
 Config::Config()
 {
-  useTimeControl_ = OptionBool("t","useTimeControl","use time control",OT_BOOL_POS, false);
+  useTimeControl_ = OptionBool("t","use_time_tontrol","use time control",OT_BOOL_POS, false);
   fnInput_ = OptionString("i","input","Input file", OT_STRING, "");
   secPerMove_ = OptionInt("s","sec_per_move","Seconds per move - trivial time control", OT_INT, 3);
   playoutsPerMove_ = OptionInt("p","playouts_per_move","Playouts per move - mostly for debugging", OT_INT, PLAYOUTS_PER_MOVE);
+  inputIsRecord_ = OptionBool("r","input_record","input is a record of the game",OT_BOOL_POS, false);
 
   options_[0] =  &useTimeControl_;
   options_[1] =  &fnInput_;
   options_[2] =  &secPerMove_;
   options_[3] =  &playoutsPerMove_;
-  optionsNum_ = 4;
+  options_[4] =  &inputIsRecord_;
+  optionsNum_ = 5;
 
 }
 

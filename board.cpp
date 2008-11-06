@@ -352,9 +352,9 @@ Board::Board()
 {
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------- 
 
-bool Board::init(const char* fn)
+void Board::init()
 {
 
   stepArrayLen[0] = 0;
@@ -385,6 +385,56 @@ bool Board::init(const char* fn)
   moveCount_ = 1;
   winner_    = EMPTY;
 
+  //init pieceArray and rabbitsNum
+  rabbitsNum[0] = 0;
+  rabbitsNum[1] = 0;
+
+  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
+
+}
+
+//---------------------------------------------------------------------
+
+bool Board::initFromRecord(const char* fn)
+{
+
+  init();
+  
+  fstream f;
+  string line;
+
+  try { 
+    f.open(fn, fstream::in);
+    if (! f.good()){
+      f.close();
+      return false;
+    }
+
+    
+    while (f.good()){
+      
+      getline(f, line);
+      cout << line << endl;
+      //while ( ! f.eoln()){  
+     //   f >> line; 
+      //}
+    }
+
+  }
+  catch(int e) {
+    return false;     //initialization from file failed
+  }
+
+  return true;
+
+} 
+
+//---------------------------------------------------------------------
+
+bool Board::initFromPosition(const char* fn)
+{
+
+  init();
 
   fstream f;
   char side;
@@ -450,9 +500,6 @@ bool Board::init(const char* fn)
   makeSignature();    //(unique) position identification
   preMoveSignature = signature;
 
-  //init pieceArray and rabbitsNum
-  rabbitsNum[0] = 0;
-  rabbitsNum[1] = 0;
   for (int square = 11; square < 89; square++){
     if (IS_PLAYER(board_[square]))
       pieceArray[PLAYER_TO_INDEX(OWNER(board_[square]))].add(square);
@@ -460,8 +507,6 @@ bool Board::init(const char* fn)
       rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++;
 
   }
-
-  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
   return true;
 }
@@ -666,7 +711,7 @@ void Board::makeStep(Step& step)
 
 //--------------------------------------------------------------------- 
 
-bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo)
+bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) const
 {
 
   if ( IS_TRAP(to) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
