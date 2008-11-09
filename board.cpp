@@ -381,6 +381,7 @@ void Board::init()
     }
 
   toMove_    = GOLD;
+  toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
   stepCount_ = 0;
   moveCount_ = 1;
   winner_    = EMPTY;
@@ -390,6 +391,8 @@ void Board::init()
   rabbitsNum[1] = 0;
 
   assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
+
+  makeSignature();
 
 }
 
@@ -402,6 +405,12 @@ bool Board::initFromRecord(const char* fn)
   
   fstream f;
   string line;
+  stringstream ss;
+  string token;
+  uint moveNum;
+  player_t movePlayer = GOLD;
+  recordAction_e recordAction;
+
 
   try { 
     f.open(fn, fstream::in);
@@ -414,11 +423,52 @@ bool Board::initFromRecord(const char* fn)
     while (f.good()){
       
       getline(f, line);
+      ss.clear();
+      ss.str(line);
+
+      ss >> token; 
+      moveNum = str2int(token.substr(0, token.length() - 1));
       cout << line << endl;
-      //while ( ! f.eoln()){  
-     //   f >> line; 
-      //}
+      //cout << endl << "move: " << moveNum;
+      while (ss.good()){
+        player_t player; 
+        piece_t  piece;
+        square_t from;
+        square_t to;
+
+        ss >> token;
+        recordAction = parseRecordActionToken(token, player, piece, from, to);
+        Step step = Step(STEP_SINGLE, player, piece, from, to);
+
+        switch (recordAction){
+          case ACTION_PLACEMENT:
+            assert(moveNum == 1);
+
+            board_[from] = (player | piece);
+            pieceArray[PLAYER_TO_INDEX(player)].add(from);
+            if (piece == PIECE_RABBIT)
+              rabbitsNum[PLAYER_TO_INDEX(player)]++; 
+            break;
+          case ACTION_STEP:
+            //cout << toString();
+            assert(moveNum > 1);
+            makeStep(step);
+            //cout << "step :" << step.toString() << endl; 
+            break;
+          case ACTION_TRAP_FALL:
+            break;
+        }
+
+        movePlayer = player;
+      }
+
     }
+    moveCount_ = moveNum;
+    toMove_ = OPP(movePlayer);
+    toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
+    stepCount_ = 0;
+    makeSignature();
+    preMoveSignature_ = signature_;
 
   }
   catch(int e) {
@@ -439,6 +489,7 @@ bool Board::initFromPosition(const char* fn)
   fstream f;
   char side;
   char c;
+  PiecePair piecePair;
   
   try { 
     f.open(fn,fstream::in);
@@ -466,28 +517,20 @@ bool Board::initFromPosition(const char* fn)
 
       for (int j = 1; j < 9; j++) {
         f.ignore(1); //ignore a white space 
-         c=f.get();
+        c=f.get();
 
-         switch(c) {
-           case 'E' : board_[i*10+j] = (GOLD | PIECE_ELEPHANT);  break;
-           case 'M' : board_[i*10+j] = (GOLD | PIECE_CAMEL);   break;
-           case 'H' : board_[i*10+j] = (GOLD | PIECE_HORSE);   break;
-           case 'D' : board_[i*10+j] = (GOLD | PIECE_DOG);    break;
-           case 'C' : board_[i*10+j] = (GOLD | PIECE_CAT);    break;
-           case 'R' : board_[i*10+j] = (GOLD | PIECE_RABBIT);   break;
-           case 'e' : board_[i*10+j] = (SILVER | PIECE_ELEPHANT); break;
-           case 'm' : board_[i*10+j] = (SILVER | PIECE_CAMEL);  break;
-           case 'h' : board_[i*10+j] = (SILVER | PIECE_HORSE);  break;
-           case 'd' : board_[i*10+j] = (SILVER | PIECE_DOG);   break;
-           case 'c' : board_[i*10+j] = (SILVER | PIECE_CAT);   break;
-           case 'r' : board_[i*10+j] = (SILVER | PIECE_RABBIT);  break;
-           case ' ' : case 'X' : case 'x': board_[i*10+j] = (EMPTY_SQUARE); break;
-           default :
-           log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n";
-           f.close();
-           return false;
-           break;
-         }
+        if (c == ' ' || c=='X' || c=='x')
+          board_[i*10+j] = (EMPTY_SQUARE); 
+        else {
+          try{
+            piecePair = parsePieceChar(c);
+            board_[i*10+j] = (piecePair.first | piecePair.second);
+          }catch (int e){
+            log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
+            f.close();
+            return false;
+          }
+        } //else
       } //for
       f.ignore(1024,'\n'); //finish the line
     } //for 
@@ -498,18 +541,91 @@ bool Board::initFromPosition(const char* fn)
   }
 
   makeSignature();    //(unique) position identification
-  preMoveSignature = signature;
+  preMoveSignature_ = signature_;
 
   for (int square = 11; square < 89; square++){
     if (IS_PLAYER(board_[square]))
       pieceArray[PLAYER_TO_INDEX(OWNER(board_[square]))].add(square);
     if (PIECE(board_[square]) == PIECE_RABBIT)
-      rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++;
-
+      rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++; 
   }
 
   return true;
 }
+
+//--------------------------------------------------------------------- 
+
+recordAction_e  Board::parseRecordActionToken(const string& token, player_t& player, 
+                                              piece_t& piece, square_t& from, square_t& to)
+{
+  assert(token.length() == 3 || token.length() == 4);
+  recordAction_e recordAction = ACTION_STEP;
+
+  if (token.length() == 3) 
+    recordAction = ACTION_PLACEMENT;
+  else if (token[3] == 'x') //kill in trap
+    recordAction = ACTION_TRAP_FALL; 
+
+  //parse player/piece
+  PiecePair piecePair = parsePieceChar(token[0]);
+  player = piecePair.first;
+  piece = piecePair.second;
+
+  //parse from
+  string columnRefStr("abcdefgh");
+  string::size_type col = columnRefStr.find(token[1], 0);
+  assert(col != string::npos);
+  uint row = token[2] - '0';
+  assert(row > 0 && row < 9);
+  from = (row) * 10 + (col + 1);
+
+  if (recordAction == ACTION_STEP){
+    square_t direction;
+    switch  (token[3]){
+      case 'n': direction = NORTH;  
+        break;  
+      case 's': direction = SOUTH;  
+        break;  
+      case 'e': direction = EAST;  
+        break;  
+      case 'w': direction = WEST;  
+        break;  
+      default:
+        assert(false);
+        break;
+    }
+    to = from + direction;
+  }
+
+  return recordAction;
+}
+
+//--------------------------------------------------------------------- 
+
+PiecePair Board::parsePieceChar(char pieceChar) 
+{
+  player_t player;
+  piece_t piece;
+
+  player = GOLD;
+  if (islower(pieceChar))
+    player = SILVER;
+  pieceChar = tolower(pieceChar); 
+
+  switch(pieceChar) {
+    case 'e' : piece = PIECE_ELEPHANT; break;
+    case 'm' : piece = PIECE_CAMEL;    break;
+    case 'h' : piece = PIECE_HORSE;    break;
+    case 'd' : piece = PIECE_DOG;      break;
+    case 'c' : piece = PIECE_CAT;      break;
+    case 'r' : piece = PIECE_RABBIT;   break;
+    default:
+      throw "Incorrect piece Character encountered.";
+      break;
+  }
+  return PiecePair(player, piece); 
+}
+
 
 //---------------------------------------------------------------------
 
@@ -525,10 +641,10 @@ void Board::initZobrist() const
 
 void Board::makeSignature()
 {
-  signature = 0;
+  signature_ = 0;
   for (int i = 0; i < 100; i++)  
     if IS_PLAYER(board_[i])
-      signature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
+      signature_ ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
 }
 
 //---------------------------------------------------------------------
@@ -813,7 +929,7 @@ void Board::commitMove()
   stepCount_ = 0;
 
   //preMoveSignature of the next move is the actual signature
-  preMoveSignature = signature;
+  preMoveSignature_ = signature_;
 }
 
 //---------------------------------------------------------------------
@@ -821,14 +937,14 @@ void Board::commitMove()
 u64 Board::calcAfterStepSignature(Step& step) const
 {
   if (step.stepType_ == STEP_PASS)
-    return signature;
+    return signature_;
 
   assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
 
   int checkTrap[2];         //squares in whose vicinity we check the traps
   int checkTrapNum = 0;
 
-  u64 newSignature = signature;
+  u64 newSignature = signature_;
 
   if (step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL){
     newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppFrom_];  //erase previous location
@@ -959,7 +1075,7 @@ int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const
 bool Board::stepIsVirtualPass( Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
-  if (afterStepSignature == preMoveSignature) 
+  if (afterStepSignature == preMoveSignature_) 
     return true;
   return false;
   
@@ -1060,14 +1176,14 @@ uint Board::getStepCount()
 
 u64 Board::getSignature()
 {
-  return signature;
+  return signature_;
 }
 
 //---------------------------------------------------------------------
 
 u64 Board::getPreMoveSignature()
 {
-  return preMoveSignature; 
+  return preMoveSignature_; 
 }
 
 //---------------------------------------------------------------------
@@ -1089,7 +1205,7 @@ player_t Board::getWinner()
 /*places piece at given position and updates signature*/
 void Board::setSquare( square_t square, player_t player, piece_t piece)  
 {
-  signature ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square]; 
+  signature_ ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square]; 
   board_[square] = ( player | piece ); 
 }
 
@@ -1098,7 +1214,7 @@ void Board::setSquare( square_t square, player_t player, piece_t piece)
 /*removes piece from given position and updates signature*/ 
 void Board::clearSquare( square_t square) 
 {
-  signature ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square]; 
+  signature_ ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square]; 
   board_[square] = EMPTY_SQUARE; 
 } 
 

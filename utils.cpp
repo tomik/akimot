@@ -30,3 +30,11 @@ ostream& Logger::operator()(unsigned int messageLevel) const{
   return cerr;
 }
 
+
+int str2int(const string& str)
+{
+  stringstream ss(str);
+  int n;
+  ss >> n;
+  return n;
+}

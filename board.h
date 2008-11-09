@@ -170,6 +170,16 @@ class StepWithKills: public Step
 };
 
 
+/**
+ * Record action as parsed from the game record (file).
+ *
+ * Potential values are: placement in the beginning (e.g. RA1), 
+ * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
+ */
+enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL}; 
+
+typedef pair<player_t, piece_t>  PiecePair;
+
 
 typedef Step  StepArray[MAX_STEPS];
 
@@ -195,8 +205,8 @@ class Board
     StepArray     stepArray[2];
     uint          stepArrayLen[2];
 
-    u64           signature;            //position signature - for hash tables, corectness checks, etc. 
-    u64           preMoveSignature;     //signature of position from when the current move started
+    u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
+    u64           preMoveSignature_;     //signature of position from when the current move started
 
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
     uint  moveCount_;
@@ -237,6 +247,27 @@ class Board
     * otherwise false
     */
     bool  initFromPosition(const char* fn); 
+
+    /**
+    * Parsing single token for init from game record.
+    *
+    * @param token given string token (e.g. Ra1n)
+    * @param player player parsed from the token
+    * @param piece  piece parsed from the token
+    * @param from position parsed from the token
+    * @param to (optional) new position parsed from the token (only if it is a step)
+    * @return what recordAction was parsed (i.e. placement in the beginning,...)
+    */
+    recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
+                                           piece_t& piece, square_t& from, square_t& to); 
+
+    /**
+    * Parsing piece char (e.g. R,H,c,m, ... ) 
+    * 
+    * @return pair: (player, piece) belonging to given char.
+    * Throws an exception when unknown pieceChar encountered.
+    */
+    PiecePair parsePieceChar(char pieceChar); 
 
     /**
      * Init zobrist table.

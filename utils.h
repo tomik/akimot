@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <ctype.h>
 #include <bitset>
 
 #include <stdio.h>
@@ -39,5 +40,6 @@ class Logger
 		ostream& operator()(unsigned int = 0) const;
 }; 
 
+int str2int(const string& str);
 
 #endif
