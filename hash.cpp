@@ -52,8 +52,49 @@ bool ThirdRep::check(u64 key, uint playerIndex)
 }
 
 
-//--------------------------------------------------------------------- 
-//--------------------------------------------------------------------- 
-
-
 ThirdRep thirdRep;
+
+//--------------------------------------------------------------------- 
+// section SearchTT 
+//--------------------------------------------------------------------- 
+
+SearchTT::SearchTT()
+{
+  table.clear();
+  playerSignature_[0] = getRandomU64();
+  playerSignature_[0] = getRandomU64(); 
+}
+
+//--------------------------------------------------------------------- 
+
+void SearchTT::saveItem(u64 key, uint playerIndex, Node* node)
+{
+  assert(playerIndex == 0 || playerIndex == 1);
+  assert(node != NULL);
+  key ^= playerSignature_[playerIndex];
+
+  TT::iterator iter;
+  table[key] = node;
+}
+
+//--------------------------------------------------------------------- 
+
+Node* SearchTT::loadItem(u64 key, uint playerIndex)
+{
+  assert(playerIndex == 0 || playerIndex == 1);
+  key ^= playerSignature_[playerIndex];
+
+  TT::iterator iter;
+  iter = table.find(key);
+  if (iter != table.end()) 
+    return iter->second;
+  return NULL;
+}
+
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+
+
+
+
+

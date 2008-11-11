@@ -286,19 +286,19 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
 
 //---------------------------------------------------------------------
 
-void Tree::historyReset()
-{
-  historyTop = 0;
-}
-
-//---------------------------------------------------------------------
-
 void Tree::updateHistory(float sample)
 {
   for(int i = historyTop; i >= 0; i--)
     history[i]->update(sample);
   historyReset();
 } 
+
+//---------------------------------------------------------------------
+
+void Tree::historyReset()
+{
+  historyTop = 0;
+}
 
 //---------------------------------------------------------------------
 
@@ -315,6 +315,21 @@ Node* Tree::actNode()
 }
 
 //---------------------------------------------------------------------
+
+int Tree::getNodeDepth(Node* node) 
+{
+  assert(node != NULL);
+  int depth = 0;
+
+  while (node != root()){
+    node = node->getFather();
+    depth++;
+  }
+  return depth;
+  
+}
+
+//--------------------------------------------------------------------- 
 
 string Tree::toString() {
   return root()->recToString(0);

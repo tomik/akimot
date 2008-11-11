@@ -5,6 +5,7 @@
 #include "config.h"
 #include "board.h"
 #include "eval.h"
+#include "hash.h"
 
 #include <cmath>
 
@@ -74,14 +75,33 @@ class Tree
     Tree(player_t);   
     ~Tree();
 
+    /**
+     * UCT-based descend to next level.
+     *
+     * Crucial method implementing core idea of UCT algorithm - 
+     * the descend by UCB1 formula. History is updated - simulating the descend.
+     */
     void uctDescend();
+
+    /** 
+     * Finding the resulting move.
+     *
+     * In the end of the search, finds the best move (sequence of up to 4 steps)
+     * for player who owns the root and returns it's string representation 
+     * to be outputted (also trap falls are outputed ... e,g. RC1n RC2n RC3x RB1n)
+     */
     string findBestMove(Node* bestFirstNode = NULL, const Board* boardGiven = NULL);
 
     void updateHistory(float);
     void historyReset();
 
-    Node* actNode();
     Node* root();
+    Node* actNode();
+
+    /**
+     * Gets ply in which node lies.
+     */
+    int getNodeDepth(Node* node);
 
     string toString();
     string pathToActToString(bool onlyLastMove = false);

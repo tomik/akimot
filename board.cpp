@@ -580,7 +580,7 @@ recordAction_e  Board::parseRecordActionToken(const string& token, player_t& pla
   from = (row) * 10 + (col + 1);
 
   if (recordAction == ACTION_STEP){
-    square_t direction;
+    square_t direction = 0; 
     switch  (token[3]){
       case 'n': direction = NORTH;  
         break;  
