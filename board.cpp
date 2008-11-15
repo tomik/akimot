@@ -428,8 +428,7 @@ bool Board::initFromRecord(const char* fn)
 
       ss >> token; 
       moveNum = str2int(token.substr(0, token.length() - 1));
-      cout << line << endl;
-      //cout << endl << "move: " << moveNum;
+      //log_()<< line << endl;
       while (ss.good()){
         player_t player; 
         piece_t  piece;
@@ -450,10 +449,8 @@ bool Board::initFromRecord(const char* fn)
               rabbitsNum[PLAYER_TO_INDEX(player)]++; 
             break;
           case ACTION_STEP:
-            //cout << toString();
             assert(moveNum > 1);
             makeStep(step);
-            //cout << "step :" << step.toString() << endl; 
             break;
           case ACTION_TRAP_FALL:
             break;
@@ -1087,7 +1084,7 @@ bool Board::stepIsThirdRepetition( Step& step ) const
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   //check whether position with opponent to move won't be a repetition
-  if ( thirdRep_->check(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
+  if ( ! thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
     return true;
   return false;
   
