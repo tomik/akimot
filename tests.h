@@ -10,6 +10,7 @@
 class MyTestSuite : public CxxTest::TestSuite 
 {
   public:
+
     /**
      * Board init test.
      *
@@ -45,7 +46,7 @@ class MyTestSuite : public CxxTest::TestSuite
      }
 
     /**
-     * Hash table insert/is member/load test.
+     * Hash table insert/hasItem/load test.
      */
     void testHashTable(void)
     {
@@ -61,7 +62,7 @@ class MyTestSuite : public CxxTest::TestSuite
       //positive-lookup test
       for (int i = 0; i < HASH_TABLE_INSERTS; i++){
         int item;
-        TS_ASSERT_EQUALS(hashTable.isMember(keys[i]), true); 
+        TS_ASSERT_EQUALS(hashTable.hasItem(keys[i]), true); 
         if (! hashTable.loadItem(keys[i], item))
           TS_ASSERT_EQUALS(true, false); 
       }
@@ -70,7 +71,7 @@ class MyTestSuite : public CxxTest::TestSuite
       for (int i = 0; i < HASH_TABLE_INSERTS; i++){
         int key = getRandomU64();
         int item;
-        TS_ASSERT_EQUALS(hashTable.isMember(key), false); 
+        TS_ASSERT_EQUALS(hashTable.hasItem(key), false); 
         if (hashTable.loadItem(key, item))
           TS_ASSERT_EQUALS(true, false); 
       }

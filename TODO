@@ -8,9 +8,12 @@
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
   [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
+  [3, uct] node which cannot expand must be deleted straightaway
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
+[3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
+         this is difficult to test (positions with almost no moves to play)
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

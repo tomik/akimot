@@ -144,6 +144,7 @@ class Step
 
     player_t getStepPlayer() const;
     bool isPass() const;
+    bool isSingleStep() const;
     bool isPushPull() const;
 		bool pieceMoved() const;
 		bool operator== (const Step&) const;
@@ -328,7 +329,8 @@ class Board
     /**
      * Forward check. 
      *
-     * Checking whether step defined by from, to is causing a kill (suicide, being pushed/pulled to trap, stops protecting piece on the trap).
+     * Checking whether step defined by from, to is causing a kill 
+     * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
      * This function causes no board update ! 
      */
     bool checkKillForward(square_t from, square_t to, KillInfo* killInfo) const;
@@ -350,7 +352,7 @@ class Board
     /**
      * Calculater signature for one step forward. 
      */
-    u64 calcAfterStepSignature(Step& step) const;
+    u64 calcAfterStepSignature(const Step& step) const;
 
     /**
      * Generates all (syntatically) legal steps from the position.
@@ -377,21 +379,22 @@ class Board
 		inline bool hasStrongerEnemy(square_t) const;
 		inline bool isFrozen(square_t) const;
 
-    bool		  isEmpty();
-		uint			getAllStepsNum(uint);
-		uint			getStepCount();
-    u64       getPreMoveSignature();
-    u64       getSignature();
-    player_t  getPlayerToMove();
-		player_t	getWinner();
+    bool		  isEmpty() const;
+		uint			getAllStepsNum(uint) const;
+		uint			getStepCount() const;
+    u64       getPreMoveSignature() const;
+    u64       getSignature() const;
+    player_t  getPlayerToMove() const;
+    player_t  getPlayerToMoveAfterStep(const Step& step) const;
+		player_t	getWinner() const;
 		
     void setSquare(square_t, player_t, piece_t);
     void clearSquare(square_t);
 
-		string toString();
-		string allStepsToString();
-    void dump();
-		void dumpAllSteps();
+		string toString() const;
+		string allStepsToString() const;
+    void dump() const;
+		void dumpAllSteps() const;
 
 		void testPieceArray();
 };

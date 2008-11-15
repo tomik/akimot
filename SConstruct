@@ -40,5 +40,5 @@ if do_build:
   env.Install(AKIMOT_MATCH_DIR, akimot)
   env.Alias('match', AKIMOT_MATCH_DIR)
   tst = Environment(tools = ['default','cxxtest'], CXXTEST='/usr/bin/cxxtestgen.py', CXXTEST_DIR='')
-  tst.CxxTest('akimot_test', ['tests.h'] + obj_files_test)
+  tst.CxxTest('tests', ['tests.h'] + obj_files_test)
   #print "CCCOM is ",  env.subst('$CCCOM')

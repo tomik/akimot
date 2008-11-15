@@ -22,9 +22,9 @@ Node::Node(const Step& step)
 {
   firstChild_ = NULL;
   sibling_    = NULL;
+  father_     = NULL;  
   visits_     = 0;
   value_      = 0;
-  father_     = NULL;  
 
   step_ = step;
   nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
@@ -32,19 +32,19 @@ Node::Node(const Step& step)
 
 //---------------------------------------------------------------------
 
-void Node::expand(const StepArray& stepArray, uint len)
+void Node::expand(const StepArray& steps, uint len)
 {
   //cout << "Expanding node" << endl;
   Node* newChild;
   for (uint i = 0; i < len; i++){
-    newChild = new Node(stepArray[i]);
+    newChild = new Node(steps[i]);
     addChild(newChild);
   }
 }
 
 //---------------------------------------------------------------------
 
-Node* Node::findUctChild()
+Node* Node::findUctChild() const
 {
   assert(this->firstChild_ != NULL);
 
@@ -69,7 +69,7 @@ Node* Node::findUctChild()
 
 //---------------------------------------------------------------------
 
-Node* Node::findMostExploredChild()
+Node* Node::findMostExploredChild() const
 {
   assert(this->firstChild_ != NULL);
 
@@ -85,7 +85,7 @@ Node* Node::findMostExploredChild()
 
 //---------------------------------------------------------------------
 
-float Node::ucb(float exploreCoeff)
+float Node::ucb(float exploreCoeff) const
 {
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
   return (( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt((exploreCoeff/visits_)));
@@ -105,12 +105,41 @@ void Node::addChild(Node* newChild)
  
 //---------------------------------------------------------------------
 
-void Node::removeChild(Node* delChild)
+void Node::removeChild(Node* child)
 {
   assert(this->firstChild_ != NULL);
-  assert(delChild->firstChild_ == NULL);
+  Node* previous = NULL;
+  Node* node = firstChild_;
 
-  //TODO implement removal
+  while(node != child && node != NULL){
+    previous = node;
+    node = node->sibling_;
+  }
+  assert(node == child);
+
+  if (previous == NULL)
+    firstChild_ = node->sibling_;
+  else
+    previous->sibling_ = node->sibling_;
+
+  delete node;
+
+  //TODO handle number of visits/value ? 
+  if (firstChild_ == NULL){
+    remove();
+  }
+}
+
+//---------------------------------------------------------------------
+
+void Node::remove()
+{
+  assert(firstChild_ == NULL);
+  assert(father_ != NULL);
+
+  //TODO: father==NULL -> root should be removed ? 
+  if (father_ != NULL) 
+    father_->removeChild(this);
   return;
   
 }
@@ -139,49 +168,63 @@ void Node::update(float sample)
 
 //---------------------------------------------------------------------
 
-bool Node::isMature() 
+bool Node::isMature() const
 {
   return visits_ > MATURE_LEVEL;
 }
 
 //---------------------------------------------------------------------
 
-bool Node::hasChildren() 
+bool Node::hasChildren() const
 {
   return firstChild_ != NULL;
 }
 
 //---------------------------------------------------------------------
 
-Node* Node::getFather()
+Node* Node::getFather() const
 {
   return father_;
 }
 
 //---------------------------------------------------------------------
 
-Step Node::getStep()
+Node* Node::getFirstChild() const
+{
+  return firstChild_;
+}
+
+//---------------------------------------------------------------------
+
+Node* Node::getSibling() const
+{
+  return sibling_;
+}
+
+//---------------------------------------------------------------------
+
+Step Node::getStep() const
 {
   return step_;
 }
 
 //---------------------------------------------------------------------
 
-int Node::getVisits()
+int Node::getVisits() const
 {
   return visits_;
 }
 
 //---------------------------------------------------------------------
 
-nodeType_e Node::getNodeType()
+nodeType_e Node::getNodeType() const
 {
   return nodeType_;
 }
 
 //---------------------------------------------------------------------
 
-string Node::toString()
+string Node::toString() const
 {
   stringstream ss;
 
@@ -191,7 +234,7 @@ string Node::toString()
 
 //---------------------------------------------------------------------
 
-string Node::recToString(int depth)
+string Node::recToString(int depth) const
 {
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
@@ -431,7 +474,9 @@ Uct::Uct(Board* board)
   board_ = board;
   tree_  = new Tree(board->getPlayerToMove());
   eval_  = new Eval();
+  tt_    = new TT();
   bestMoveNode_ = NULL;
+  nodesPruned_ = 0;
   nodesExpanded_ = 0;
   nodesInTheTree_ = 1;
 }
@@ -442,6 +487,7 @@ Uct::~Uct()
 {
   delete eval_;
   delete tree_;
+  delete tt_;
 }
 
 //---------------------------------------------------------------------
@@ -488,6 +534,7 @@ string Uct::generateMove()
       << "UCT: " << endl
         << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
         << "  " << nodesExpanded_ << " nodes expanded" << endl 
+        << "  " << nodesPruned_ << " nodes pruned" << endl 
       ;
   //#endif
  
@@ -503,31 +550,42 @@ void Uct::doPlayout()
   playoutStatus_e playoutStatus;
   Node* MoveNode = NULL;
 
-  StepArray stepArray;    
-  uint      stepArrayLen;
+  StepArray steps;    
+  uint      stepsNum;
   
   tree_->historyReset();     //point tree's actNode to the root 
 
   do { 
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
-        stepArrayLen = playBoard->generateAllSteps(playBoard->getPlayerToMove(),stepArray);
+        stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(),steps);
 
         #ifdef DEBUG_3
           log_() << "Expanding node : " << tree_->pathToActToString() << endl;
         #endif
 
-        stepArrayLen = playBoard->filterRepetitions(stepArray, stepArrayLen);
-        tree_->actNode()->expand(stepArray,stepArrayLen);
+        stepsNum = playBoard->filterRepetitions(steps, stepsNum);
 
-        nodesExpanded_++;
-        nodesInTheTree_+= stepArrayLen;
+        stepsNum = filterTT(steps, stepsNum, playBoard); 
+        if (stepsNum > 0) {
+          tree_->actNode()->expand(steps,stepsNum);
+          updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+          nodesExpanded_++;
+          nodesInTheTree_ += stepsNum;
+        }else{
+          tree_->actNode()->remove();
+          //TODO remove might cause a cascade
+          nodesInTheTree_ -= 1; 
+          break;
+        }
+
         continue;
       }
 
       //"random" playout
       SimplePlayout simplePlayout(playBoard);
       playoutStatus = simplePlayout.doPlayout();
+      tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
       break;
     }
 
@@ -549,9 +607,7 @@ void Uct::doPlayout()
     }
 
   } while(true);
-
   
-  tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
   delete playBoard;
 }
 
@@ -568,6 +624,48 @@ int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
     return 1;
   else
     return -1;
+}
+
+//--------------------------------------------------------------------- 
+
+int Uct::filterTT(StepArray& steps, uint stepsNum, Board* board)
+{
+  uint i = 0;
+  u64 afterStepSignature;
+  //player_t newNodePlayer;
+  //Node* node
+
+  while (i < stepsNum){
+    afterStepSignature = board->calcAfterStepSignature(steps[i]);
+    if (tt_->hasItem(afterStepSignature, 
+                     PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
+      //TODO change this policy     
+      //if node with same position already exists in the tree new node is not added 
+      steps[i] = steps[stepsNum-- - 1];
+      nodesPruned_++;
+      continue;
+    }
+    i++; 
+  }
+
+  return stepsNum;
+}  
+
+//--------------------------------------------------------------------- 
+
+void Uct::updateTT(Node* nodeList, Board* board)
+{
+  assert(nodeList != NULL); 
+  Node* node = nodeList; 
+  u64 afterStepSignature;
+
+  while (node != NULL){
+    afterStepSignature = board->calcAfterStepSignature(node->getStep());
+    tt_->insertItem(afterStepSignature,
+                    PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(node->getStep())), 
+                    node);
+    node = node->getSibling();
+  }
 }
 
 //---------------------------------------------------------------------

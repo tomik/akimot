@@ -145,6 +145,13 @@ bool Step::isPass() const
 
 //---------------------------------------------------------------------
 
+bool Step::isSingleStep() const
+{
+  return (stepType_ == STEP_SINGLE);
+}
+
+//---------------------------------------------------------------------
+
 bool Step::isPushPull() const
 {
   return (stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
@@ -931,7 +938,7 @@ void Board::commitMove()
 
 //---------------------------------------------------------------------
 
-u64 Board::calcAfterStepSignature(Step& step) const
+u64 Board::calcAfterStepSignature(const Step& step) const
 {
   if (step.stepType_ == STEP_PASS)
     return signature_;
@@ -1148,7 +1155,7 @@ bool Board::isFrozen(square_t square) const
 
 //---------------------------------------------------------------------
 
-bool Board::isEmpty() 
+bool Board::isEmpty() const
   /* this check is used in the beginning for pieces positioning*/
 {
  return moveCount_ == 1; //TODO ... really check whether the board is empty 
@@ -1157,42 +1164,56 @@ bool Board::isEmpty()
 //---------------------------------------------------------------------
 
 /*returns number of all steps for given player - not index but player ! GOLD/SILVER */
-uint Board::getAllStepsNum(player_t player)
+uint Board::getAllStepsNum(player_t player) const
 {
   return stepArrayLen[PLAYER_TO_INDEX(player)];
 }
 
 //---------------------------------------------------------------------
 
-uint Board::getStepCount() 
+uint Board::getStepCount() const
 {
   return stepCount_;
 }
 
 //--------------------------------------------------------------------- 
 
-u64 Board::getSignature()
+u64 Board::getSignature() const
 {
   return signature_;
 }
 
 //---------------------------------------------------------------------
 
-u64 Board::getPreMoveSignature()
+u64 Board::getPreMoveSignature() const
 {
   return preMoveSignature_; 
 }
 
 //---------------------------------------------------------------------
 
-player_t Board::getPlayerToMove() 
+player_t Board::getPlayerToMove() const
 {
- return toMove_;
+  return toMove_;
 }
 
 //---------------------------------------------------------------------
 
-player_t Board::getWinner()
+player_t Board::getPlayerToMoveAfterStep(const Step& step) const
+{ 
+  //TODO what about resing step ? 
+  assert( step.isPass() || step.isPushPull() || step.isSingleStep());
+  player_t player = toMove_;
+
+  //check whether player switches after the step
+  if (step.isPass() || stepCount_ == 3 || (stepCount_ == 2 && step.isPushPull())) 
+    player = OPP(player);
+  return player;
+}
+
+//---------------------------------------------------------------------
+
+player_t Board::getWinner() const
 {
   return winner_;
 }
@@ -1217,7 +1238,7 @@ void Board::clearSquare( square_t square)
 
 //---------------------------------------------------------------------
 
-string Board::toString() 
+string Board::toString() const
 {
 
   stringstream ss;
@@ -1296,7 +1317,7 @@ string Board::toString()
 
 //---------------------------------------------------------------------
 
-string Board::allStepsToString()
+string Board::allStepsToString() const
 {
   stringstream ss;
 
@@ -1317,14 +1338,14 @@ string Board::allStepsToString()
 
 //---------------------------------------------------------------------
 
-void Board::dump()
+void Board::dump() const
 {
   log_() << toString();
 }
 
 //---------------------------------------------------------------------
 
-void Board::dumpAllSteps()
+void Board::dumpAllSteps() const
 {
   log_() << allStepsToString(); 
 }

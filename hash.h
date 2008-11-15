@@ -29,7 +29,7 @@ template<typename T> class HashTable
      *
      * @return true if item is in the table, otherwise returns false
      */
-    bool isMember(u64 key)
+    bool hasItem(u64 key)
     {
       if (table.find(key) != table.end()) 
         return true;
@@ -52,7 +52,7 @@ template<typename T> class HashTable
      */
     bool loadItem(u64 key, T& item)
     {
-      if (isMember(key)){
+      if (hasItem(key)){
         item = HashTable<T>::table[key];
         return true;
       }
@@ -76,13 +76,13 @@ template<typename T> class HashTableBoard : public HashTable<T>
     //--------------------------------------------------------------------- 
 
     /**
-     * Wrapper around HashTable::isMember.
+     * Wrapper around HashTable::hasItem.
      */
-    bool isMember(u64 key, uint playerIndex)
+    bool hasItem(u64 key, uint playerIndex)
     {
       assert(playerIndex == 0 || playerIndex == 1);
       key ^= playerSignature_[playerIndex];
-      return HashTable<T>::isMember(key);
+      return HashTable<T>::hasItem(key);
     }
 
     //--------------------------------------------------------------------- 
@@ -137,14 +137,14 @@ class ThirdRep: public HashTableBoard<int>
 //forward declaration
 class Node; 
 
-typedef map<u64, Node*> TTpair;
-typedef map<u64, Node*> TT;
+//typedef map<u64, Node*> TTpair;
+//typedef map<u64, Node*> TTmap;
 
 /**
- * Search transposition table.
+ * transposition table.
  *
  * Implements mapping: 
  * "key(position signature, player, move - tree depth ) ---> 
  *    pointer to the node in the tree"
  */
-typedef HashTableBoard<Node *> SearchTT;
+typedef HashTableBoard<Node *> TT;

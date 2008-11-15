@@ -40,25 +40,28 @@ class Node
     Node(const Step&);
 
     void  expand(const StepArray& stepArray, uint len);
-    Node* findUctChild();
-    Node* findMostExploredChild(); 
+    Node* findUctChild() const;
+    Node* findMostExploredChild() const;
 
-    float ucb(float);
+    float ucb(float) const;
 
     void  addChild(Node*);
     void  removeChild(Node*);
+    void  remove();
     void  freeChildren();
     void  update(float);
 
-    bool  isMature();
-    bool  hasChildren();
-    Node* getFather();
-    Step  getStep();
-    int   getVisits();
-    nodeType_e getNodeType();
+    bool  isMature() const;
+    bool  hasChildren() const;
+    Node* getFather() const;
+    Node* getFirstChild() const;
+    Node* getSibling() const;
+    Step  getStep() const;
+    int   getVisits() const;
+    nodeType_e getNodeType() const;
 
-    string toString(); 
-    string recToString(int);
+    string toString() const; 
+    string recToString(int) const;
 };
 
 
@@ -129,8 +132,10 @@ class Uct
     Board* board_;
     Tree* tree_;
     Eval* eval_;
+    TT* tt_;              //!< Transposition table.
     Logger log_;
     Node* bestMoveNode_;  //pointer to the most visited last step of first move
+    int nodesPruned_;
     int nodesExpanded_;
     int nodesInTheTree_;
 
@@ -139,7 +144,21 @@ class Uct
     Uct(Board*);
     ~Uct();
 
+    /**
+     * Generates uct-search result move.
+     *
+     * Top level function. Time control wrapper around 
+     * loop of doPlayout(s). 
+     * @return String representation of move to play.
+     */
     string generateMove();
+
+    /**
+     * Does one uct-monte carlo playout. 
+     *
+     * Crucial method of search. Performs UCT descend as deep as possible and 
+     * then starts the "monte carlo" playout through object SimplePlayout.
+     */
     void doPlayout();
 
     /**
@@ -149,6 +168,28 @@ class Uct
      * position is evaluated and biased coin si flipped to estimate the winner 
      */
     int decidePlayoutWinner(Board*, playoutStatus_e);
+
+    /**
+     * Filtering steps through Transposition tables.
+     *
+     * Signature of every step in steps is counted and checked 
+     * against transposition table. If found 
+     * step is deleted (won't be added to the tree).
+     * 
+     * @return Number of steps in steps array after update.
+     */
+    int filterTT(StepArray& steps, uint stepsNum, Board* board);
+
+    /**
+     * Updates Transposition tables after nodes were added. 
+     *
+     * Signature of every node in nodeList is added to the TT. 
+     *
+     * @param nodes Dynamic List of children (retrieved by getBrother())
+     * @return Number of steps in steps array after update.
+     */
+    void updateTT(Node* nodeList, Board* board);
+    
 };
 
 class Engine
