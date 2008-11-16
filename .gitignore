@@ -1,0 +1,10 @@
+.svn
+other/
+doc
+.swp
+site_scons
+.sconsign.dblite
+tests
+akimot
+tests.cpp
+*.o
