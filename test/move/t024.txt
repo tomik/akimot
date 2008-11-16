@@ -1,0 +1,12 @@
+9w
+ +-----------------+
+8|   r   r c r r r |
+7| r               |
+6|       c         |
+5| R r r h C H h d |
+4| d   E           |
+3| R D m e C       |
+2|   R H M   D   R |
+1|     R     R R R |
+ +-----------------+
+   a b c d e f g h

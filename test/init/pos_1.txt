@@ -1,0 +1,12 @@
+17b 
+ +-----------------+
+8|     e r     r   |
+7|         d r   r |
+6| r   X     X     |
+5| h r   r       m |
+4|     h c d       |
+3| H D R E M D H   |
+2|   R R C R C R R |
+1|   R       R     |
+ +-----------------+
+   a b c d e f g h

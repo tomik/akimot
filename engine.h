@@ -13,7 +13,7 @@
 #define EVAL_AFTER_LENGTH 8    //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
-#define MATURE_LEVEL  10
+#define MATURE_LEVEL  20
 #define EXPLORE_RATE 0.2
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
@@ -41,6 +41,7 @@ class Node
 
     void  expand(const StepArray& stepArray, uint len);
     Node* findUctChild() const;
+    Node* findRandomChild() const;
     Node* findMostExploredChild() const;
 
     float ucb(float) const;
@@ -73,9 +74,21 @@ class Tree
     
     Logger     log_;
 
-  public:
     Tree();
-    Tree(player_t);   
+
+  public:
+    /**
+     * Constructor with player initialization.
+     *
+     * Root node is created(bottom of history stack) with given player.
+     */
+    Tree(player_t firstPlayer);   
+
+    /**
+     * Destructor.
+     *
+     * Recursively deletes the tree.
+     */
     ~Tree();
 
     /**
@@ -86,6 +99,13 @@ class Tree
      */
     void uctDescend();
 
+    /**
+     * Random descend.
+     *
+     * Mostly for testing purposes.
+     */
+    void randomDescend();
+
     /** 
      * Finding the resulting move.
      *
@@ -95,10 +115,26 @@ class Tree
      */
     string findBestMove(Node* bestFirstNode = NULL, const Board* boardGiven = NULL);
 
+    /**
+     * Backpropagation of playout sample.
+     */
     void updateHistory(float);
+
+    /**
+     * History reset.
+     *
+     * Performed after updateHistory. Points actual node to the root.
+     */
     void historyReset();
 
+    /**
+     * Gets tree root(bottom of history stack). 
+     */
     Node* root();
+
+    /**
+     * Gets the actual node (top of history stack). 
+     */
     Node* actNode();
 
     /**
@@ -106,7 +142,17 @@ class Tree
      */
     int getNodeDepth(Node* node);
 
+    /**
+     * String representation of the tree.
+     */
     string toString();
+
+    /**
+     * Path to actNode() to string.  
+     *
+     * Returns string with steps leading to actNode().
+     * @param onlyLastMove if true then only steps from last move are returned.
+     */
     string pathToActToString(bool onlyLastMove = false);
 };
 
@@ -116,11 +162,28 @@ class SimplePlayout
     Board*				board_;
     uint					playoutLength_;
 
-	public:
 		SimplePlayout();
+
+	public:
+    /**
+     * Constructor with board initialization.
+     */
 		SimplePlayout(Board*);
 
+    /**
+     * Performs whole playout. 
+     *
+     * Consists of repetitive calls to playOne().
+     *
+     * @return Final playout status.
+     */
 		playoutStatus_e doPlayout();	
+
+    /**
+     * Performs one move of one player.
+     *
+     * Implements random step play to get the move.
+     */
     void playOne();	
 
 		uint getPlayoutLength();  
@@ -139,8 +202,9 @@ class Uct
     int nodesExpanded_;
     int nodesInTheTree_;
 
-  public:
     Uct();
+
+  public:
     Uct(Board*);
     ~Uct();
 

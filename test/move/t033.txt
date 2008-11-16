@@ -1,0 +1,12 @@
+33w
+ +-----------------+
+8| r r r     r r r |
+7| r   m   c d   r |
+6|       c d       |
+5| h R     C       |
+4| E   e           |
+3| h     D     H   |
+2|   D H     C R   |
+1| R R R   M R R R |
+ +-----------------+
+   a b c d e f g h

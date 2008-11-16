@@ -1,0 +1,12 @@
+28b
+ +-----------------+
+8|                 |
+7|             r   |
+6|       r h r     |
+5|   d r r D H     |
+4| r r E c d h     |
+3| R D m e     H   |
+2|   R R C R C c r |
+1|     M     R R R |
+ +-----------------+
+   a b c d e f g h

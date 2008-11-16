@@ -1,11 +1,18 @@
 #include <cxxtest/TestSuite.h>
 #include "board.h"
 #include "hash.h"
+#include "engine.h"
 
 #define TEST_DIR "./test"
 #define INIT_TEST_DIR "./test/init/"
 #define INIT_TEST_LIST "./test/init/tests.txt"
 #define HASH_TABLE_INSERTS 100
+
+//mature level is defined in engine.h
+#define UCT_TREE_TEST_MATURE 1 
+#define UCT_TREE_NODES 100000
+#define UCT_TREE_NODES_DELETE 100
+#define UCT_TREE_MAX_CHILDREN 30
 
 class MyTestSuite : public CxxTest::TestSuite 
 {
@@ -64,7 +71,7 @@ class MyTestSuite : public CxxTest::TestSuite
         int item;
         TS_ASSERT_EQUALS(hashTable.hasItem(keys[i]), true); 
         if (! hashTable.loadItem(keys[i], item))
-          TS_ASSERT_EQUALS(true, false); 
+          TS_FAIL("positive-lookup failed");
       }
        
       //negative-lookup test
@@ -73,7 +80,59 @@ class MyTestSuite : public CxxTest::TestSuite
         int item;
         TS_ASSERT_EQUALS(hashTable.hasItem(key), false); 
         if (hashTable.loadItem(key, item))
-          TS_ASSERT_EQUALS(true, false); 
+          TS_FAIL("negative-lookup suceeded");
       }
     }
+
+    /**
+     * Uct test.
+     *
+     * Dummy version of Uct::doPlayout. Tests whether the uct tree is consistent 
+     * after large number of inserts(UCT_TREE_NODES). Position in the bottom of the 
+     * tree is evaluated randomly and randomDescend() is applied instead of uctDescend().  
+     */
+    void testUct(void)
+    {
+      //tree with random player in the root
+      Tree* tree = new Tree(INDEX_TO_PLAYER(random() % 2));
+      int winValue[2] = {1, -1};
+      StepArray steps;
+      int stepsNum;
+      int i = 0;
+
+      //build the tree in UCT manner
+      for (int i = 0; i < UCT_TREE_MAX_CHILDREN; i++)
+        steps[i] = Step();
+
+      while (true) {
+        tree->historyReset();     //point tree's actNode to the root 
+        while (true) { 
+          if (! tree->actNode()->hasChildren()) { 
+            //if (tree->actNode()->getVisits() > UCT_TREE_TEST_MATURE) {
+              stepsNum = (rand() % UCT_TREE_MAX_CHILDREN) + 1;
+              tree->actNode()->expand(steps,stepsNum);
+              i++;
+              break;
+            //}
+            //tree->updateHistory(winValue[(random() % 2)]);
+            //break;
+          }
+          tree->randomDescend(); 
+          //tree->uctDescend(); 
+        } 
+        if (i >= UCT_TREE_NODES)
+          break;
+      }
+
+      //remove given number of leafs
+      for (int i = 0; i < UCT_TREE_NODES_DELETE; i++){
+        tree->historyReset();
+        while (tree->actNode()->hasChildren())
+          tree->randomDescend(); 
+        tree->actNode()->remove();
+      }
+
+      //TODO DFS through tree and check child.father == father, etc. ? 
+    } //testUct
+
 };

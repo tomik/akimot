@@ -14,6 +14,8 @@
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
          this is difficult to test (positions with almost no moves to play)
+[1, uct]  history has a fixed size - change to dynamic + reallocation
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 
+[uct] uctDescend should be FAST ( now slow :( )

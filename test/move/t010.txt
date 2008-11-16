@@ -1,0 +1,12 @@
+29w
+ +-----------------+
+8| r r r     r r r |
+7| r   d m c c   r |
+6|   h   h     d   |
+5|                 |
+4|       e         |
+3| H     E     H   |
+2| R C D     D C R |
+1| R R R   M R R R |
+ +-----------------+
+   a b c d e f g h

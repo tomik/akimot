@@ -48,8 +48,8 @@ Node* Node::findUctChild() const
 {
   assert(this->firstChild_ != NULL);
 
-  Node* act = this->firstChild_;
-  Node* best = this->firstChild_;
+  Node* act = firstChild_;
+  Node* best = firstChild_;
   float bestUrgency = -100;       //TODO - something very large ! 
   float actUrgency = 0;
 
@@ -65,6 +65,31 @@ Node* Node::findUctChild() const
   }
 
   return best;
+}
+
+//---------------------------------------------------------------------
+
+Node* Node::findRandomChild() const
+{
+  Node* node = firstChild_;
+  assert(node != NULL);
+  int childNum = 0; 
+
+  //count children
+  while (node != NULL) {
+    node = node->sibling_;
+    childNum++; 
+  }    
+
+  //select children to be played  
+  childNum = random() % childNum;
+
+  node = firstChild_;
+  for (int i=0; i < childNum; i++){
+    assert(node != NULL);
+    node = node->sibling_;
+  }
+  return node; 
 }
 
 //---------------------------------------------------------------------
@@ -122,9 +147,13 @@ void Node::removeChild(Node* child)
   else
     previous->sibling_ = node->sibling_;
 
-  delete node;
 
-  //TODO handle number of visits/value ? 
+  //handle number of visits/value in father
+  father_->visits_ -= visits_;
+  father_->value_  -= value_;
+  assert(father_->visits_ >= 0);
+  
+  delete node;
   if (firstChild_ == NULL){
     remove();
   }
@@ -254,6 +283,7 @@ string Node::recToString(int depth) const
 
 Tree::Tree()
 {
+  assert(false);
 }
 
 //---------------------------------------------------------------------
@@ -277,6 +307,15 @@ Tree::~Tree()
 void Tree::uctDescend()
 {
   history[historyTop + 1]= actNode()->findUctChild();
+  historyTop++;
+  assert(actNode() != NULL);
+}
+
+//---------------------------------------------------------------------
+
+void Tree::randomDescend()
+{
+  history[historyTop + 1]= actNode()->findRandomChild();
   historyTop++;
   assert(actNode() != NULL);
 }
@@ -398,6 +437,7 @@ string Tree::pathToActToString(bool onlyLastMove )
 
 SimplePlayout::SimplePlayout()
 {
+  assert(false);
 }
 
 //---------------------------------------------------------------------
@@ -591,6 +631,7 @@ void Uct::doPlayout()
 
     tree_->uctDescend(); 
     
+    //determine which node represents (most visited) end of the first move - for output
     if ( MoveNode == NULL && tree_->actNode()->getNodeType() != tree_->root()->getNodeType()){
       MoveNode = tree_->actNode()->getFather();
       assert(MoveNode->getFather() != NULL);
@@ -603,7 +644,7 @@ void Uct::doPlayout()
     if ( playBoard->makeStepTryCommitMove(step) )   {
       //commit was successful - check whether winning criteria are not reached already
       if ( playBoard->getWinner() != EMPTY ) 
-        break;      //winner is known already in the uct tree -> no need to go deeper
+        break;  //winner is known already in the uct tree -> no need to go deeper
     }
 
   } while(true);
