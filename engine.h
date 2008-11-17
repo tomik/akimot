@@ -219,6 +219,11 @@ class Uct
     string generateMove();
 
     /**
+     * Value of node selected to play. 
+     */
+    float getBestMoveValue();
+
+    /**
      * Does one uct-monte carlo playout. 
      *
      * Crucial method of search. Performs UCT descend as deep as possible and 

@@ -5,6 +5,7 @@
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
+[5,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
   [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
@@ -15,6 +16,7 @@
 [3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
          this is difficult to test (positions with almost no moves to play)
 [1, uct]  history has a fixed size - change to dynamic + reallocation
+[3. uct] time control should be part of engine not uct 
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

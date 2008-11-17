@@ -590,6 +590,13 @@ string Uct::generateMove()
   return tree_->findBestMove(bestMoveNode_, board_);
 }
 
+//--------------------------------------------------------------------- 
+
+float Uct::getBestMoveValue()
+{
+  return bestMoveNode_->getValue();
+}
+
 //---------------------------------------------------------------------
 
 void Uct::doPlayout()
@@ -616,7 +623,7 @@ void Uct::doPlayout()
 
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
 
-        stepsNum = filterTT(steps, stepsNum, playBoard); 
+          stepsNum = filterTT(steps, stepsNum, playBoard); 
         if (stepsNum > 0) {
           tree_->actNode()->expand(steps,stepsNum);
           updateTT(tree_->actNode()->getFirstChild(), playBoard); 

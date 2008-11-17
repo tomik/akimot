@@ -24,8 +24,9 @@ class PerformanceTestSuite : public CxxTest::TestSuite
         f.open(RABBIT_TEST_LIST, fstream::in);
 
         //TODO remove magic values
-        config.useTimeControl(true);
-        config.secPerMove(1);
+        //config.useTimeControl(true);
+        //config.secPerMove(3);
+        config.playoutsPerMove(100000);
 
         while (f.good()){
           getline(f, line);
@@ -39,8 +40,8 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           cerr << endl << "Processing " << fnPosition << endl;
 
           //TODO clear thirdRep table ! 
-          thirdRep.clear();
           Board* board = new Board();
+
           board->initFromPosition(fnPosition.c_str());
 
           Uct* uct = new Uct(board);
@@ -48,8 +49,9 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           Tree* tree = uct->getTree();
 
           //cerr << tree->toString();
-          cerr << "Root value: " << tree->root()->getValue() << endl;
-          TS_ASSERT(tree->root()->getValue() > 0.6 );
+          cerr << "Best move value: " << uct->getBestMoveValue() << endl;
+          TS_ASSERT(uct->getBestMoveValue() > 0.6 );
+
           delete uct;
           delete board;
         }

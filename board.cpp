@@ -368,6 +368,16 @@ Board::Board()
 
 //--------------------------------------------------------------------- 
 
+void Board::gameInit()
+{
+  srand(time(0));
+  initZobrist();  
+  thirdRep.clear();
+  thirdRep_ = &thirdRep;
+}
+
+//--------------------------------------------------------------------- 
+
 void Board::init()
 {
 
@@ -381,9 +391,8 @@ void Board::init()
   //this is the only place in program to call initZobrist ... 
   //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
   if (! classInit ) {
-    initZobrist();  
     classInit = true;
-    thirdRep_ = &thirdRep;
+    gameInit();
   }
 
   for (int i = 0; i < 100; i++)  
@@ -411,9 +420,8 @@ void Board::init()
 
   assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
-  makeSignature();
-  preMoveSignature_ = 0;
 
+  //signatures are made after the position is loaded
 }
 
 //---------------------------------------------------------------------
@@ -914,7 +922,7 @@ bool Board::makeStepTryCommitMove(Step& step)
 
 void Board::commitMove()
 {
-  assert(winner_ == EMPTY);
+  //assert(winner_ == EMPTY);
   //winner might be set already ( when player to move has no move ) 
   for (int i = 11; i <= 19; i++)
     if (board_[i] == (SILVER | PIECE_RABBIT) )
@@ -1084,6 +1092,7 @@ int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const
       stepArray[i] = stepArray[stepsNum-- - 1];
     else
       i++;  
+  
 
   return stepsNum;
 }
@@ -1105,7 +1114,7 @@ bool Board::stepIsThirdRepetition( Step& step ) const
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   //check whether position with opponent to move won't be a repetition
-  if ( ! thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
+  if ( thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
     return true;
   return false;
   
@@ -1271,9 +1280,9 @@ string Board::toString() const
 
 
   //ss << "board at: " << this << endl; //pointer debug
-  #ifdef DEBUG_1
-    ss << "Signature " << signature << endl;
-  #endif
+  //#ifdef DEBUG_1
+    ss << "Signature " << signature_ << endl;
+  //#endif
 
   ss << "Move " << (toMove_ == GOLD ? "g" : "s") << moveCount_ ;
   #ifdef DEBUG_2

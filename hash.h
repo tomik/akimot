@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "utils.h"
@@ -27,6 +26,13 @@ template<typename T> class HashTable
     void clear()
     {
       table.clear();
+    }
+
+    //--------------------------------------------------------------------- 
+    
+    bool isEmpty()
+    {
+      return table.empty();
     }
 
     //--------------------------------------------------------------------- 
@@ -77,7 +83,7 @@ template<typename T> class HashTableBoard : public HashTable<T>
     HashTableBoard(): HashTable<T>()
     {
       playerSignature_[0] = getRandomU64();
-      playerSignature_[0] = getRandomU64(); 
+      playerSignature_[1] = getRandomU64(); 
     }
 
     //--------------------------------------------------------------------- 
@@ -127,7 +133,9 @@ template<typename T> class HashTableBoard : public HashTable<T>
 class ThirdRep: public HashTableBoard<int>
 {
 	public:
-
+    void print() { 
+      cerr << playerSignature_[0] << " | " << playerSignature_[1] << "|" << isEmpty() << endl; 
+    }
     /**
      * Updates number of repetitions (+1).
      *
@@ -140,6 +148,8 @@ class ThirdRep: public HashTableBoard<int>
      */
     bool  isThirdRep(u64 key, uint playerIndex ); 
 }; 
+
+extern ThirdRep thirdRep;
 
 //forward declaration
 class Node; 

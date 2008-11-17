@@ -56,8 +56,6 @@
 extern const int direction[4];
 extern const int trap[4];
 
-extern ThirdRep thirdRep;
-
 typedef uint player_t;
 typedef int  square_t;
 typedef uint piece_t;		
@@ -233,6 +231,13 @@ class Board
      * Inits static variables if neccessary, etc.
      */
     void  init();
+
+    /**
+     * Init of variables for a whole Game.
+     *
+     * Init(ed) gets: zobrist, repetition table, random seed.
+     */
+    void  gameInit();
 
     /**
     * Inits board from a game record in file.

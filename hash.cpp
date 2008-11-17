@@ -15,9 +15,10 @@ u64 getRandomU64()
 void ThirdRep::update(u64 key, uint playerIndex)
 {
   int positionVisited = 0;
+  bool found;
 
-  loadItem(key, playerIndex, positionVisited);
-  assert(positionVisited < 2);
+  found = loadItem(key, playerIndex, positionVisited);
+  assert(!found || positionVisited < 2);
   insertItem(key, playerIndex, ++positionVisited);
 }
 
@@ -26,11 +27,12 @@ void ThirdRep::update(u64 key, uint playerIndex)
 bool ThirdRep::isThirdRep(u64 key, uint playerIndex)
 {
   int positionVisited = 0;
+  bool found = false;
 
-  positionVisited = loadItem(key, playerIndex, positionVisited);
-  if (positionVisited < 2);
-      return true;
-  return false;
+  found = loadItem(key, playerIndex, positionVisited);
+  if (! found || positionVisited < 2);
+    return false;
+  return true;
 }
 
 //--------------------------------------------------------------------- 
