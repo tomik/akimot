@@ -85,6 +85,7 @@ class PieceArray
 
     void add(square_t);
     void del(square_t);
+    void clear();
 
     uint getLen() const;
     square_t operator[](uint) const;

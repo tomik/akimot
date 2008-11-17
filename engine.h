@@ -59,6 +59,7 @@ class Node
     Node* getSibling() const;
     Step  getStep() const;
     int   getVisits() const;
+    float getValue() const;
     nodeType_e getNodeType() const;
 
     string toString() const; 
@@ -253,6 +254,8 @@ class Uct
      * @return Number of steps in steps array after update.
      */
     void updateTT(Node* nodeList, Board* board);
+
+    Tree* getTree() const;
     
 };
 

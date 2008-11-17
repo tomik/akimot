@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 		return 1;
 	} 
 
-	logger() << board.toString();
+	//logger() << board.toString();
   
 	if (board.isEmpty()) { //first step
 		cout << engine.initialSetup(board.getPlayerToMove() == GOLD);

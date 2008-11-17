@@ -27,6 +27,7 @@ Node::Node(const Step& step)
   value_      = 0;
 
   step_ = step;
+  assert(IS_PLAYER(step.getStepPlayer()));
   nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
@@ -242,6 +243,13 @@ Step Node::getStep() const
 int Node::getVisits() const
 {
   return visits_;
+}
+
+//---------------------------------------------------------------------
+
+float Node::getValue() const
+{
+  return value_;
 }
 
 //---------------------------------------------------------------------
@@ -564,6 +572,7 @@ string Uct::generateMove()
   //#ifdef DEBUG
   //log_() << tree_->toString();
     log_()
+      << board_->toString() << endl
       << "Performance: " << endl
         << "  " << iteration << " playouts" << endl 
         << "  " << timeTotal << " seconds" << endl
@@ -589,6 +598,7 @@ void Uct::doPlayout()
   Board *playBoard = new Board(*board_);
   playoutStatus_e playoutStatus;
   Node* MoveNode = NULL;
+  int descendNum = 0;
 
   StepArray steps;    
   uint      stepsNum;
@@ -630,12 +640,14 @@ void Uct::doPlayout()
     }
 
     tree_->uctDescend(); 
-    
+    descendNum++;
+
     //determine which node represents (most visited) end of the first move - for output
-    if ( MoveNode == NULL && tree_->actNode()->getNodeType() != tree_->root()->getNodeType()){
-      MoveNode = tree_->actNode()->getFather();
-      assert(MoveNode->getFather() != NULL);
-      if ( ! bestMoveNode_ || bestMoveNode_->getVisits() < MoveNode->getVisits() + 1 )
+    //if at the end of first move ... 
+    if (MoveNode == NULL && (descendNum == 4 || tree_->actNode()->getStep().isPass())){
+      MoveNode = tree_->actNode();
+      //check actual node is better than so far hold one
+      if ((! bestMoveNode_) || (bestMoveNode_->getVisits() < MoveNode->getVisits() + 1 ))
         bestMoveNode_ = MoveNode;
     }
 
@@ -643,8 +655,10 @@ void Uct::doPlayout()
     //perform the step and try commit
     if ( playBoard->makeStepTryCommitMove(step) )   {
       //commit was successful - check whether winning criteria are not reached already
-      if ( playBoard->getWinner() != EMPTY ) 
+      if ( playBoard->getWinner() != EMPTY ) {
+        tree_->updateHistory(playBoard->getWinner() == GOLD ? 1 : -1); 
         break;  //winner is known already in the uct tree -> no need to go deeper
+      }
     }
 
   } while(true);
@@ -709,6 +723,13 @@ void Uct::updateTT(Node* nodeList, Board* board)
   }
 }
 
+//--------------------------------------------------------------------- 
+
+Tree* Uct::getTree() const
+{
+  return tree_;
+}
+  
 //---------------------------------------------------------------------
 //  section Engine
 //---------------------------------------------------------------------

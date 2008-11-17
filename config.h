@@ -27,6 +27,9 @@ class OptionFather
     virtual void setValue(bool){};
     virtual void setValue(string){};
     virtual void setValue(int){};
+    virtual void setValueParsed(bool){};
+    virtual void setValueParsed(string){};
+    virtual void setValueParsed(int){};
     virtual string toString(){ return "";};
 };
 
@@ -40,7 +43,8 @@ template <typename T> class Option: public OptionFather
      OptionFather(shortName, longName, description, type), value_(defaultValue) {}
 
     T getValue() { return value_;}
-    void setValue(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
+    void setValueparsed(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
+    void setValue(T value) { value_ = value;}
      
     string toString() {
       stringstream ss;
@@ -82,6 +86,11 @@ class Config
     int secPerMove(){ return secPerMove_.getValue(); } 
     int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
     const char * fnInput() { return fnInput_.getValue().c_str(); }
+
+    //sometimes it is neccessary to set values in config - e.g. testing 
+    void playoutsPerMove(int playouts){ playoutsPerMove_.setValue(playouts); } 
+    void useTimeControl(bool use){ useTimeControl_.setValue(use); } 
+    void secPerMove(int sec){ secPerMove_.setValue(sec); } 
 
     void logAll();
     

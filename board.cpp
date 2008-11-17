@@ -51,6 +51,13 @@ void PieceArray::del(square_t elem)
 
 //---------------------------------------------------------------------
  
+void PieceArray::clear() 
+{
+  len = 0; 
+}
+
+//---------------------------------------------------------------------
+ 
 uint PieceArray::getLen() const
 {
   return len;
@@ -370,6 +377,7 @@ void Board::init()
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
 
+
   //this is the only place in program to call initZobrist ... 
   //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
   if (! classInit ) {
@@ -392,14 +400,19 @@ void Board::init()
   stepCount_ = 0;
   moveCount_ = 1;
   winner_    = EMPTY;
+  moveCount_ = 0;
+  stepCount_ = 0;
 
   //init pieceArray and rabbitsNum
+  pieceArray[0].clear();
+  pieceArray[1].clear();
   rabbitsNum[0] = 0;
   rabbitsNum[1] = 0;
 
   assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
 
   makeSignature();
+  preMoveSignature_ = 0;
 
 }
 
@@ -901,6 +914,7 @@ bool Board::makeStepTryCommitMove(Step& step)
 
 void Board::commitMove()
 {
+  assert(winner_ == EMPTY);
   //winner might be set already ( when player to move has no move ) 
   for (int i = 11; i <= 19; i++)
     if (board_[i] == (SILVER | PIECE_RABBIT) )

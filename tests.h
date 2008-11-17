@@ -14,7 +14,7 @@
 #define UCT_TREE_NODES_DELETE 100
 #define UCT_TREE_MAX_CHILDREN 30
 
-class MyTestSuite : public CxxTest::TestSuite 
+class DebugTestSuite : public CxxTest::TestSuite 
 {
   public:
 

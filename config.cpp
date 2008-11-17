@@ -73,13 +73,13 @@ bool Config::parseToken(string token, string value) {
 			consistent = true;
 			switch ( options_[i]->type_ ) {
 				case OT_STRING :
-					options_[i]->setValue(value); break;
+					options_[i]->setValueParsed(value); break;
 				case OT_BOOL_POS :
-					options_[i]->setValue(true); break;
+					options_[i]->setValueParsed(true); break;
 				case OT_BOOL_NEG :
-					options_[i]->setValue(false); break;
+					options_[i]->setValueParsed(false); break;
 				case OT_INT :
-					options_[i]->setValue(atoi(value.c_str())); break;
+					options_[i]->setValueParsed(atoi(value.c_str())); break;
 				default : break;
 			}
       if ((value != "") && (options_[i]->type_ == OT_BOOL_POS || options_[i]->type_ == OT_BOOL_NEG))
@@ -99,7 +99,7 @@ bool Config::parseValue(string value)
 {
   //todo ... quite dummy - just sets value for file input - undummyfy 
   //for instance - mark options without name ( and go through them and parse values to them ) 
-  fnInput_.setValue(value);
+  fnInput_.setValueParsed(value);
   return true;
 }
 
