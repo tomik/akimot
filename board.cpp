@@ -197,6 +197,7 @@ bool Step::operator== ( const Step& other) const
 const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) const
 {
   stringstream s;
+  s.str("");
   string pieceRefStr(" RCDHMErcdhme");
   string columnRefStr("abcdefgh");
 
@@ -212,6 +213,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
       break;
   }
   s << " ";
+
   return s.str();
 }
 
@@ -220,7 +222,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
 const string Step::toString(bool resultPrint) const
 {
   stringstream ss;
-  ss.clear(); 
+  ss.str(""); 
 
   if ( ! resultPrint)
     ss << "(";
@@ -231,7 +233,7 @@ const string Step::toString(bool resultPrint) const
         ss << "pass";     
       break;
     case STEP_SINGLE: 
-      ss << oneSteptoString(player_, piece_, from_, to_) ; 
+      ss << oneSteptoString(player_, piece_, from_, to_); 
       break;
     case STEP_PUSH: 
       ss << oneSteptoString(OPP(player_), oppPiece_, oppFrom_, oppTo_)

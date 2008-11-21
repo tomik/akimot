@@ -345,11 +345,7 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
     assert(false);
   }
 
-  stringstream ss;
-  #ifdef DEBUG
-    log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
-  #endif
-  string s = ss.str();
+  log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
 
   while (act != root()) {
     assert(stepNum < 4);
@@ -359,11 +355,13 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
 
   assert(stepNum > 0);
 
+  stringstream ss; 
+  ss.str("");
   //print the steps 
   for (int i = stepNum - 1; i >= 0; i--){
     steps[i].addKills(board);
     board->makeStep(steps[i]);
-    s = s + steps[i].toString();   //resultPrint of move
+    ss << trimRight(steps[i].toString()) << " ";   //resultPrint of move
   } 
 
   //add signature of final position ! -> for future thirdRepetitionCheck
@@ -371,7 +369,7 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
   thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
 
   delete(board);
-  return s; 
+  return ss.str(); 
 } 
 
 //---------------------------------------------------------------------
@@ -616,11 +614,6 @@ void Uct::doPlayout()
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
         stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(),steps);
-
-        #ifdef DEBUG_3
-          log_() << "Expanding node : " << tree_->pathToActToString() << endl;
-        #endif
-
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
 
           stepsNum = filterTT(steps, stepsNum, playBoard); 
@@ -649,16 +642,18 @@ void Uct::doPlayout()
     tree_->uctDescend(); 
     descendNum++;
 
+    Step step = tree_->actNode()->getStep();
+    player_t playerAfterStep = playBoard->getPlayerToMoveAfterStep(step);
     //determine which node represents (most visited) end of the first move - for output
     //if at the end of first move ... 
-    if (MoveNode == NULL && (descendNum == 4 || tree_->actNode()->getStep().isPass())){
+    if (MoveNode == NULL && 
+        (tree_->root()->getNodeType() != PLAYER_TO_NODE_TYPE(playerAfterStep))){
       MoveNode = tree_->actNode();
       //check actual node is better than so far hold one
       if ((! bestMoveNode_) || (bestMoveNode_->getVisits() < MoveNode->getVisits() + 1 ))
         bestMoveNode_ = MoveNode;
     }
 
-    Step step = tree_->actNode()->getStep();
     //perform the step and try commit
     if ( playBoard->makeStepTryCommitMove(step) )   {
       //commit was successful - check whether winning criteria are not reached already

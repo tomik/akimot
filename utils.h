@@ -1,5 +1,4 @@
-#ifndef UTILS_H
-#define UTILS_H
+#pragma once
 
 #include <cassert>
 
@@ -40,6 +39,12 @@ class Logger
 		ostream& operator()(unsigned int = 0) const;
 }; 
 
+/**
+ * String to int converter.
+ */
 int str2int(const string& str);
 
-#endif
+/**
+ * Spaces trim from right.
+ */
+string trimRight(const string& str);

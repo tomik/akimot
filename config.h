@@ -43,7 +43,7 @@ template <typename T> class Option: public OptionFather
      OptionFather(shortName, longName, description, type), value_(defaultValue) {}
 
     T getValue() { return value_;}
-    void setValueparsed(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
+    void setValueParsed(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
     void setValue(T value) { value_ = value;}
      
     string toString() {

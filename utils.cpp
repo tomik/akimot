@@ -38,3 +38,11 @@ int str2int(const string& str)
   ss >> n;
   return n;
 }
+
+string trimRight(const string& s)
+{
+  string ret = s;
+  ret.erase(ret.find_last_not_of(' ')+1);
+  return ret;
+}
+
