@@ -107,15 +107,7 @@ class Aei
     Engine* engine_;
     pthread_t engineThread;
 
-  public:
-    Aei();
-    ~Aei();
-
-    /**
-     * Waits for commands in loop. 
-     */
-    void runLoop();
-
+  protected:
     /**
      * Handles single command; 
      */
@@ -132,13 +124,6 @@ class Aei
      * @param arg Search arguments - e.g. ponder, infinite, etc.
      */
     void startSearch(const string& arg);
-
-    /**
-     * Hardcoded beginning of session.
-     *
-     * For debugging purposes.  
-     */
-    void implicitSessionStart();
 
     /**
      * Threaded wrapper around engine.doSearch(). 
@@ -168,5 +153,23 @@ class Aei
      * Wrapper around sending.
      */
     void send(const string& s) const;
+
+  public:
+    Aei();
+    ~Aei();
+
+    /**
+     * Waits for commands in loop. 
+     */
+    void runLoop();
+
+    /**
+     * Hardcoded beginning of session.
+     *
+     * For debugging purposes.  
+     */
+    void implicitSessionStart();
+
+
 };
 
