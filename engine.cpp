@@ -525,6 +525,7 @@ Uct::Uct(Board* board)
   nodesPruned_ = 0;
   nodesExpanded_ = 0;
   nodesInTheTree_ = 1;
+  playouts_ = 0;
 }
 
 //---------------------------------------------------------------------
@@ -538,65 +539,6 @@ Uct::~Uct()
 
 //---------------------------------------------------------------------
 
-string Uct::generateMove()
-{
-  clock_t clockBegin; 
-  float timeTotal; 
-  clockBegin = clock();
-  #ifdef DEBUG
-    log_() << "Starting uct" << endl;
-  #endif
-
-  int iteration = 0;
-
-  if (config.useTimeControl()) {
-    while ( true ) {
-      doPlayout();
-      iteration++;
-      if (( float(clock() - clockBegin)/CLOCKS_PER_SEC ) > config.secPerMove() )
-        break;
-    }
-  }  
-  else  //no time control - just do predefined number of playouts
-    for ( iteration = 0; iteration < config.playoutsPerMove(); iteration++) 
-      doPlayout();
-
-  #ifdef DEBUG
-    log_() << "Uct is over" << endl;
-  #endif
-  timeTotal = float(clock() - clockBegin)/CLOCKS_PER_SEC;
-  
-
-  //#ifdef DEBUG
-  //log_() << tree_->toString();
-    log_()
-      << board_->toString() << endl
-      << "Performance: " << endl
-        << "  " << iteration << " playouts" << endl 
-        << "  " << timeTotal << " seconds" << endl
-        << "  " << int ( float(iteration) / timeTotal) << " pps" << endl
-      ;
-
-    log_()
-      << "UCT: " << endl
-        << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
-        << "  " << nodesExpanded_ << " nodes expanded" << endl 
-        << "  " << nodesPruned_ << " nodes pruned" << endl 
-      ;
-  //#endif
- 
-  return tree_->findBestMove(bestMoveNode_, board_);
-}
-
-//--------------------------------------------------------------------- 
-
-float Uct::getBestMoveValue()
-{
-  return bestMoveNode_->getValue();
-}
-
-//---------------------------------------------------------------------
-
 void Uct::doPlayout()
 {
   //TODO ... change playBoard to an object not pointer
@@ -604,6 +546,8 @@ void Uct::doPlayout()
   playoutStatus_e playoutStatus;
   Node* MoveNode = NULL;
   int descendNum = 0;
+
+  playouts_++;
 
   StepArray steps;    
   uint      stepsNum;
@@ -727,14 +671,103 @@ void Uct::updateTT(Node* nodeList, Board* board)
 
 //--------------------------------------------------------------------- 
 
+string Uct::statisticsToString(float seconds)
+{
+  assert(seconds > 0);
+  stringstream ss;
+
+    ss  << "UCT: " << endl
+        << "  " << playouts_ << " playouts" << endl 
+        << "  " << seconds << " seconds" << endl
+        << "  " << int(playouts_ / seconds) << " playouts per second" << endl
+        << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
+        << "  " << nodesExpanded_ << " nodes expanded" << endl 
+        << "  " << nodesPruned_ << " nodes pruned" << endl 
+      ;
+
+  return ss.str();
+}
+
+//---------------------------------------------------------------------
+
+string Uct::getBestMove()
+{
+  assert(bestMoveNode_ != NULL);
+  return tree_->findBestMove(bestMoveNode_, board_);
+}
+
+//---------------------------------------------------------------------
+
+float Uct::getBestMoveValue()
+{
+  assert(bestMoveNode_);
+  return bestMoveNode_->getValue();
+}
+
+//--------------------------------------------------------------------- 
+
 Tree* Uct::getTree() const
 {
   return tree_;
 }
+
+//---------------------------------------------------------------------
+//  section TimeManager
+//---------------------------------------------------------------------
+
+TimeManager::TimeManager()
+{
+  noTimeLimit_ = false;
+  secondsPerMove_ = 3;  //TODO change 
+}
+
+//--------------------------------------------------------------------- 
+
+void TimeManager::startClock()
+{
+  clockBegin_ = clock();
+}
+
+//---------------------------------------------------------------------
+
+bool TimeManager::checkClock()
+{
+  if (secondsElapsed() < secondsPerMove_ || noTimeLimit_)
+    return true;
+  return false;
+}
+
+//---------------------------------------------------------------------
+
+float TimeManager::secondsElapsed()
+{
+  assert(clock() >= clockBegin_);
+
+  return float(clock() - clockBegin_)/CLOCKS_PER_SEC;
+}
   
+//---------------------------------------------------------------------
+
+void TimeManager::setTimeOption(timeOption_e option, bool value)
+{
+  switch (option){
+    case TO_INFINITE: 
+            noTimeLimit_ = value;
+            break;
+    default: assert(false);
+            break;
+  }
+}
+
 //---------------------------------------------------------------------
 //  section Engine
 //---------------------------------------------------------------------
+
+Engine::Engine()
+{
+}
+
+//--------------------------------------------------------------------- 
 
 string Engine::initialSetup(bool isGold)
 {
@@ -748,12 +781,25 @@ string Engine::initialSetup(bool isGold)
 
 string Engine::doSearch(Board* board) 
 { 
-  Uct* uct_ = new Uct(board);
-  string result = uct_->generateMove();  
+  uct_ = new Uct(board);
+  timeManager_ = new TimeManager();
+
+  timeManager_->startClock();
+  while (timeManager_->checkClock() && ! aei->checkSearchInterrupt())
+    uct_->doPlayout();
+
+  log_() << board->toString() << endl;
+  log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
+  string result = uct_->getBestMove();
   delete uct_;
-  
   return result;
 }
 
+//---------------------------------------------------------------------
+
+TimeManager* Engine::timeManager()
+{
+  return timeManager_;
+}
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------

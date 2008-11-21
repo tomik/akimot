@@ -24,6 +24,7 @@ Aei::Aei()
   records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_GAME, AS_SAME, AA_SET_POSITION_FILE));
   records_.push_back(AeiRecord(STR_SET_OPTION, AS_MAIN, AS_SAME, AA_SET_OPTION));
   records_.push_back(AeiRecord(STR_GO, AS_GAME, AS_SEARCH, AA_GO));
+  records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_GAME, AA_STOP));
 
   state_ = AS_OPEN;
   board_ = new Board();
@@ -50,6 +51,25 @@ void Aei::runLoop()
         handleInput(line);
     }
   }
+}
+
+//--------------------------------------------------------------------- 
+
+bool Aei::checkSearchInterrupt()
+{
+  assert(state_ == AS_SEARCH);
+  bool interrupt = false;
+  string line;
+
+  if (cin.good()){
+    getline(cin, line);
+    if (line != ""){
+      handleInput(line);
+      interrupt = true;
+    }
+  }
+  
+  return interrupt;
 }
 
 //--------------------------------------------------------------------- 
@@ -88,6 +108,9 @@ void Aei::handleInput(const string& line)
     quit();
   }
 
+  if (record->nextState_ != AS_SAME)
+    state_ = record->nextState_;
+
   aeiAction_e action = record->action_;
   switch (action) {
     case AA_OPEN:
@@ -109,6 +132,13 @@ void Aei::handleInput(const string& line)
                   board_->initFromPositionStream(rest);
                   break;
     case AA_GO:    
+                  rest.str(getStreamRest(ssLine));
+                  if (rest.str() == STR_PONDER || rest.str() == STR_INFINITE)
+                    engine_->timeManager()->setTimeOption(TO_INFINITE, true);
+                  response_ = STR_BEST_MOVE;
+                  response_ += " " + engine_->doSearch(board_);
+                  break;
+    case AA_STOP: 
                   break;
     case AA_QUIT: response_ = STR_BYE;
                   quit();
@@ -118,9 +148,6 @@ void Aei::handleInput(const string& line)
   }
 
   send(response_);
-  if (record->nextState_ != AS_SAME)
-    state_ = record->nextState_;
-  
 }
 
 //--------------------------------------------------------------------- 
@@ -159,4 +186,7 @@ void Aei::send(const string& s) const
   cout << s << endl;
 }
 
-Aei aei;
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+
+Aei* aei = new Aei();

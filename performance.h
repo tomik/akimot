@@ -6,6 +6,7 @@
 #define RABBIT_TEST_DIR "./test/rabbits/"
 #define RABBIT_TEST_LIST "./test/rabbits/list.txt"
 #define HASH_TABLE_INSERTS 100
+#define UCT_TEST_PLAYOUTS 20000
 
 class PerformanceTestSuite : public CxxTest::TestSuite 
 {
@@ -26,7 +27,7 @@ class PerformanceTestSuite : public CxxTest::TestSuite
         //TODO remove magic values
         //config.useTimeControl(true);
         //config.secPerMove(3);
-        config.playoutsPerMove(100000);
+        //config.playoutsPerMove(10000);
 
         while (f.good()){
           getline(f, line);
@@ -45,7 +46,9 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           board->initFromPosition(fnPosition.c_str());
 
           Uct* uct = new Uct(board);
-          cerr << uct->generateMove() << endl;
+          for (int i = 0; i < UCT_TEST_PLAYOUTS; i++) 
+            uct->doPlayout();
+          cerr << uct->getBestMove() << endl;
           Tree* tree = uct->getTree();
 
           //cerr << tree->toString();

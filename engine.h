@@ -1,11 +1,17 @@
-#ifndef ENGINE_H
-#define ENGINE_H
+/**
+ * @file engine.h
+ *
+ * Search engine and time management.
+ */
+
+#pragma once
 
 #include "utils.h"
 #include "config.h"
 #include "board.h"
 #include "eval.h"
 #include "hash.h"
+#include "aei.h"
 
 #include <cmath>
 
@@ -205,26 +211,13 @@ class Uct
     int nodesPruned_;
     int nodesExpanded_;
     int nodesInTheTree_;
+    int playouts_;
 
     Uct();
 
   public:
     Uct(Board*);
     ~Uct();
-
-    /**
-     * Generates uct-search result move.
-     *
-     * Top level function. Time control wrapper around 
-     * loop of doPlayout(s). 
-     * @return String representation of move to play.
-     */
-    string generateMove();
-
-    /**
-     * Value of node selected to play. 
-     */
-    float getBestMoveValue();
 
     /**
      * Does one uct-monte carlo playout. 
@@ -263,17 +256,94 @@ class Uct
      */
     void updateTT(Node* nodeList, Board* board);
 
+    /**
+     * Get uct search statistics.
+     *
+     * @param seconds Length of run of the search in seconds.
+     */
+    string statisticsToString(float seconds);
+
+    /**
+     * Finds the best move. 
+    void calculateBestMove();
+     */
+
+    /**
+     * String representation of best move.
+     */
+    string getBestMove();
+
+    /**
+     * Value of best move.
+     */
+    float getBestMoveValue();
+
     Tree* getTree() const;
     
 };
 
+
+enum timeOption_e {TO_INFINITE};
+
+class TimeManager
+{
+  private:
+    clock_t clockBegin_;
+    float secondsPerMove_;
+    bool noTimeLimit_;
+  
+  public:
+    TimeManager();
+    
+    /**
+     * Starts clock for given move. 
+     */
+    void  startClock();
+
+    /**
+     * Checks the clock.
+     *
+     * @return true if there is time, false otherwise.
+     * TODO: Searcher might provide importance of time addition.
+     */
+    bool checkClock();
+
+    /**
+     *  Seconds elapsed since last startClock().
+     */
+    inline float secondsElapsed();
+
+    /**
+     * Setting options to timer. 
+     */
+    void setTimeOption(timeOption_e option, bool value);
+};
+
+
 class Engine
 {
   private:
+    Uct* uct_;
+    TimeManager* timeManager_;
 	  Logger log_;
 
   public:
-  	string initialSetup(bool); 
+    Engine();
+
+    /**
+     * Returns initial setup. 
+     */
+  	string initialSetup(bool isGold); 
+
+    /**
+     * Search loop.
+     *
+     * Crucial method running the search.
+     */
   	string doSearch(Board*);		
+    
+    /**
+     * timeManager getter. 
+     */
+    TimeManager* timeManager();
 };
-#endif

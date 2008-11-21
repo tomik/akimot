@@ -18,7 +18,7 @@
 #define ID_AUTHOR "Tomas Kozelek"
 #define ID_VERSION "0.1"
 
-//string used in communication
+//strings used in communication
 #define STR_AEI "aei"
 #define STR_AEI_OK "aeiok"
 #define STR_READY "isready"
@@ -29,6 +29,10 @@
 #define STR_SET_OPTION "setoption"
 #define STR_QUIT "quit"
 #define STR_GO "go"
+#define STR_PONDER "ponder"
+#define STR_INFINITE "infinite"
+#define STR_STOP "stop"
+#define STR_BEST_MOVE "bestmove"
 #define STR_BYE "bye"
 
 #define STR_INVALID_COMMAND "Invalid command"
@@ -41,7 +45,9 @@ enum aeiState_e { AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH};
 enum aeiAction_e { AA_OPEN, AA_READY, AA_QUIT, AA_SET_POSITION, AA_SET_POSITION_FILE, 
                   AA_SET_OPTION, AA_NEW_GAME, AA_SET_VARIABLE, AA_GO, AA_STOP};
 
+class Engine;
 class Aei;
+
 
 /**
  * One record in aei finite automata.
@@ -82,7 +88,6 @@ class Aei
     Engine* engine_;
 
   public:
-    
     Aei();
     ~Aei();
 
@@ -90,6 +95,13 @@ class Aei
      * Waits for commands in loop. 
      */
     void runLoop();
+
+    /**
+     * Search interrupt. 
+     *
+     * Called from search to interrupt engine.
+     */
+    bool checkSearchInterrupt();
 
     /**
      * Handles single command; 
@@ -112,7 +124,6 @@ class Aei
      * Wrapper around sending.
      */
     void send(const string& s) const;
-
 };
 
-extern Aei aei;
+extern Aei* aei;

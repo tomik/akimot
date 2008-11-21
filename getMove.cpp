@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
     config.logAll();
   #endif
 
-  aei.runLoop();
+  aei->runLoop();
   return 0;
 
 	if (argc < 2) {
