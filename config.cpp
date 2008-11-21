@@ -20,12 +20,12 @@ Config::Config()
   playoutsPerMove_ = OptionInt("p","playouts_per_move","Playouts per move - mostly for debugging", OT_INT, PLAYOUTS_PER_MOVE);
   inputIsRecord_ = OptionBool("r","input_record","input is a record of the game",OT_BOOL_POS, false);
 
-  options_[0] =  &useTimeControl_;
-  options_[1] =  &fnInput_;
-  options_[2] =  &secPerMove_;
-  options_[3] =  &playoutsPerMove_;
-  options_[4] =  &inputIsRecord_;
-  optionsNum_ = 5;
+  options_.clear();
+  options_.push_back(&useTimeControl_);
+  options_.push_back(&fnInput_);
+  options_.push_back(&secPerMove_);
+  options_.push_back(&playoutsPerMove_);
+  options_.push_back(&inputIsRecord_);
 
 }
 
@@ -68,21 +68,22 @@ bool Config::parse(const int argc, const char ** argv )
 
 bool Config::parseToken(string token, string value) {
   bool consistent = false;
-  for ( int i = 0 ; i < optionsNum_; i++ ) 
-		if ( "-" + options_[i]->shortName_ == token || "--" + options_[i]->longName_ == token) {
+  OptionList::iterator it;
+  for ( it = options_.begin(); it != options_.end(); it++ ) 
+		if ( "-" + (*it)->shortName_ == token || "--" + (*it)->longName_ == token) {
 			consistent = true;
-			switch ( options_[i]->type_ ) {
+			switch ( (*it)->type_ ) {
 				case OT_STRING :
-					options_[i]->setValueParsed(value); break;
+					(*it)->setValueParsed(value); break;
 				case OT_BOOL_POS :
-					options_[i]->setValueParsed(true); break;
+					(*it)->setValueParsed(true); break;
 				case OT_BOOL_NEG :
-					options_[i]->setValueParsed(false); break;
+					(*it)->setValueParsed(false); break;
 				case OT_INT :
-					options_[i]->setValueParsed(atoi(value.c_str())); break;
+					(*it)->setValueParsed(atoi(value.c_str())); break;
 				default : break;
 			}
-      if ((value != "") && (options_[i]->type_ == OT_BOOL_POS || options_[i]->type_ == OT_BOOL_NEG))
+      if ((value != "") && ((*it)->type_ == OT_BOOL_POS || (*it)->type_ == OT_BOOL_NEG))
         parseValue(value);
 		} // if 
 		if ( consistent ) 
@@ -108,8 +109,9 @@ bool Config::parseValue(string value)
 void Config::logAll()
 {
   log_() << "Program configuration: " << endl;
-  for (int i = 0; i < optionsNum_; i++)
-   log_() <<  options_[i]->toString();
+  OptionList::iterator it;
+  for ( it = options_.begin(); it != options_.end(); it++ ) 
+    log_() <<  (*it)->toString();
 }
 
 //--------------------------------------------------------------------- 

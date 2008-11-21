@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.h"
+#include <list>
 
 #define PLAYOUTS_PER_MOVE 10000
 
@@ -57,13 +58,12 @@ typedef Option<int> OptionInt;
 typedef Option<bool> OptionBool;
 typedef Option<string> OptionString;
 
-#define MAX_OPTIONS 30
+typedef list<OptionFather*> OptionList;
 
 class Config
 {
   private:
-    OptionFather*     options_[MAX_OPTIONS];
-    int         optionsNum_;
+    OptionList  options_;
 
     OptionBool  useTimeControl_;
     OptionBool  inputIsRecord_;

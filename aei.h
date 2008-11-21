@@ -100,16 +100,16 @@ class Aei
     void runLoop();
 
     /**
-     * Search interrupt. 
-     *
-     * Called from search to interrupt engine.
-     */
-    bool checkSearchInterrupt();
-
-    /**
      * Handles single command; 
      */
     void handleInput(const string& input);
+
+    /**
+     * Hardcoded beginning of session.
+     *
+     * For debugging purposes.  
+     */
+    void implicitSessionStart();
 
     /**
      * Threaded wrapper around engine.doSearch(). 
@@ -133,5 +133,3 @@ class Aei
      */
     void send(const string& s) const;
 };
-
-extern Aei* aei;

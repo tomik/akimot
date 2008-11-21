@@ -11,7 +11,6 @@
 #include "board.h"
 #include "eval.h"
 #include "hash.h"
-#include "aei.h"
 
 #include <cmath>
 
@@ -326,6 +325,8 @@ class Engine
     Uct* uct_;
     TimeManager* timeManager_;
     string bestMove_;
+    bool stopRequest_;
+
 	  Logger log_;
 
   public:
@@ -343,6 +344,13 @@ class Engine
      * Crucial method running the search.
      */
   	void doSearch(Board*);		
+
+    /**
+     * Requests search stop. 
+     *
+     * Search will stop after current playout is finished.
+     */
+    void requestSearchStop();
 
     /**
      * After search pick the best move.

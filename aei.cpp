@@ -62,25 +62,6 @@ void Aei::runLoop()
 
 //--------------------------------------------------------------------- 
 
-bool Aei::checkSearchInterrupt()
-{
-  assert(state_ == AS_SEARCH);
-  bool interrupt = false;
-  string line;
-
-  if (cin.good()){
-    getline(cin, line);
-    if (line != ""){
-      handleInput(line);
-      interrupt = true;
-    }
-  }
-  
-  return interrupt;
-}
-
-//--------------------------------------------------------------------- 
-
 void Aei::handleInput(const string& line)
 {
   stringstream ssLine;
@@ -110,6 +91,7 @@ void Aei::handleInput(const string& line)
       record = &(*it); 
       break;
     }
+
   if (! record) {
     response_ = STR_INVALID_COMMAND;
     quit();
@@ -120,6 +102,7 @@ void Aei::handleInput(const string& line)
 
   aeiAction_e action = record->action_;
   switch (action) {
+    int rc;
     case AA_OPEN:
                   sendId();
                   response_ = STR_AEI_OK;
@@ -142,14 +125,21 @@ void Aei::handleInput(const string& line)
                   rest.str(getStreamRest(ssLine));
                   if (rest.str() == STR_PONDER || rest.str() == STR_INFINITE)
                     engine_->timeManager()->setTimeOption(TO_INFINITE, true);
-                  pthread_create(&engineThread, NULL, aeiSearchInThread, this);
+                  //no mutex is needed - this is done only when no engineThread runs
+                  rc = pthread_create(&engineThread, NULL, aeiSearchInThread, this);
+
+                  if (rc) //allocating thread failed
+                    quit();
                   break;
     case AA_STOP: 
+                  engine_->requestSearchStop();
                   break;
-    case AA_QUIT: response_ = STR_BYE;
+    case AA_QUIT: 
+                  response_ = STR_BYE;
                   quit();
                   break;
-    default: assert(false);
+    default: 
+             assert(false);
              break;
   }
 
@@ -158,10 +148,21 @@ void Aei::handleInput(const string& line)
 
 //--------------------------------------------------------------------- 
 
+void Aei::implicitSessionStart()
+{
+  handleInput(STR_AEI);
+  handleInput(STR_NEW_GAME);
+  handleInput((string) STR_SET_POSITION_FILE + " " + config.fnInput());
+  handleInput(STR_GO);
+}
+
+//--------------------------------------------------------------------- 
+
 void Aei::searchInThread()
 {
   engine_->doSearch(board_);
-  response_ = STR_BEST_MOVE + engine_->getBestMove();
+  state_ = AS_GAME; //TODO possible ?  
+  response_ = string(STR_BEST_MOVE) + " " + engine_->getBestMove();
   send(response_);
 }
 
@@ -203,5 +204,3 @@ void Aei::send(const string& s) const
 
 //--------------------------------------------------------------------- 
 //--------------------------------------------------------------------- 
-
-Aei* aei = new Aei();
