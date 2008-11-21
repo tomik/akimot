@@ -1,5 +1,12 @@
 #include "aei.h"
 
+void * aeiSearchInThread(void* instance)
+{
+  Aei* aei= (Aei*) instance;
+  aei->searchInThread();
+  return NULL;
+}
+
 //--------------------------------------------------------------------- 
 // section AeiRecord
 //--------------------------------------------------------------------- 
@@ -135,8 +142,7 @@ void Aei::handleInput(const string& line)
                   rest.str(getStreamRest(ssLine));
                   if (rest.str() == STR_PONDER || rest.str() == STR_INFINITE)
                     engine_->timeManager()->setTimeOption(TO_INFINITE, true);
-                  response_ = STR_BEST_MOVE;
-                  response_ += " " + engine_->doSearch(board_);
+                  pthread_create(&engineThread, NULL, aeiSearchInThread, this);
                   break;
     case AA_STOP: 
                   break;
@@ -147,6 +153,15 @@ void Aei::handleInput(const string& line)
              break;
   }
 
+  send(response_);
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::searchInThread()
+{
+  engine_->doSearch(board_);
+  response_ = STR_BEST_MOVE + engine_->getBestMove();
   send(response_);
 }
 

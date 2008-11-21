@@ -7,12 +7,13 @@
 
 #pragma once
 
+#include <list>
+#include <pthread.h>
+
 #include "utils.h"
 #include "config.h"
 #include "board.h"
 #include "engine.h"
-
-#include <list>
 
 #define ID_NAME "akimot"
 #define ID_AUTHOR "Tomas Kozelek"
@@ -70,6 +71,7 @@ class AeiRecord
 
 typedef list<AeiRecord> AeiRecordList;
 
+void* aeiSearchInThread(void *instance);
 
 /**
  * Arima Engine Interface Controller.
@@ -86,6 +88,7 @@ class Aei
 
     Board* board_;
     Engine* engine_;
+    pthread_t engineThread;
 
   public:
     Aei();
@@ -107,6 +110,11 @@ class Aei
      * Handles single command; 
      */
     void handleInput(const string& input);
+
+    /**
+     * Threaded wrapper around engine.doSearch(). 
+     */
+    void searchInThread();
 
     /**
      * Quit the program. 

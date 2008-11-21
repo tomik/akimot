@@ -325,10 +325,12 @@ class Engine
   private:
     Uct* uct_;
     TimeManager* timeManager_;
+    string bestMove_;
 	  Logger log_;
 
   public:
     Engine();
+    ~Engine();
 
     /**
      * Returns initial setup. 
@@ -340,7 +342,12 @@ class Engine
      *
      * Crucial method running the search.
      */
-  	string doSearch(Board*);		
+  	void doSearch(Board*);		
+
+    /**
+     * After search pick the best move.
+     */
+  	string getBestMove();		
     
     /**
      * timeManager getter. 

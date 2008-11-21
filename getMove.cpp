@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
 	if (board.isEmpty()) { //first step
 		cout << engine.initialSetup(board.getPlayerToMove() == GOLD);
 	}else {
-		cout << engine.doSearch(&board) << endl;
+    engine.doSearch(&board);
+		cout << engine.getBestMove() << endl;
 	}
 
  //test(&board);

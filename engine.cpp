@@ -769,6 +769,12 @@ Engine::Engine()
 
 //--------------------------------------------------------------------- 
 
+Engine::~Engine()
+{
+}
+
+//--------------------------------------------------------------------- 
+
 string Engine::initialSetup(bool isGold)
 {
 	if (isGold)
@@ -779,7 +785,7 @@ string Engine::initialSetup(bool isGold)
 
 //---------------------------------------------------------------------
 
-string Engine::doSearch(Board* board) 
+void Engine::doSearch(Board* board) 
 { 
   uct_ = new Uct(board);
   timeManager_ = new TimeManager();
@@ -790,9 +796,15 @@ string Engine::doSearch(Board* board)
 
   log_() << board->toString() << endl;
   log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
-  string result = uct_->getBestMove();
+  bestMove_ = uct_->getBestMove(); 
   delete uct_;
-  return result;
+}
+
+//---------------------------------------------------------------------
+
+string Engine::getBestMove()
+{
+  return bestMove_; 
 }
 
 //---------------------------------------------------------------------
