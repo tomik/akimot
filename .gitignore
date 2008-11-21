@@ -1,0 +1,11 @@
+other/
+doc
+.swp
+site_scons
+.sconsign.dblite
+func_test
+perf_test
+performance.cpp
+akimot
+tests.cpp
+*.o
