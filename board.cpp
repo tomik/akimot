@@ -510,25 +510,40 @@ bool Board::initFromRecord(const char* fn)
 
 bool Board::initFromPosition(const char* fn)
 {
+  fstream f;
+
+  f.open(fn,fstream::in);
+
+  if (! f.good()){
+    f.close();
+     return false;
+   }
+
+  bool result = initFromPositionStream(f);
+  f.close();
+
+  return result;
+}
+
+//---------------------------------------------------------------------
+
+bool Board::initFromPositionStream(istream& ss)
+{
 
   init();
 
-  fstream f;
+//  stringstream ss;
+  //ss.str(s);
+
   char side;
   char c;
   PiecePair piecePair;
   
   try { 
-    f.open(fn,fstream::in);
 
-    if (! f.good()){
-      f.close();
-       return false;
-     }
-
-    f >> moveCount_; 
-    f >> side;
-    f.ignore(1024,'\n'); //ignores the rest of initial line 
+    ss >> moveCount_; 
+    ss >> side;
+    ss.ignore(1024,'\n'); //ignores the rest of initial line 
 
     if (side == 'w')
       toMove_ = GOLD;
@@ -537,14 +552,14 @@ bool Board::initFromPosition(const char* fn)
     }
     toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
 
-    f.ignore(1024,'\n'); //ignores the top of the border till EOF 
+    ss.ignore(1024,'\n'); //ignores the top of the border till EOF 
 
     for (int i = 8; i > 0; i--) { // do this for each of the 8 lines of the board
-      f.ignore(2); //ignore trailing characters
+      ss.ignore(2); //ignore trailing characters
 
       for (int j = 1; j < 9; j++) {
-        f.ignore(1); //ignore a white space 
-        c=f.get();
+        ss.ignore(1); //ignore a white space 
+        c=ss.get();
 
         if (c == ' ' || c=='X' || c=='x')
           board_[i*10+j] = (EMPTY_SQUARE); 
@@ -554,14 +569,12 @@ bool Board::initFromPosition(const char* fn)
             board_[i*10+j] = (piecePair.first | piecePair.second);
           }catch (int e){
             log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
-            f.close();
             return false;
           }
         } //else
       } //for
-      f.ignore(1024,'\n'); //finish the line
+      ss.ignore(1024,'\n'); //finish the line
     } //for 
-      f.close();
   } //try
   catch(int e) {
     return false; //initialization from file failed

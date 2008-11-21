@@ -9,3 +9,4 @@ performance.cpp
 akimot
 tests.cpp
 *.o
+input

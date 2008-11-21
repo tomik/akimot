@@ -249,11 +249,18 @@ class Board
 
     /**
     * Inits board from a position in file.
-    *
-    * @return true if initialization went right 
-    * otherwise false
+    * 
+    * Wrapper around initFromPositionStream.
     */
     bool  initFromPosition(const char* fn); 
+
+    /**
+     * Inits board from position stream.
+     * 
+     * @return true if initialization went right 
+     * otherwise false
+     */
+    bool  initFromPositionStream(istream& ss); 
 
     /**
     * Parsing single token for init from game record.

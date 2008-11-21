@@ -10,7 +10,7 @@ dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
-src_files_common = 'board.cpp engine.cpp utils.cpp benchmark.cpp eval.cpp config.cpp hash.cpp'.split()
+src_files_common = 'board.cpp engine.cpp utils.cpp benchmark.cpp eval.cpp config.cpp hash.cpp aei.cpp'.split()
 src_files_build = src_files_common + ['getMove.cpp'] 
 src_files_test = src_files_common 
 #todo - is this portable ? determine the extension of object file ( '.o' at linux) dynamically

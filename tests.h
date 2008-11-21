@@ -1,4 +1,5 @@
 #include <cxxtest/TestSuite.h>
+#include "utils.h"
 #include "board.h"
 #include "hash.h"
 #include "engine.h"
@@ -17,6 +18,21 @@
 class DebugTestSuite : public CxxTest::TestSuite 
 {
   public:
+
+
+    /**
+     * Utilities test - mostly string functions. 
+     */
+    void testUtils(void)
+    {
+      string s;
+
+      s = " x ";
+      TS_ASSERT_EQUALS(trimRight(trimLeft(s)), "x");
+
+      s = "    x  ";
+      TS_ASSERT_EQUALS(trimRight(trimLeft(s)), "x");
+    }
 
     /**
      * Board init test.

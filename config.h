@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include "utils.h"
 
@@ -97,5 +96,3 @@ class Config
 };
 
 extern Config config;
-#endif
-

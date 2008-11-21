@@ -30,6 +30,7 @@ ostream& Logger::operator()(unsigned int messageLevel) const{
   return cerr;
 }
 
+//--------------------------------------------------------------------- 
 
 int str2int(const string& str)
 {
@@ -39,10 +40,55 @@ int str2int(const string& str)
   return n;
 }
 
+//--------------------------------------------------------------------- 
+
 string trimRight(const string& s)
 {
   string ret = s;
-  ret.erase(ret.find_last_not_of(' ')+1);
+  ret.erase(ret.find_last_not_of(' ') + 1);
   return ret;
 }
+
+//--------------------------------------------------------------------- 
+
+string trimLeft(const string& s)
+{
+  string ret = s;
+  ret.erase(0, ret.find_first_not_of(' '));
+  return ret;
+}
+
+//--------------------------------------------------------------------- 
+
+string getStreamRest(istream& is)
+{
+
+  stringstream ss ;
+
+  char * buffer;
+  int len;
+  int pos;
+  string s;
+
+  //initial position
+  pos = is.tellg();
+  
+  //save buffer length
+  is.seekg (0, ios::end);
+  len = is.tellg();
+
+  is.seekg (pos, ios::beg);
+
+  buffer = new char[len - pos];
+  is.read(buffer, len - pos);
+  s = buffer;
+  delete[] buffer;
+
+  //set back g pointer
+  is.seekg (pos, ios::beg);
+
+  return trimLeft(s);
+}
+
+//--------------------------------------------------------------------- 
 

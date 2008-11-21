@@ -48,3 +48,14 @@ int str2int(const string& str);
  * Spaces trim from right.
  */
 string trimRight(const string& str);
+
+/**
+ * Spaces trim from right.
+ */
+string trimLeft(const string& str);
+
+
+/**
+ * Get stream rest.
+ */
+string getStreamRest(istream& is);

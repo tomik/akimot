@@ -3,6 +3,7 @@
 #include "board.h"
 #include "engine.h"
 #include "benchmark.h"
+#include "aei.h"
 
 void test(Board* board)
 {
@@ -28,6 +29,9 @@ int main(int argc, char *argv[]) // returns 1 if an error occurs, 0 otherwise
   #ifdef DEBUG_2
     config.logAll();
   #endif
+
+  aei.runLoop();
+  return 0;
 
 	if (argc < 2) {
 		logger() << "Program requires an argument (name of file containing position).\n";
