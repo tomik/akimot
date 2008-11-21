@@ -282,7 +282,11 @@ class Uct
 };
 
 
-enum timeOption_e {TO_INFINITE};
+//this defines size of following enum !!!
+#define TIME_CONTROLS_NUM 13
+enum timeControl_e {TC_MOVE, TC_RESERVE, TC_PERCENT, TC_MAX, TC_TOTAL, TC_TURNS,
+                    TC_TURN_TIME, TC_W_RESERVE, TC_B_RESERVE, TC_W_USED, TC_B_USED, 
+                    TC_MOVE_USED, TC_LAST_MOVE_USED};
 
 class TimeManager
 {
@@ -290,6 +294,7 @@ class TimeManager
     clock_t clockBegin_;
     float secondsPerMove_;
     bool noTimeLimit_;
+    int timeControls_[TIME_CONTROLS_NUM];
   
   public:
     TimeManager();
@@ -313,9 +318,17 @@ class TimeManager
     inline float secondsElapsed();
 
     /**
-     * Setting options to timer. 
+     * Setting time controls from aei.
+     *
+     * @param tc Time control identifier - used as index into timeControls array.
+     * @param value Value for option in seconds (all controal are aligned to secs). 
      */
-    void setTimeOption(timeOption_e option, bool value);
+    void setTimeControl(timeControl_e tc, int value);
+
+    /**
+     * Sets time unlimited search. 
+     */
+    void setNoTimeLimit();
 };
 
 
@@ -339,8 +352,7 @@ class Engine
   	string initialSetup(bool isGold); 
 
     /**
-     * Search loop.
-     *
+     * Search loop.  *
      * Crucial method running the search.
      */
   	void doSearch(Board*);		

@@ -748,15 +748,19 @@ float TimeManager::secondsElapsed()
   
 //---------------------------------------------------------------------
 
-void TimeManager::setTimeOption(timeOption_e option, bool value)
+void TimeManager::setTimeControl(timeControl_e tc, int value)
 {
-  switch (option){
-    case TO_INFINITE: 
-            noTimeLimit_ = value;
-            break;
-    default: assert(false);
-            break;
-  }
+  assert(tc < TIME_CONTROLS_NUM);
+
+  if ( tc < TIME_CONTROLS_NUM)
+    timeControls_[tc] = value;
+}
+
+//--------------------------------------------------------------------- 
+
+void TimeManager::setNoTimeLimit()
+{
+  noTimeLimit_ = true;
 }
 
 //---------------------------------------------------------------------

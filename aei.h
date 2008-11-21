@@ -36,6 +36,21 @@
 #define STR_BEST_MOVE "bestmove"
 #define STR_BYE "bye"
 
+#define STR_TC_MOVE "tcmove"
+#define STR_TC_RESERVE "tcreserve"
+#define STR_TC_PERCENT "tcpercent"
+#define STR_TC_MAX "tcmax"
+#define STR_TC_TOTAL "tctotal"
+#define STR_TC_TURNS "tcturns"
+#define STR_TC_TURN_TIME "tcturntime"
+#define STR_TC_W_RESERVE "wreserve"
+#define STR_TC_B_RESERVE "breserve"
+#define STR_TC_W_USED "wused"
+#define STR_TC_B_USED "bused"
+#define STR_TC_LAST_MOVE_USED "lastmoveused"
+#define STR_TC_MOVE_USED "tcmoveused"
+
+
 #define STR_INVALID_COMMAND "Invalid command"
 
 #define STR_NAME "name"
@@ -70,11 +85,12 @@ class AeiRecord
 
 
 typedef list<AeiRecord> AeiRecordList;
+typedef pair<string, timeControl_e> timeControlPair; 
+typedef list<timeControlPair> TimeControlList;
 
-void* aeiSearchInThread(void *instance);
 
 /**
- * Arima Engine Interface Controller.
+ * Arimaa Engine Interface Controller.
  *
  * This class operates communication with external interface(gameroom, user)
  * and controls the searching engine.
@@ -83,6 +99,7 @@ class Aei
 {
   private:
     AeiRecordList records_;
+    TimeControlList timeControls_;
     aeiState_e state_;
     string response_;
 
@@ -105,6 +122,18 @@ class Aei
     void handleInput(const string& input);
 
     /**
+     * Parse option from setoption command. 
+     */
+    void handleOption(const string& commandRest);
+
+    /**
+     * Initiates thread creation and search start. 
+     *
+     * @param arg Search arguments - e.g. ponder, infinite, etc.
+     */
+    void startSearch(const string& arg);
+
+    /**
      * Hardcoded beginning of session.
      *
      * For debugging purposes.  
@@ -115,6 +144,13 @@ class Aei
      * Threaded wrapper around engine.doSearch(). 
      */
     void searchInThread();
+
+    /**
+     * Wrapper around Aei::searchinThread().
+     *
+     * Declared as static so it can be threaded.
+     */
+    static void* SearchInThreadWrapper(void *instance);
 
     /**
      * Quit the program. 
@@ -133,3 +169,4 @@ class Aei
      */
     void send(const string& s) const;
 };
+

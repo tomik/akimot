@@ -1,11 +1,5 @@
 #include "aei.h"
 
-void * aeiSearchInThread(void* instance)
-{
-  Aei* aei= (Aei*) instance;
-  aei->searchInThread();
-  return NULL;
-}
 
 //--------------------------------------------------------------------- 
 // section AeiRecord
@@ -32,6 +26,20 @@ Aei::Aei()
   records_.push_back(AeiRecord(STR_SET_OPTION, AS_MAIN, AS_SAME, AA_SET_OPTION));
   records_.push_back(AeiRecord(STR_GO, AS_GAME, AS_SEARCH, AA_GO));
   records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_GAME, AA_STOP));
+
+  timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
+  timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_PERCENT, TC_PERCENT));
+  timeControls_.push_back(timeControlPair(STR_TC_MAX, TC_MAX));
+  timeControls_.push_back(timeControlPair(STR_TC_TOTAL, TC_TOTAL));
+  timeControls_.push_back(timeControlPair(STR_TC_TURNS, TC_TURNS));
+  timeControls_.push_back(timeControlPair(STR_TC_TURN_TIME, TC_TURN_TIME));
+  timeControls_.push_back(timeControlPair(STR_TC_W_RESERVE, TC_W_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_B_RESERVE, TC_B_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_W_USED, TC_W_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_B_USED, TC_B_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_LAST_MOVE_USED, TC_LAST_MOVE_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_MOVE_USED, TC_MOVE_USED));
 
   state_ = AS_OPEN;
   board_ = new Board();
@@ -69,22 +77,11 @@ void Aei::handleInput(const string& line)
   ssLine.str("");
   ssLine.str(line);
   string command = "";
-  string s = "";
   ssLine >> command; 
   response_ = "";
   
   AeiRecord* record = NULL;
   AeiRecordList::iterator it; 
-
-  /*
-  cout << line << endl;
-  cout << command << endl;
-  cout << getStreamRest(ssLine) << endl;
-  command = "";
-  ssLine >> command;
-  cout << command << endl;
-  return;
-  */
 
   for (it = records_.begin(); it != records_.end(); it++)
     if ((it->state_ == state_ || it->state_ == AS_ALL) && it->command_ == command){
@@ -102,7 +99,6 @@ void Aei::handleInput(const string& line)
 
   aeiAction_e action = record->action_;
   switch (action) {
-    int rc;
     case AA_OPEN:
                   sendId();
                   response_ = STR_AEI_OK;
@@ -112,7 +108,8 @@ void Aei::handleInput(const string& line)
                   break;
     case AA_NEW_GAME: 
                   break;
-    case AA_SET_OPTION: 
+    case AA_SET_OPTION:
+                  handleOption(getStreamRest(ssLine));
                   break;
     case AA_SET_POSITION_FILE: 
                   board_->initFromPosition(getStreamRest(ssLine).c_str());
@@ -122,14 +119,7 @@ void Aei::handleInput(const string& line)
                   board_->initFromPositionStream(rest);
                   break;
     case AA_GO:    
-                  rest.str(getStreamRest(ssLine));
-                  if (rest.str() == STR_PONDER || rest.str() == STR_INFINITE)
-                    engine_->timeManager()->setTimeOption(TO_INFINITE, true);
-                  //no mutex is needed - this is done only when no engineThread runs
-                  rc = pthread_create(&engineThread, NULL, aeiSearchInThread, this);
-
-                  if (rc) //allocating thread failed
-                    quit();
+                  startSearch(getStreamRest(ssLine));
                   break;
     case AA_STOP: 
                   engine_->requestSearchStop();
@@ -144,6 +134,41 @@ void Aei::handleInput(const string& line)
   }
 
   send(response_);
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::handleOption(const string& commandRest)
+{
+  string option;
+  string value;
+  stringstream ss ;
+  ss.str(commandRest);
+
+  ss >> option;
+  ss >> value;
+
+  TimeControlList::iterator it;
+  for (it = timeControls_.begin(); it != timeControls_.end(); it++)
+    if (it->first == option){
+      engine_->timeManager()->setTimeControl(it->second, str2int(value));
+      return;
+    }
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::startSearch(const string& arg)
+{
+  int rc;
+
+  if (arg == STR_PONDER || arg == STR_INFINITE)
+    engine_->timeManager()->setNoTimeLimit();
+  //no mutex is needed - this is done only when no engineThread runs
+  rc = pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this);
+
+  if (rc) //allocating thread failed
+    quit();
 }
 
 //--------------------------------------------------------------------- 
@@ -164,6 +189,15 @@ void Aei::searchInThread()
   state_ = AS_GAME; //TODO possible ?  
   response_ = string(STR_BEST_MOVE) + " " + engine_->getBestMove();
   send(response_);
+}
+
+//--------------------------------------------------------------------- 
+
+void * Aei::SearchInThreadWrapper(void* instance)
+{
+  Aei* aei= (Aei*) instance;
+  aei->searchInThread();
+  return NULL;
 }
 
 //--------------------------------------------------------------------- 
@@ -194,7 +228,7 @@ void Aei::sendId() const
   ss.str("");
 }
 
-//--------------------------------------------------------------------- //
+//---------------------------------------------------------------------
 
 void Aei::send(const string& s) const
 {
