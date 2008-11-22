@@ -21,6 +21,19 @@
 #define MATURE_LEVEL  20
 #define EXPLORE_RATE 0.2
 
+/** Default time per move.*/
+#define TC_MOVE_DEFAULT 3
+#define TC_RESERVE_DEFAULT 60
+#define TC_MAX_DEFAULT 20
+
+#define TC_DEFAULT_ 5 
+
+//this defines size of following enum !!!
+#define TIME_CONTROLS_NUM 13
+
+enum timeControl_e {TC_MOVE, TC_RESERVE, TC_PERCENT, TC_MAX, TC_TOTAL, TC_TURNS,
+                    TC_TURN_TIME, TC_W_RESERVE, TC_B_RESERVE, TC_W_USED, TC_B_USED, 
+                    TC_MOVE_USED, TC_LAST_MOVE_USED};
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
 enum nodeType_e {NODE_MAX, NODE_MIN};   
@@ -282,20 +295,8 @@ class Uct
 };
 
 
-//this defines size of following enum !!!
-#define TIME_CONTROLS_NUM 13
-enum timeControl_e {TC_MOVE, TC_RESERVE, TC_PERCENT, TC_MAX, TC_TOTAL, TC_TURNS,
-                    TC_TURN_TIME, TC_W_RESERVE, TC_B_RESERVE, TC_W_USED, TC_B_USED, 
-                    TC_MOVE_USED, TC_LAST_MOVE_USED};
-
 class TimeManager
 {
-  private:
-    clock_t clockBegin_;
-    float secondsPerMove_;
-    bool noTimeLimit_;
-    int timeControls_[TIME_CONTROLS_NUM];
-  
   public:
     TimeManager();
     
@@ -315,7 +316,7 @@ class TimeManager
     /**
      *  Seconds elapsed since last startClock().
      */
-    inline float secondsElapsed();
+    float secondsElapsed(); 
 
     /**
      * Setting time controls from aei.
@@ -329,19 +330,17 @@ class TimeManager
      * Sets time unlimited search. 
      */
     void setNoTimeLimit();
+
+  private:
+    clock_t clockBegin_;
+    int timeControls_[TIME_CONTROLS_NUM];
+    bool noTimeLimit_;
+  
 };
 
 
 class Engine
 {
-  private:
-    Uct* uct_;
-    TimeManager* timeManager_;
-    string bestMove_;
-    bool stopRequest_;
-
-	  Logger log_;
-
   public:
     Engine();
     ~Engine();
@@ -349,7 +348,7 @@ class Engine
     /**
      * Returns initial setup. 
      */
-  	string initialSetup(bool isGold); 
+  	string initialSetup(bool isGold) const;
 
     /**
      * Search loop.  *
@@ -370,7 +369,16 @@ class Engine
   	string getBestMove();		
     
     /**
-     * timeManager getter. 
+     * TimeManager getter. 
      */
     TimeManager* timeManager();
+
+  private:
+    Uct* uct_;
+    TimeManager* timeManager_;
+    string bestMove_;
+    bool stopRequest_;
+
+	  Logger log_;
+
 };

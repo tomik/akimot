@@ -71,6 +71,8 @@ class Config
     OptionInt   playoutsPerMove_;
     OptionString fnInput_;
 
+    OptionBool debug_; 
+
     Logger      log_;
 
   public:
@@ -85,6 +87,7 @@ class Config
     int secPerMove(){ return secPerMove_.getValue(); } 
     int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
     const char * fnInput() { return fnInput_.getValue().c_str(); }
+    bool debug() { return debug_.getValue(); }
 
     //sometimes it is neccessary to set values in config - e.g. testing 
     void playoutsPerMove(int playouts){ playoutsPerMove_.setValue(playouts); } 

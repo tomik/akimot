@@ -1,5 +1,4 @@
-#ifndef BOARD_H
-#define BOARD_H
+#pragma once
 
 #include "utils.h"
 #include "hash.h"
@@ -148,8 +147,9 @@ class Step
 		bool pieceMoved() const;
 		bool operator== (const Step&) const;
 
-    inline void setValues( stepType_t, player_t, piece_t, square_t, square_t );
-    inline void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
+    //TODO inline
+    void setValues( stepType_t, player_t, piece_t, square_t, square_t );
+    void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
 
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
     const string toString(bool resultPrint = false) const;
@@ -190,54 +190,13 @@ typedef Step  StepArray[MAX_STEPS];
  */
 class Board
 {
-
-	private:
-    static bool       classInit;
-    static u64        zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
-    static ThirdRep*  thirdRep_;
-
-		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
-		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
-
-    PieceArray    pieceArray[2];  
-    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
-  
-    StepArray     stepArray[2];
-    uint          stepArrayLen[2];
-
-    u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
-    u64           preMoveSignature_;     //signature of position from when the current move started
-
-		// move consists of up to 4 steps ( push/pull  counting for 2 ),
-    uint  moveCount_;
-
-		// step is either pass or single piece step or push/pull step,
-		// thus stepCount_ takes values 0 - 4 
-    uint  stepCount_;
-
-    player_t toMove_;
-    uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
-		player_t winner_;
-
-    Logger        log_; 
-
-    friend class Eval;
-
   public:
     Board();
 
     /**
-     * General init - nullifies variables.
-     * Inits static variables if neccessary, etc.
+     * Public wrapper around init(newGame=true). 
      */
-    void  init();
-
-    /**
-     * Init of variables for a whole Game.
-     *
-     * Init(ed) gets: zobrist, repetition table, random seed.
-     */
-    void  gameInit();
+    void initNewGame();
 
     /**
     * Inits board from a game record in file.
@@ -255,12 +214,146 @@ class Board
     bool  initFromPosition(const char* fn); 
 
     /**
+     * Inits board from compact string.
+     * 
+     * Compact string is in form PLAYER_CHAR [position in lines]
+     * e.g.:w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]
+     * @return true if initialization went right 
+     * otherwise false
+     */
+    bool  initFromPositionCompactString(const string& s); 
+
+    /**
+     * Step generation for Monte Carlo playouts.
+     *
+     * Generates (random) step with some restrictions ( i.e. no pass in the first step ).
+     * Random step is generated either by calling findRandomStep method or ( if the former 
+     * one is unsuccessfull ) by generating all steps and selecting one in random.
+     */
+		Step findStepToPlay();
+
+    
+    /**
+     * Performs whole move. 
+     *
+     * There is no control whether move is legal.
+     * @param move String representation of the move.
+     */
+		void makeMove(const string& move);
+    
+    //TODO from here till private: restructuralize in .cpp
+    
+    /**
+     * Making the step.
+     *
+     * One of the crucial methods in the boardstructure.
+     * Takes given step and performs it. Updates board structure and resolves kills.
+     */
+		void makeStep(Step&);
+
+    /**
+     *  Wraper for makeStep with commiting.
+     *
+     *  Performs makestep on given step. If the move is over it commits.
+     *  @param step given step 
+     *  @return true if commited false otherwise
+     */
+		bool makeStepTryCommitMove(Step&);
+
+    /**
+     * Commits the move.
+     *
+     * Handles switching the sides, checking the winner, etc.
+     */
+		void commitMove();
+
+    /**
+     * Repetition check.
+     *
+     * Takes step array and filters out illegal moves considering:
+     * 1) virtual pass repetition
+     * 2) 3 moves same position repetition
+     * */
+    int filterRepetitions(StepArray&, int ) const;
+
+    /**
+     * Setup pieces phase test.
+     *
+     * @return True, if it's first move and there are no pieces 
+     * for player to move, otherwise false.
+     */
+    bool		  isSetupPhase() const;
+
+    /**
+     * Actual player getter.
+     */
+    player_t  getPlayerToMove() const;
+
+    /**
+     * Next step's player getter.
+     */
+    player_t  getPlayerToMoveAfterStep(const Step& step) const;
+
+    /**
+     * String representation of board.
+     */
+		string toString() const;
+
+    /**
+     * Forward check. 
+     *
+     * Checking whether step defined by from, to is causing a kill 
+     * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
+     * This function causes no board update and is used in class StepWithKills. 
+     */
+    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo) const;
+
+    /**
+     * Calculater signature for one step forward. 
+     */
+    u64 calcAfterStepSignature(const Step& step) const;
+
+    /**
+     * Generates all (syntatically) legal steps from the position.
+     *
+     * Doesn't check 3 - repetitions rule / virtual pass. 
+     * Pass move is always generated as a last move.
+     * */
+		int generateAllSteps(player_t, StepArray&) const;
+
+    u64       getSignature() const;
+    player_t	getWinner() const;
+
+  private:
+    /**
+     * General init - nullifies variables.
+     *
+     * @param newGame true -> inits static variables for new game
+     * e.g. -> zobrist table, thirdRepetition table, etc.
+     */
+    void  init(bool newGame=false);
+
+    /**
      * Inits board from position stream.
      * 
      * @return true if initialization went right 
      * otherwise false
      */
     bool  initFromPositionStream(istream& ss); 
+
+    /**
+     * After load from position actions. 
+     *
+     * Signature gest created. PieceArray is filled.
+     */
+    void afterPositionLoad();
+
+    /**
+     * Side character to player.
+     *
+     * Maps 'w','g' -> gold ; 'b', 's' -> silver.
+     */
+    player_t sideCharToPlayer(char side) const; 
 
     /**
     * Parsing single token for init from game record.
@@ -299,54 +392,12 @@ class Board
     void  makeSignature();
 
     /**
-     * Step generation for Monte Carlo playouts.
-     *
-     * Generates (random) step with some restrictions ( i.e. no pass in the first step ).
-     * Random step is generated either by calling findRandomStep method or ( if the former 
-     * one is unsuccessfull ) by generating all steps and selecting one in random.
-     */
-		Step findStepToPlay();
-
-    /**
      * "Random" step generator.
      *
      * Generates random step ( random type, from, to, ... ) and returns it if it's correctness
      * is verified (might try to generate the step more times).
      */
 		bool findRandomStep(Step&) const;
-
-    /**
-     * Making the step.
-     *
-     * One of the crucial methods in the boardstructure.
-     * Takes given step and performs it. Updates board structure and resolves kills.
-     */
-		void makeStep(Step&);
-
-    /**
-     *  Wraper for makeStep with commiting.
-     *
-     *  Performs makestep on given step. If the move is over it commits.
-     *  @param step given step 
-     *  @return true if commited false otherwise
-     */
-		bool makeStepTryCommitMove(Step&);
-
-    /**
-     * Commits the move.
-     *
-     * Handles switching the sides, checking the winner, etc.
-     */
-		void commitMove();
-
-    /**
-     * Forward check. 
-     *
-     * Checking whether step defined by from, to is causing a kill 
-     * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
-     * This function causes no board update ! 
-     */
-    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo) const;
 
     /**
      * Kill checker.
@@ -362,54 +413,62 @@ class Board
      */
     void performKill(square_t trapPos);
 
-    /**
-     * Calculater signature for one step forward. 
-     */
-    u64 calcAfterStepSignature(const Step& step) const;
+    //TODO inline block
+    bool stepIsVirtualPass( Step& ) const;
+    bool stepIsThirdRepetition( Step& ) const;
 
-    /**
-     * Generates all (syntatically) legal steps from the position.
-     *
-     * Doesn't check 3 - repetitions rule / virtual pass. 
-     * Pass move is always generated as a last move.
-     * */
-		int generateAllSteps(player_t, StepArray&) const;
+    //TODO inline block
+		bool hasFriend(square_t) const;
+		bool hasTwoFriends(square_t, player_t) const;
+		bool hasStrongerEnemy(square_t) const;
+		bool isFrozen(square_t) const;
 
-    /**
-     * Repetition check.
-     *
-     * Takes step array and filters out illegal moves considering:
-     * 1) virtual pass repetition
-     * 2) 3 moves same position repetition
-     * */
-    int filterRepetitions(StepArray&, int ) const;
-
-    inline bool stepIsVirtualPass( Step& ) const;
-    inline bool stepIsThirdRepetition( Step& ) const;
-
-		inline bool hasFriend(square_t) const;
-		inline bool hasTwoFriends(square_t, player_t) const;
-		inline bool hasStrongerEnemy(square_t) const;
-		inline bool isFrozen(square_t) const;
-
-    bool		  isEmpty() const;
 		uint			getAllStepsNum(uint) const;
 		uint			getStepCount() const;
     u64       getPreMoveSignature() const;
-    u64       getSignature() const;
-    player_t  getPlayerToMove() const;
-    player_t  getPlayerToMoveAfterStep(const Step& step) const;
-		player_t	getWinner() const;
 		
     void setSquare(square_t, player_t, piece_t);
     void clearSquare(square_t);
 
-		string toString() const;
 		string allStepsToString() const;
-    void dump() const;
 		void dumpAllSteps() const;
+    void dump() const;
+
 
 		void testPieceArray();
+
+    //Attributes
+
+    static bool       classInit;
+    static u64        zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
+    static ThirdRep*  thirdRep_;
+
+		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
+		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
+
+    PieceArray    pieceArray[2];  
+    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
+  
+    StepArray     stepArray[2];
+    uint          stepArrayLen[2];
+
+    u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
+    u64           preMoveSignature_;     //signature of position from when the current move started
+
+		// move consists of up to 4 steps ( push/pull  counting for 2 ),
+    uint  moveCount_;
+
+		// step is either pass or single piece step or push/pull step,
+		// thus stepCount_ takes values 0 - 4 
+    uint  stepCount_;
+
+    player_t toMove_;
+    uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
+		player_t winner_;
+
+    Logger        log_; 
+
+    friend class Eval;
+
 };
 
-#endif

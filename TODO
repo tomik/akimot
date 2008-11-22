@@ -2,10 +2,16 @@
 # [urgency, category] item 
 
 === Actual ===
+[5,engine] uct should inherit from engine and become top level search handler
+[5,log] refactor logging through macro ! 
+[5,config] refactor to use only aei 
+[5,*] reorganize headers 
+[3,board] refactor board loading - use fromcompactstring
+[4,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
-[5,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
+
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
   [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
@@ -17,6 +23,7 @@
          this is difficult to test (positions with almost no moves to play)
 [1, uct]  history has a fixed size - change to dynamic + reallocation
 [3. uct] time control should be part of engine not uct 
+[3. board] makestep should be private
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

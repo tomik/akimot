@@ -19,7 +19,6 @@ class DebugTestSuite : public CxxTest::TestSuite
 {
   public:
 
-
     /**
      * Utilities test - mostly string functions. 
      */
@@ -32,6 +31,14 @@ class DebugTestSuite : public CxxTest::TestSuite
 
       s = "    x  ";
       TS_ASSERT_EQUALS(trimRight(trimLeft(s)), "x");
+
+      stringstream ss("ab cd");
+      ss >> s;
+      TS_ASSERT_EQUALS(getStreamRest(ss), "cd");
+
+      ss.clear();
+      ss.str("makemove Ra1");
+      TS_ASSERT_EQUALS(getStreamRest(ss), "Ra1");
     }
 
     /**
@@ -47,6 +54,7 @@ class DebugTestSuite : public CxxTest::TestSuite
         fstream f;
         string fnPosition;
         string fnRecord;
+        string s1, s2;
         stringstream ss;
         string line;
 
@@ -56,13 +64,16 @@ class DebugTestSuite : public CxxTest::TestSuite
           getline(f, line);
           ss.clear();
           ss.str(line);
-          ss >> fnPosition;
-          ss >> fnRecord;
-          fnPosition = INIT_TEST_DIR + fnPosition;
-          fnRecord = INIT_TEST_DIR + fnRecord;
+          ss >> s1;
+          ss >> s2;
+          fnPosition = INIT_TEST_DIR + s1;
+          fnRecord = INIT_TEST_DIR + s2;
 
-          board1.initFromPosition(fnPosition.c_str());
-          board2.initFromRecord(fnRecord.c_str());
+          if (! board1.initFromPosition(fnPosition.c_str()))
+            TS_FAIL((string) "Init from " + fnPosition + (string) " failed");
+          
+          if (! board2.initFromRecord(fnRecord.c_str()))
+            TS_FAIL((string) "Init from " + fnRecord + (string) " failed");
 
           TS_ASSERT_EQUALS( board1.getSignature(), board2.getSignature());
         }

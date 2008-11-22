@@ -370,63 +370,12 @@ Board::Board()
 
 //--------------------------------------------------------------------- 
 
-void Board::gameInit()
+void Board::initNewGame()
 {
-  srand(time(0));
-  initZobrist();  
-  thirdRep.clear();
-  thirdRep_ = &thirdRep;
+  init(true);
 }
 
 //--------------------------------------------------------------------- 
-
-void Board::init()
-{
-
-  stepArrayLen[0] = 0;
-  stepArrayLen[1] = 0;
-
-  assert(OPP(GOLD) == SILVER);
-  assert(OPP(SILVER) == GOLD);
-
-
-  //this is the only place in program to call initZobrist ... 
-  //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
-  if (! classInit ) {
-    classInit = true;
-    gameInit();
-  }
-
-  for (int i = 0; i < 100; i++)  
-    board_[i] = OFF_BOARD_SQUARE;
-
-  for (int i = 1; i < 9; i++)
-    for (int j = 1; j < 9; j++){
-      board_[10*i+j]       = EMPTY_SQUARE;
-      frozenBoard_[10*i+j] = false;           //implicitly we consider everything not frozen
-    }
-
-  toMove_    = GOLD;
-  toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
-  stepCount_ = 0;
-  moveCount_ = 1;
-  winner_    = EMPTY;
-  moveCount_ = 0;
-  stepCount_ = 0;
-
-  //init pieceArray and rabbitsNum
-  pieceArray[0].clear();
-  pieceArray[1].clear();
-  rabbitsNum[0] = 0;
-  rabbitsNum[1] = 0;
-
-  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
-
-
-  //signatures are made after the position is loaded
-}
-
-//---------------------------------------------------------------------
 
 bool Board::initFromRecord(const char* fn)
 {
@@ -472,7 +421,6 @@ bool Board::initFromRecord(const char* fn)
         switch (recordAction){
           case ACTION_PLACEMENT:
             assert(moveNum == 1);
-
             board_[from] = (player | piece);
             pieceArray[PLAYER_TO_INDEX(player)].add(from);
             if (piece == PIECE_RABBIT)
@@ -527,13 +475,197 @@ bool Board::initFromPosition(const char* fn)
 
 //---------------------------------------------------------------------
 
-bool Board::initFromPositionStream(istream& ss)
+bool Board::initFromPositionCompactString(const string& s)
+{
+  stringstream ss;
+  ss.str(s);
+  init();
+  char side;
+  ss >> side;
+
+  toMove_ = sideCharToPlayer(side);
+  string boardStr = getStreamRest(ss);
+  
+  //check format '[' .. 64 characters for position ... ']'
+  if (boardStr[0] != '[' || boardStr[65] != ']') 
+    return false;
+
+  uint k=1;
+  for (int i = 8; i > 0; i--) 
+    for (int j = 1; j < 9; j++) {
+      assert(k < boardStr.length());
+      char c = boardStr[k++];
+      if (c == ' ' || c=='X' || c=='x')
+        board_[i*10+j] = (EMPTY_SQUARE); 
+      else {
+        try{
+          PiecePair piecePair = parsePieceChar(c);
+          board_[i*10+j] = (piecePair.first | piecePair.second);
+        }catch (int e){
+          log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
+          return false;
+        }
+      }
+    }
+
+  afterPositionLoad();
+  this->dump();
+  return true;
+}
+
+//--------------------------------------------------------------------- 
+
+Step Board::findStepToPlay() 
+{
+  uint playerIndex = PLAYER_TO_INDEX(toMove_);
+  Step step;
+
+  assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); //it's not possible to have 0 rabbits in the beginning of move
+
+  if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
+    return Step(STEP_PASS, toMove_);          //step_pass since the player with no pieces still might win 
+                                              //if he managed to kill opponent's last rabbit before he lost his last piece
+  //if (findRandomStep(step))
+  //  return step;
+
+  /* STEP_PASS is always last move generated in generateAllSteps 
+   * it can be simply removed to get "no-pass" move */
+  stepArrayLen[playerIndex] = generateAllSteps(toMove_, stepArray[playerIndex]);
+  uint len = stepArrayLen[playerIndex];
+
+  assert(stepArrayLen[playerIndex] < MAX_STEPS);
+
+  if (len == 0 ){ //player to move has no step to play - not even pass
+    winner_ = OPP(toMove_);
+    return Step(STEP_NO_STEP,toMove_); 
+  }
+
+  assert(len > 0);
+  uint index = rand() % len;
+  assert( index >= 0 && index < len );
+
+  /*check step reasonability
+  for (int i = 0; i < 20; i++){
+    index = rand() % len;
+    step = stepArray[playerIndex][index]; 
+    
+    //avoid suicide
+    if (  IS_TRAP(step.to_) ){
+      bool suicide = true;
+      for(int i = 0; i < 4; i++)
+        if (OWNER(board_[step.to_ + direction[i]]) == step.player_ && step.to_ + direction[i] != step.from_ )
+          suicide = false;
+
+      if ( suicide )
+          continue;
+    //TODO - rabbits move forward, prefer push/pulls, ...
+    }
+  
+  }
+
+  */
+
+  return( stepArray[playerIndex][index]); 
+} 
+
+//---------------------------------------------------------------------
+
+void Board::makeMove(const string& move)
+{
+  stringstream ss(move);
+
+  while (ss.good()){
+    recordAction_e recordAction;
+    string token;
+    player_t player; 
+    piece_t  piece;
+    square_t from;
+    square_t to;
+
+    ss >> token;
+
+    recordAction = parseRecordActionToken(token, player, piece, from, to);
+    Step step = Step(STEP_SINGLE, player, piece, from, to);
+
+    switch (recordAction){
+      case ACTION_PLACEMENT:
+        assert(moveCount_ == 1);
+        board_[from] = (player | piece);
+        pieceArray[PLAYER_TO_INDEX(player)].add(from);
+        if (piece == PIECE_RABBIT)
+          rabbitsNum[PLAYER_TO_INDEX(player)]++; 
+        break;
+      case ACTION_STEP:
+        assert(moveCount_ > 1);
+        makeStep(step);
+        break;
+      case ACTION_TRAP_FALL:
+        break;
+    }
+  }
+
+  commitMove();
+}
+
+//--------------------------------------------------------------------- 
+
+void Board::init(bool newGame)
+{
+
+  stepArrayLen[0] = 0;
+  stepArrayLen[1] = 0;
+
+  assert(OPP(GOLD) == SILVER);
+  assert(OPP(SILVER) == GOLD);
+
+
+  //this is the only place in program to call initZobrist ... 
+  //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
+  if (! classInit ) {
+    classInit = true;
+    srand(time(0));
+    initZobrist();  
+    thirdRep.clear();
+    thirdRep_ = &thirdRep;
+  }
+
+  for (int i = 0; i < 100; i++)  
+    board_[i] = OFF_BOARD_SQUARE;
+
+  for (int i = 1; i < 9; i++)
+    for (int j = 1; j < 9; j++){
+      board_[10*i+j]       = EMPTY_SQUARE;
+      frozenBoard_[10*i+j] = false;           //implicitly we consider everything not frozen
+    }
+
+  toMove_    = GOLD;
+  toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
+  stepCount_ = 0;
+  moveCount_ = 1;
+  winner_    = EMPTY;
+  //moveCount_ = 0;
+  //stepCount_ = 0;
+
+  //init pieceArray and rabbitsNum
+  pieceArray[0].clear();
+  pieceArray[1].clear();
+  rabbitsNum[0] = 0;
+  rabbitsNum[1] = 0;
+
+  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
+
+  signature_ = 0;
+  preMoveSignature_ = 0; 
+  //signature is generated after the position is loaded
+}
+
+//---------------------------------------------------------------------
+
+
+bool Board::initFromPositionStream(istream& is)
 {
 
   init();
-
-//  stringstream ss;
-  //ss.str(s);
 
   char side;
   char c;
@@ -541,25 +673,19 @@ bool Board::initFromPositionStream(istream& ss)
   
   try { 
 
-    ss >> moveCount_; 
-    ss >> side;
-    ss.ignore(1024,'\n'); //ignores the rest of initial line 
-
-    if (side == 'w')
-      toMove_ = GOLD;
-    else {
-      toMove_ = SILVER;
-    }
+    is >> moveCount_; 
+    is >> side;
+    is.ignore(1024,'\n'); //ignores the rest of initial line 
+    toMove_ = sideCharToPlayer(side);
     toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
-
-    ss.ignore(1024,'\n'); //ignores the top of the border till EOF 
+    is.ignore(1024,'\n'); //ignores the top of the border till EOF 
 
     for (int i = 8; i > 0; i--) { // do this for each of the 8 lines of the board
-      ss.ignore(2); //ignore trailing characters
+      is.ignore(2); //ignore trailing characters
 
       for (int j = 1; j < 9; j++) {
-        ss.ignore(1); //ignore a white space 
-        c=ss.get();
+        is.ignore(1); //ignore a white space 
+        c=is.get();
 
         if (c == ' ' || c=='X' || c=='x')
           board_[i*10+j] = (EMPTY_SQUARE); 
@@ -571,15 +697,41 @@ bool Board::initFromPositionStream(istream& ss)
             log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
             return false;
           }
-        } //else
-      } //for
-      ss.ignore(1024,'\n'); //finish the line
-    } //for 
-  } //try
+        } 
+      } 
+      is.ignore(1024,'\n'); //finish the line
+    } 
+  } 
   catch(int e) {
     return false; //initialization from file failed
   }
 
+  afterPositionLoad();
+
+  return true;
+}
+
+//--------------------------------------------------------------------- 
+
+player_t Board::sideCharToPlayer(char side) const
+{
+  player_t player;
+  if (! (side == 'w' || side == 'b' || side == 'g' || side =='s'))
+    throw;
+
+  if (side == 'w' || side == 'g')
+    player = GOLD;
+  else {
+    player = SILVER;
+  }
+
+  return player;
+}
+
+//--------------------------------------------------------------------- 
+
+void Board::afterPositionLoad()
+{
   makeSignature();    //(unique) position identification
   preMoveSignature_ = signature_;
 
@@ -589,8 +741,6 @@ bool Board::initFromPositionStream(istream& ss)
     if (PIECE(board_[square]) == PIECE_RABBIT)
       rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++; 
   }
-
-  return true;
 }
 
 //--------------------------------------------------------------------- 
@@ -686,61 +836,6 @@ void Board::makeSignature()
     if IS_PLAYER(board_[i])
       signature_ ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
 }
-
-//---------------------------------------------------------------------
-
-Step Board::findStepToPlay() 
-{
-  uint playerIndex = PLAYER_TO_INDEX(toMove_);
-  Step step;
-
-  assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); //it's not possible to have 0 rabbits in the beginning of move
-
-  if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
-    return Step(STEP_PASS, toMove_);          //step_pass since the player with no pieces still might win 
-                                              //if he managed to kill opponent's last rabbit before he lost his last piece
-  //if (findRandomStep(step))
-  //  return step;
-
-  /* STEP_PASS is always last move generated in generateAllSteps 
-   * it can be simply removed to get "no-pass" move */
-  stepArrayLen[playerIndex] = generateAllSteps(toMove_, stepArray[playerIndex]);
-  uint len = stepArrayLen[playerIndex];
-
-  assert(stepArrayLen[playerIndex] < MAX_STEPS);
-
-  if (len == 0 ){ //player to move has no step to play - not even pass
-    winner_ = OPP(toMove_);
-    return Step(STEP_NO_STEP,toMove_); 
-  }
-
-  assert(len > 0);
-  uint index = rand() % len;
-  assert( index >= 0 && index < len );
-
-  /*check step reasonability
-  for (int i = 0; i < 20; i++){
-    index = rand() % len;
-    step = stepArray[playerIndex][index]; 
-    
-    //avoid suicide
-    if (  IS_TRAP(step.to_) ){
-      bool suicide = true;
-      for(int i = 0; i < 4; i++)
-        if (OWNER(board_[step.to_ + direction[i]]) == step.player_ && step.to_ + direction[i] != step.from_ )
-          suicide = false;
-
-      if ( suicide )
-          continue;
-    //TODO - rabbits move forward, prefer push/pulls, ...
-    }
-  
-  }
-
-  */
-
-  return( stepArray[playerIndex][index]); 
-} 
 
 //---------------------------------------------------------------------
 
@@ -958,11 +1053,9 @@ void Board::commitMove()
     log_() << "move count: " << moveCount_ << endl;
   #endif
 
+  assert(toMove_ == GOLD || toMove_ == SILVER);
   if (toMove_ == SILVER) 
     moveCount_++;
-  else{ 
-    assert(toMove_ == GOLD);
-  }
 
   toMove_ = OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
@@ -1193,10 +1286,9 @@ bool Board::isFrozen(square_t square) const
 
 //---------------------------------------------------------------------
 
-bool Board::isEmpty() const
-  /* this check is used in the beginning for pieces positioning*/
+bool Board::isSetupPhase() const
 {
- return moveCount_ == 1; //TODO ... really check whether the board is empty 
+  return moveCount_ == 1 && pieceArray[toMoveIndex_].getLen() == 0; 
 }
 
 //---------------------------------------------------------------------

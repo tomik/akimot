@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 
-AKIMOT_MATCH_DIR = '/home/tomik/src/tmp/arimaa/matchOffline/bot_akimot'
+AKIMOT_AEI_DIR = '/home/tomik/src/tmp/arimaa/aei'
 AKIMOT_LIBS = ['pthread']
 
 common = Environment(CC='g++', CCFLAGS = '-Wall ')
@@ -38,8 +38,8 @@ if do_build:
   #akimot = env.Program(target = 'akimot', source = src_files_build, CPPPATH = '.')
   env.Object(src_files_build)
   akimot = env.Program(target = 'akimot', source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
-  env.Install(AKIMOT_MATCH_DIR, akimot)
-  env.Alias('match', AKIMOT_MATCH_DIR)
+  env.Install(AKIMOT_AEI_DIR, akimot)
+  env.Alias('aei', AKIMOT_AEI_DIR)
   tst = Environment(tools = ['default','cxxtest'], CXXTEST='/usr/bin/cxxtestgen.py', LIBS = AKIMOT_LIBS, CXXTEST_DIR='')
   tst.CxxTest('func_test', ['tests.h'] + obj_files_test)
   tst.CxxTest('perf_test', ['performance.h'] + obj_files_test)

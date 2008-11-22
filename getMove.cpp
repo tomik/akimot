@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   Aei aei;
   
   //for debugging
-  if (argc > 1)
+  if (config.debug())
     aei.implicitSessionStart();
 
   aei.runLoop();

@@ -1,4 +1,55 @@
 #include "aei.h"
+//--------------------------------------------------------------------- 
+// section Strings used in communication
+//--------------------------------------------------------------------- 
+
+#define STR_AEI "aei"
+#define STR_AEI_OK "aeiok"
+#define STR_READY "isready"
+#define STR_READY_OK "readyok"
+#define STR_NEW_GAME "newgame"
+#define STR_SET_POSITION "setposition"
+#define STR_SET_POSITION_FILE "setpositionfile"
+#define STR_SET_OPTION "setoption"
+#define STR_OPTION_NAME "name"
+#define STR_OPTION_VALUE "value"
+#define STR_UNKNOWN_OPTION "unknown option "
+#define STR_GO "go"
+#define STR_PONDER "ponder"
+#define STR_INFINITE "infinite"
+#define STR_STOP "stop"
+#define STR_MAKE_MOVE "makemove"
+#define STR_BEST_MOVE "bestmove"
+#define STR_QUIT "quit"
+#define STR_BYE "bye"
+
+#define STR_TC_MOVE "tcmove"
+#define STR_TC_RESERVE "tcreserve"
+#define STR_TC_PERCENT "tcpercent"
+#define STR_TC_MAX "tcmax"
+#define STR_TC_TOTAL "tctotal"
+#define STR_TC_TURNS "tcturns"
+#define STR_TC_TURN_TIME "tcturntime"
+#define STR_TC_W_RESERVE "wreserve"
+#define STR_TC_B_RESERVE "breserve"
+#define STR_TC_W_USED "wused"
+#define STR_TC_B_USED "bused"
+#define STR_TC_LAST_MOVE_USED "lastmoveused"
+#define STR_TC_MOVE_USED "tcmoveused"
+
+#define STR_LOG_ERROR "log Error:"
+#define STR_LOG_WARNING "log Warning:"
+#define STR_LOG_DEBUG "log Debug:"
+#define STR_LOG_INFO "log "
+
+#define STR_LOAD_FAIL "Fatal error occured while loading position."
+
+#define STR_INVALID_COMMAND "Invalid command"
+
+#define STR_ID "id"
+#define STR_ID_NAME "name"
+#define STR_ID_AUTHOR "author"
+#define STR_ID_VERSION "version"
 
 
 //--------------------------------------------------------------------- 
@@ -20,12 +71,15 @@ Aei::Aei()
   records_.push_back(AeiRecord(STR_AEI, AS_OPEN, AS_MAIN, AA_OPEN));
   records_.push_back(AeiRecord(STR_READY, AS_ALL, AS_SAME, AA_READY));
   records_.push_back(AeiRecord(STR_QUIT, AS_ALL, AS_SAME, AA_QUIT));
-  records_.push_back(AeiRecord(STR_NEW_GAME, AS_MAIN, AS_GAME, AA_NEW_GAME));
-  records_.push_back(AeiRecord(STR_SET_POSITION, AS_GAME, AS_SAME, AA_SET_POSITION));
-  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_GAME, AS_SAME, AA_SET_POSITION_FILE));
+  records_.push_back(AeiRecord(STR_NEW_GAME, AS_MAIN, AS_SAME, AA_NEW_GAME));
+  records_.push_back(AeiRecord(STR_SET_POSITION, AS_MAIN, AS_SAME, AA_SET_POSITION));
+  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_MAIN, AS_SAME, AA_SET_POSITION_FILE));
   records_.push_back(AeiRecord(STR_SET_OPTION, AS_MAIN, AS_SAME, AA_SET_OPTION));
-  records_.push_back(AeiRecord(STR_GO, AS_GAME, AS_SEARCH, AA_GO));
-  records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_GAME, AA_STOP));
+  records_.push_back(AeiRecord(STR_GO, AS_MAIN, AS_SEARCH, AA_GO));
+  records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_MAIN, AA_STOP));
+  //TODO MAKE_MOVE might come also during search ( pondering ) 
+  //should end pondering and make move, no output !
+  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_MAIN, AS_SAME, AA_MAKE_MOVE));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
@@ -70,18 +124,33 @@ void Aei::runLoop()
 
 //--------------------------------------------------------------------- 
 
+void Aei::implicitSessionStart()
+{
+  handleInput(STR_AEI);
+  handleInput(STR_NEW_GAME);
+  //handleInput((string) STR_SET_POSITION_FILE + " " + config.fnInput());
+  handleInput("setposition w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]");
+  handleInput("setoption name tcmove value 5");
+  //handleInput(STR_GO);
+}
+
+//--------------------------------------------------------------------- 
+
 void Aei::handleInput(const string& line)
 {
   stringstream ssLine;
   stringstream rest;
-  ssLine.str("");
+  ssLine.clear();
+  rest.clear();
   ssLine.str(line);
-  string command = "";
+  string command;
   ssLine >> command; 
   response_ = "";
   
   AeiRecord* record = NULL;
   AeiRecordList::iterator it; 
+
+  //log("received: " + line, LL_INFO);
 
   for (it = records_.begin(); it != records_.end(); it++)
     if ((it->state_ == state_ || it->state_ == AS_ALL) && it->command_ == command){
@@ -90,7 +159,7 @@ void Aei::handleInput(const string& line)
     }
 
   if (! record) {
-    response_ = STR_INVALID_COMMAND;
+    log(STR_INVALID_COMMAND, LL_ERROR);
     quit();
   }
 
@@ -107,16 +176,22 @@ void Aei::handleInput(const string& line)
                   response_ = STR_READY_OK;
                   break;
     case AA_NEW_GAME: 
+                  board_->initNewGame(); 
                   break;
     case AA_SET_OPTION:
                   handleOption(getStreamRest(ssLine));
                   break;
     case AA_SET_POSITION_FILE: 
-                  board_->initFromPosition(getStreamRest(ssLine).c_str());
+                  if (! board_->initFromPosition(getStreamRest(ssLine).c_str())){
+                    log(STR_LOAD_FAIL, LL_ERROR);
+                    quit();
+                  }
                   break;
     case AA_SET_POSITION: 
-                  rest.str(getStreamRest(ssLine));
-                  board_->initFromPositionStream(rest);
+                  if (! board_->initFromPositionCompactString(getStreamRest(ssLine))){
+                    log(STR_LOAD_FAIL, LL_ERROR);
+                    quit();
+                  }
                   break;
     case AA_GO:    
                   startSearch(getStreamRest(ssLine));
@@ -124,8 +199,10 @@ void Aei::handleInput(const string& line)
     case AA_STOP: 
                   engine_->requestSearchStop();
                   break;
+    case AA_MAKE_MOVE:
+                  board_->makeMove(getStreamRest(ssLine));
+                  break;
     case AA_QUIT: 
-                  response_ = STR_BYE;
                   quit();
                   break;
     default: 
@@ -142,11 +219,25 @@ void Aei::handleOption(const string& commandRest)
 {
   string option;
   string value;
+  string s;
   stringstream ss ;
   ss.str(commandRest);
 
+  bool correct = true;;
+
+  ss >> s;
+  if ( s != STR_OPTION_NAME)
+    correct = false;
   ss >> option;
+  ss >> s;
+  if ( s != STR_OPTION_VALUE)
+    correct = false;
   ss >> value;
+
+  if (! correct) {
+    log(STR_UNKNOWN_OPTION + option, LL_WARNING);
+    return;
+  }
 
   TimeControlList::iterator it;
   for (it = timeControls_.begin(); it != timeControls_.end(); it++)
@@ -154,6 +245,8 @@ void Aei::handleOption(const string& commandRest)
       engine_->timeManager()->setTimeControl(it->second, str2int(value));
       return;
     }
+
+  log(STR_UNKNOWN_OPTION + option, LL_WARNING);
 }
 
 //--------------------------------------------------------------------- 
@@ -167,18 +260,10 @@ void Aei::startSearch(const string& arg)
   //no mutex is needed - this is done only when no engineThread runs
   rc = pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this);
 
-  if (rc) //allocating thread failed
+  if (rc){ //allocating thread failed
+    log("Fatal thread error occured.", LL_ERROR);
     quit();
-}
-
-//--------------------------------------------------------------------- 
-
-void Aei::implicitSessionStart()
-{
-  handleInput(STR_AEI);
-  handleInput(STR_NEW_GAME);
-  handleInput((string) STR_SET_POSITION_FILE + " " + config.fnInput());
-  handleInput(STR_GO);
+  }
 }
 
 //--------------------------------------------------------------------- 
@@ -186,9 +271,8 @@ void Aei::implicitSessionStart()
 void Aei::searchInThread()
 {
   engine_->doSearch(board_);
-  state_ = AS_GAME; //TODO possible ?  
-  response_ = string(STR_BEST_MOVE) + " " + engine_->getBestMove();
-  send(response_);
+  state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?   
+  send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
 }
 
 //--------------------------------------------------------------------- 
@@ -202,10 +286,36 @@ void * Aei::SearchInThreadWrapper(void* instance)
 
 //--------------------------------------------------------------------- 
 
+void Aei::log(const string& msg, const aeiLogLevel_e logLevel) const 
+{
+  string completeMsg = msg;
+
+  switch(logLevel){
+    case LL_ERROR:
+                  completeMsg = STR_LOG_ERROR + completeMsg;
+                  break;
+    case LL_WARNING:
+                  completeMsg = STR_LOG_WARNING + completeMsg;
+                  break;
+    case LL_DEBUG:
+                  completeMsg = STR_LOG_DEBUG + completeMsg;
+                  break;
+    case LL_INFO:
+                  completeMsg = STR_LOG_INFO + completeMsg;
+                  break;
+    default:
+                  assert(false);
+                  break;
+  }
+  send(completeMsg);
+}
+
+//--------------------------------------------------------------------- 
+
 void Aei::quit() const
 {
-  send(response_);
-  exit(1);
+  log(STR_BYE, LL_INFO);
+  exit(0);
 }
 
 //--------------------------------------------------------------------- 
@@ -215,15 +325,15 @@ void Aei::sendId() const
   stringstream ss; 
   ss.clear();
 
-  ss << STR_NAME << " " << ID_NAME;
+  ss << STR_ID << " " << STR_ID_NAME << " " << ID_NAME;
   send(ss.str());
   ss.str("");
 
-  ss << STR_AUTHOR << " " << ID_AUTHOR;
+  ss << STR_ID << " " << STR_ID_AUTHOR << " " << ID_AUTHOR;
   send(ss.str());
   ss.str("");
 
-  ss << STR_VERSION << " " << ID_VERSION;
+  ss << STR_ID << " " << STR_ID_VERSION << " " << ID_VERSION;
   send(ss.str());
   ss.str("");
 }
@@ -232,8 +342,10 @@ void Aei::sendId() const
 
 void Aei::send(const string& s) const
 {
-  if (s.length())
-  cout << s << endl;
+  if (s.length() > 0 || s == "\n"){
+    cout << s << endl << flush;
+  }
+  
 }
 
 //--------------------------------------------------------------------- 

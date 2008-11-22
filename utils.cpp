@@ -79,13 +79,17 @@ string getStreamRest(istream& is)
 
   is.seekg (pos, ios::beg);
 
-  buffer = new char[len - pos];
+  buffer = new char[len - pos + 1];
   is.read(buffer, len - pos);
-  s = buffer;
+  //TODO why not bugger[len - pos + 1] = 0 ? 
+  buffer[len - pos] = 0; 
+  s = string(buffer);
   delete[] buffer;
 
   //set back g pointer
   is.seekg (pos, ios::beg);
+
+  //cout << endl << s << endl;
 
   return trimLeft(s);
 }

@@ -1,5 +1,4 @@
-#ifndef EVAL_H
-#define EVAL_H
+#pragma once
 
 #include "board.h"
 
@@ -29,4 +28,3 @@ class Eval
     float evaluateInPercent(const Board*); 
 }; 
 
-#endif

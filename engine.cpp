@@ -35,7 +35,6 @@ Node::Node(const Step& step)
 
 void Node::expand(const StepArray& steps, uint len)
 {
-  //cout << "Expanding node" << endl;
   Node* newChild;
   for (uint i = 0; i < len; i++){
     newChild = new Node(steps[i]);
@@ -482,18 +481,12 @@ void SimplePlayout::playOne()
 	Step step;
 
 	do {
-		#ifdef DEBUG_3
-			board_->dump();
-  		board_->dumpAllSteps();
-		#endif
-		#ifdef DEBUG_2
-      board_->testPieceArray();  
-		#endif
 		step = board_->findStepToPlay();
-		board_->makeStep(step);
+		//board_->makeStep(step);
 	}
-	while (board_->getStepCount() < 4 && step.pieceMoved()); 
-	board_->commitMove();
+  //TODO IS this correct ? 
+	while (! board_->makeStepTryCommitMove(step));//(board_->getStepCount() < 4 && step.pieceMoved()); 
+	//board_->commitMove();
 	return;
 }
 
@@ -717,8 +710,12 @@ Tree* Uct::getTree() const
 
 TimeManager::TimeManager()
 {
+  for (int i = 0; i < TIME_CONTROLS_NUM; i++)
+    timeControls_[i] = 0;
   noTimeLimit_ = false;
-  secondsPerMove_ = 3;  //TODO change 
+  timeControls_[TC_MOVE] = TC_MOVE_DEFAULT;
+  timeControls_[TC_MAX] = TC_MAX_DEFAULT;
+  timeControls_[TC_RESERVE] = TC_RESERVE_DEFAULT;
 }
 
 //--------------------------------------------------------------------- 
@@ -732,7 +729,7 @@ void TimeManager::startClock()
 
 bool TimeManager::checkClock()
 {
-  if (secondsElapsed() < secondsPerMove_ || noTimeLimit_)
+  if (secondsElapsed() < timeControls_[TC_MOVE] || noTimeLimit_)
     return true;
   return false;
 }
@@ -750,9 +747,9 @@ float TimeManager::secondsElapsed()
 
 void TimeManager::setTimeControl(timeControl_e tc, int value)
 {
-  assert(tc < TIME_CONTROLS_NUM);
+  assert(tc >= 0 && tc < TIME_CONTROLS_NUM);
 
-  if ( tc < TIME_CONTROLS_NUM)
+  if ( tc >= 0 && tc < TIME_CONTROLS_NUM)
     timeControls_[tc] = value;
 }
 
@@ -769,37 +766,42 @@ void TimeManager::setNoTimeLimit()
 
 Engine::Engine()
 {
+  timeManager_ = new TimeManager();
 }
 
 //--------------------------------------------------------------------- 
 
 Engine::~Engine()
 {
+  delete timeManager_;
 }
 
 //--------------------------------------------------------------------- 
 
-string Engine::initialSetup(bool isGold)
+string Engine::initialSetup(bool isGold) const
 {
 	if (isGold)
-		return "Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2\n";
+		return "Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2";
 	else
-		return "ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7\n";
+		return "ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7";
 }
 
 //---------------------------------------------------------------------
 
 void Engine::doSearch(Board* board) 
 { 
+  if (board->isSetupPhase()){
+    bestMove_ = initialSetup(board->getPlayerToMove() == GOLD);
+    return;
+  }
+
   uct_ = new Uct(board);
-  timeManager_ = new TimeManager();
   stopRequest_ = false;
 
   timeManager_->startClock();
   while (timeManager_->checkClock() && ! stopRequest_)
     uct_->doPlayout();
 
-  //log_() << board->toString() << endl;
   //log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
   bestMove_ = uct_->getBestMove(); 
   delete uct_;
