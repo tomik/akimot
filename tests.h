@@ -38,6 +38,7 @@ class DebugTestSuite : public CxxTest::TestSuite
 
       ss.clear();
       ss.str("makemove Ra1");
+      ss >> s;
       TS_ASSERT_EQUALS(getStreamRest(ss), "Ra1");
     }
 
@@ -62,6 +63,8 @@ class DebugTestSuite : public CxxTest::TestSuite
 
         while (f.good()){
           getline(f, line);
+          if (line == "")
+            continue;
           ss.clear();
           ss.str(line);
           ss >> s1;
@@ -75,7 +78,7 @@ class DebugTestSuite : public CxxTest::TestSuite
           if (! board2.initFromRecord(fnRecord.c_str()))
             TS_FAIL((string) "Init from " + fnRecord + (string) " failed");
 
-          TS_ASSERT_EQUALS( board1.getSignature(), board2.getSignature());
+          TS_ASSERT_EQUALS( board1, board2);
         }
      }
 

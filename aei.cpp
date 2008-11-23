@@ -128,10 +128,10 @@ void Aei::implicitSessionStart()
 {
   handleInput(STR_AEI);
   handleInput(STR_NEW_GAME);
-  //handleInput((string) STR_SET_POSITION_FILE + " " + config.fnInput());
-  handleInput("setposition w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]");
-  handleInput("setoption name tcmove value 5");
-  //handleInput(STR_GO);
+  handleInput(string(STR_SET_POSITION_FILE) + " " + "test/move/t008.txt");
+  //handleInput("setposition w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]");
+  handleInput("setoption name tcmove value 2");
+  handleInput(STR_GO);
 }
 
 //--------------------------------------------------------------------- 

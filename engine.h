@@ -329,6 +329,11 @@ class TimeManager
     void setTimeControl(timeControl_e tc, int value);
 
     /**
+     * Time Control getter.
+     */
+    int getTimeControl(timeControl_e tc);
+
+    /**
      * Sets time unlimited search. 
      */
     void setNoTimeLimit();

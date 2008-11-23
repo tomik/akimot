@@ -240,6 +240,14 @@ class Board
      * @param move String representation of the move.
      */
 		void makeMove(const string& move);
+
+    /**
+     * Equality operator.
+     *
+     * Check signatures and moveCount.
+     * Right now doesn't check pieceArrays and other stuff.
+     */
+		bool operator== (const Board& board) const;
     
     //TODO from here till private: restructuralize in .cpp
     

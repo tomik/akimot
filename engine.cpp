@@ -134,26 +134,30 @@ void Node::removeChild(Node* child)
 {
   assert(this->firstChild_ != NULL);
   Node* previous = NULL;
-  Node* node = firstChild_;
+  Node* toDelete = firstChild_;
 
-  while(node != child && node != NULL){
-    previous = node;
-    node = node->sibling_;
+  while(toDelete != child && toDelete != NULL){
+    previous = toDelete;
+    toDelete = toDelete->sibling_;
   }
-  assert(node == child);
+  assert(toDelete == child);
 
   if (previous == NULL)
-    firstChild_ = node->sibling_;
+    firstChild_ = toDelete->sibling_;
   else
-    previous->sibling_ = node->sibling_;
-
-
-  //handle number of visits/value in father
-  father_->visits_ -= visits_;
-  father_->value_  -= value_;
-  assert(father_->visits_ >= 0);
+    previous->sibling_ = toDelete->sibling_;
   
-  delete node;
+  /*Node* node = this;
+  //handle number of visits/wins num in ancestors
+  do {
+    node->visits_ -= toDelete->visits_;
+    //node->wins_ -= toDelete->wins_;
+    assert(node->visits_ >= 0);
+  } while (node != NULL);
+  */
+
+  
+  delete toDelete;
   if (firstChild_ == NULL){
     remove();
   }
@@ -166,7 +170,7 @@ void Node::remove()
   assert(firstChild_ == NULL);
   assert(father_ != NULL);
 
-  //TODO: father==NULL -> root should be removed ? 
+  //TODO: is this correct ? father_->removeChild(this) destroys this object ! 
   if (father_ != NULL) 
     father_->removeChild(this);
   return;
@@ -755,6 +759,17 @@ void TimeManager::setTimeControl(timeControl_e tc, int value)
 
 //--------------------------------------------------------------------- 
 
+int TimeManager::getTimeControl(timeControl_e tc)
+{
+  assert(tc >= 0 && tc < TIME_CONTROLS_NUM);
+
+  if ( tc >= 0 && tc < TIME_CONTROLS_NUM)
+    return timeControls_[tc];
+  return -1;
+}
+
+//--------------------------------------------------------------------- 
+
 void TimeManager::setNoTimeLimit()
 {
   noTimeLimit_ = true;
@@ -802,7 +817,7 @@ void Engine::doSearch(Board* board)
   while (timeManager_->checkClock() && ! stopRequest_)
     uct_->doPlayout();
 
-  //log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
+//  log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
   bestMove_ = uct_->getBestMove(); 
   delete uct_;
 }

@@ -386,10 +386,7 @@ bool Board::initFromRecord(const char* fn)
   string line;
   stringstream ss;
   string token;
-  uint moveNum;
-  player_t movePlayer = GOLD;
-  recordAction_e recordAction;
-
+  uint moveCount;
 
   try { 
     f.open(fn, fstream::in);
@@ -406,44 +403,10 @@ bool Board::initFromRecord(const char* fn)
       ss.str(line);
 
       ss >> token; 
-      moveNum = str2int(token.substr(0, token.length() - 1));
-      //log_()<< line << endl;
-      while (ss.good()){
-        player_t player; 
-        piece_t  piece;
-        square_t from;
-        square_t to;
-
-        ss >> token;
-        recordAction = parseRecordActionToken(token, player, piece, from, to);
-        Step step = Step(STEP_SINGLE, player, piece, from, to);
-
-        switch (recordAction){
-          case ACTION_PLACEMENT:
-            assert(moveNum == 1);
-            board_[from] = (player | piece);
-            pieceArray[PLAYER_TO_INDEX(player)].add(from);
-            if (piece == PIECE_RABBIT)
-              rabbitsNum[PLAYER_TO_INDEX(player)]++; 
-            break;
-          case ACTION_STEP:
-            assert(moveNum > 1);
-            makeStep(step);
-            break;
-          case ACTION_TRAP_FALL:
-            break;
-        }
-
-        movePlayer = player;
-      }
-
+      moveCount = str2int(token.substr(0, token.length() - 1));
+      assert(moveCount == moveCount_);
+      makeMove(getStreamRest(ss));
     }
-    moveCount_ = moveNum;
-    toMove_ = OPP(movePlayer);
-    toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
-    stepCount_ = 0;
-    makeSignature();
-    preMoveSignature_ = signature_;
 
   }
   catch(int e) {
@@ -453,6 +416,13 @@ bool Board::initFromRecord(const char* fn)
   return true;
 
 } 
+
+//--------------------------------------------------------------------- 
+
+bool Board::operator== ( const Board& board) const
+{
+  return (signature_ == board.signature_ && moveCount_ == board.moveCount_ ) ;
+}
 
 //---------------------------------------------------------------------
 
@@ -484,6 +454,8 @@ bool Board::initFromPositionCompactString(const string& s)
   ss >> side;
 
   toMove_ = sideCharToPlayer(side);
+  if (! IS_PLAYER(toMove_))
+    return false;
   string boardStr = getStreamRest(ss);
   
   //check format '[' .. 64 characters for position ... ']'
@@ -509,7 +481,6 @@ bool Board::initFromPositionCompactString(const string& s)
     }
 
   afterPositionLoad();
-  this->dump();
   return true;
 }
 
@@ -572,6 +543,9 @@ Step Board::findStepToPlay()
 
 void Board::makeMove(const string& move)
 {
+  if (move == "")
+    return; 
+
   stringstream ss(move);
 
   while (ss.good()){
@@ -590,7 +564,7 @@ void Board::makeMove(const string& move)
     switch (recordAction){
       case ACTION_PLACEMENT:
         assert(moveCount_ == 1);
-        board_[from] = (player | piece);
+        setSquare(from, player, piece);
         pieceArray[PLAYER_TO_INDEX(player)].add(from);
         if (piece == PIECE_RABBIT)
           rabbitsNum[PLAYER_TO_INDEX(player)]++; 
@@ -618,10 +592,8 @@ void Board::init(bool newGame)
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
 
-
-  //this is the only place in program to call initZobrist ... 
-  //this if is fullfilled only once - when static member classInit is false ( initialized this way ) 
-  if (! classInit ) {
+  //game initialization - done in the first run or when newgame is specified
+  if (! classInit || newGame) {
     classInit = true;
     srand(time(0));
     initZobrist();  
@@ -677,6 +649,8 @@ bool Board::initFromPositionStream(istream& is)
     is >> side;
     is.ignore(1024,'\n'); //ignores the rest of initial line 
     toMove_ = sideCharToPlayer(side);
+    if (! IS_PLAYER(toMove_))
+      return false;
     toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
     is.ignore(1024,'\n'); //ignores the top of the border till EOF 
 
@@ -717,7 +691,8 @@ player_t Board::sideCharToPlayer(char side) const
 {
   player_t player;
   if (! (side == 'w' || side == 'b' || side == 'g' || side =='s'))
-    throw;
+    return EMPTY;
+
 
   if (side == 'w' || side == 'g')
     player = GOLD;
@@ -1012,7 +987,7 @@ void Board::performKill(square_t trapPos)
 
   if (PIECE(board_[trapPos]) == PIECE_RABBIT)              //update rabbitsNum - for gameEnd check 
      rabbitsNum[playerIndex]--;
-  board_[trapPos] = EMPTY_SQUARE; 
+  clearSquare(trapPos);
   pieceArray[playerIndex].del(trapPos);
 }
 
@@ -1046,16 +1021,12 @@ void Board::commitMove()
   if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
     winner_ = toMove_;
 
-  #ifdef DEBUG_3
-    log_() << "COMITTING MOVE" <<endl;
-    log_() << "toMove: " << toMove_ << endl;
-    log_() << "toMoveIndex: " << toMoveIndex_ << " rabbits num: " << rabbitsNum[toMoveIndex_] << endl;
-    log_() << "move count: " << moveCount_ << endl;
-  #endif
+  //logDebug("Commiting move %d from player %d", moveCount_, toMove_);
 
   assert(toMove_ == GOLD || toMove_ == SILVER);
   if (toMove_ == SILVER) 
     moveCount_++;
+
 
   toMove_ = OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
