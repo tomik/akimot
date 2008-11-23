@@ -159,7 +159,7 @@ void Aei::handleInput(const string& line)
     }
 
   if (! record) {
-    log(STR_INVALID_COMMAND, LL_ERROR);
+    aeiLog(STR_INVALID_COMMAND, AL_ERROR);
     quit();
   }
 
@@ -183,13 +183,13 @@ void Aei::handleInput(const string& line)
                   break;
     case AA_SET_POSITION_FILE: 
                   if (! board_->initFromPosition(getStreamRest(ssLine).c_str())){
-                    log(STR_LOAD_FAIL, LL_ERROR);
+                    aeiLog(STR_LOAD_FAIL, AL_ERROR);
                     quit();
                   }
                   break;
     case AA_SET_POSITION: 
                   if (! board_->initFromPositionCompactString(getStreamRest(ssLine))){
-                    log(STR_LOAD_FAIL, LL_ERROR);
+                    aeiLog(STR_LOAD_FAIL, AL_ERROR);
                     quit();
                   }
                   break;
@@ -235,7 +235,7 @@ void Aei::handleOption(const string& commandRest)
   ss >> value;
 
   if (! correct) {
-    log(STR_UNKNOWN_OPTION + option, LL_WARNING);
+    aeiLog(STR_UNKNOWN_OPTION + option, AL_WARNING);
     return;
   }
 
@@ -246,7 +246,7 @@ void Aei::handleOption(const string& commandRest)
       return;
     }
 
-  log(STR_UNKNOWN_OPTION + option, LL_WARNING);
+  aeiLog(STR_UNKNOWN_OPTION + option, AL_WARNING);
 }
 
 //--------------------------------------------------------------------- 
@@ -261,7 +261,7 @@ void Aei::startSearch(const string& arg)
   rc = pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this);
 
   if (rc){ //allocating thread failed
-    log("Fatal thread error occured.", LL_ERROR);
+    aeiLog("Fatal thread error occured.", AL_ERROR);
     quit();
   }
 }
@@ -286,21 +286,21 @@ void * Aei::SearchInThreadWrapper(void* instance)
 
 //--------------------------------------------------------------------- 
 
-void Aei::log(const string& msg, const aeiLogLevel_e logLevel) const 
+void Aei::aeiLog(const string& msg, const aeiLogLevel_e logLevel) const 
 {
   string completeMsg = msg;
 
   switch(logLevel){
-    case LL_ERROR:
+    case AL_ERROR:
                   completeMsg = STR_LOG_ERROR + completeMsg;
                   break;
-    case LL_WARNING:
+    case AL_WARNING:
                   completeMsg = STR_LOG_WARNING + completeMsg;
                   break;
-    case LL_DEBUG:
+    case AL_DEBUG:
                   completeMsg = STR_LOG_DEBUG + completeMsg;
                   break;
-    case LL_INFO:
+    case AL_INFO:
                   completeMsg = STR_LOG_INFO + completeMsg;
                   break;
     default:
@@ -314,7 +314,7 @@ void Aei::log(const string& msg, const aeiLogLevel_e logLevel) const
 
 void Aei::quit() const
 {
-  log(STR_BYE, LL_INFO);
+  aeiLog(STR_BYE, AL_INFO);
   exit(0);
 }
 

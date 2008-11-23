@@ -1,5 +1,8 @@
 #include "utils.h"
 
+string logLevelStr[10] = { "debug", "warning", "error", "info"};
+string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
+
 Logger::Logger()
 {
 }
@@ -28,6 +31,25 @@ ostream& Logger::operator()(unsigned int messageLevel) const{
 
   */
   return cerr;
+}
+
+//--------------------------------------------------------------------- 
+
+void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...)
+{
+
+    va_list args;
+    va_start(args, line);
+
+    char* msg = va_arg(args, char *);
+
+    char * fullmsg;
+    //compiler dependend function - allocates memory to fullmsg
+    vasprintf(&fullmsg, msg, args);
+    va_end(args);
+    std::cerr << timestamp << " --- " << "["  << logLevelStr[logLevel]  << "] " << file << "/" << function << "/" << line <<  ":" << fullmsg << std::endl;
+    free(fullmsg);
+
 }
 
 //--------------------------------------------------------------------- 

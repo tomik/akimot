@@ -3,6 +3,8 @@
 #include "utils.h"
 #include <map>
 
+using std::map;
+
 typedef pair<u64, int>  PositionPair;
 typedef map<u64, int>   PositionMap; 
 

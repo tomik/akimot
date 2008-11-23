@@ -9,6 +9,7 @@
 int main(int argc, char *argv[]) 
 {
 
+  logInfo( "This is a test message %s"," and this is the end of the test message");
 //for (int i = 0; i < argc; i ++)
 //  cout << argv[i] << endl;
 

@@ -3,6 +3,8 @@
 #include "utils.h"
 #include <list>
 
+using std::list;
+
 #define PLAYOUTS_PER_MOVE 10000
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

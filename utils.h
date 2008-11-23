@@ -2,32 +2,50 @@
 
 #include <cassert>
 
-#include <list>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <ctype.h>
-#include <bitset>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 #include <ctime>
 #include <cstring>
-
-//different levels of debug 1 -- low, 2 -- mediocre,  3 -- high
-
-//#define DEBUG_1	    	
-//#define DEBUG_2
-//#define DEBUG_3
+#include <cstdio>
+#include <cstdlib>
+#include <cstdarg>
 
 typedef unsigned long long u64;
 
-using namespace std;
+typedef unsigned int uint;
 
-enum logLevel_e { LOG_INFO, LOG_DEBUG1, LOG_DEBUG2, LOG_DEBUG3  };
+using std::string ;
+
+using std::fstream;
+using std::ostream;
+using std::istream;
+using std::stringstream;
+
+using std::cout ;
+using std::endl;
+using std::cerr;
+using std::cin ;
+using std::ios;
+
+using std::pair;
+
+
+enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO};
+
+#define STR_LOAD_FAIL "Fatal error occured while loading position."
+
+
+void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...);
+
+#define logInfo(...) logFunction(LL_INFO, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logDebug(...) logFunction(LL_DEBUG, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logWarning(...) logFunction(LL_WARNING, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logError(...) logFunction(LL_ERROR, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+
 
 class Logger
 {

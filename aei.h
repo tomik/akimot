@@ -15,6 +15,10 @@
 #include "board.h"
 #include "engine.h"
 
+using std::list;
+using std::flush;
+
+
 #define ID_NAME "akimot"
 #define ID_AUTHOR "Tomas Kozelek"
 #define ID_VERSION "0.1"
@@ -24,7 +28,7 @@ enum aeiState_e {AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH};
 enum aeiAction_e {AA_OPEN, AA_READY, AA_QUIT, AA_SET_POSITION, 
                   AA_SET_POSITION_FILE, AA_SET_OPTION, AA_NEW_GAME, 
                   AA_SET_VARIABLE, AA_GO, AA_STOP, AA_MAKE_MOVE};
-enum  aeiLogLevel_e {LL_ERROR, LL_WARNING, LL_INFO, LL_DEBUG};
+enum  aeiLogLevel_e {AL_ERROR, AL_WARNING, AL_INFO, AL_DEBUG};
 
 class Engine;
 class Aei;
@@ -112,7 +116,7 @@ class Aei
     /**
      * Communicate log messages. 
      */
-    void log(const string& msg, const aeiLogLevel_e logLevel) const;
+    void aeiLog(const string& msg, const aeiLogLevel_e logLevel) const;
 
     /**
      * Quit the program. 
