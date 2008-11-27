@@ -200,6 +200,9 @@ class SimplePlayout
      */
 		playoutStatus_e doPlayout();	
 
+    /**
+     * Returns playout length in moves.  
+     */
 		uint getPlayoutLength();  
 
   private:

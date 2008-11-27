@@ -7,6 +7,12 @@
 
 #define START_POS_PATH "test/startpos.txt"
 #define PLAYOUT_NUM 10000
+#define PLAYOUT_DEPTH 3
+#define EVAL_NUM 1000000
+#define UCT_NODES_NUM 10000
+#define UCT_NODE_MATURE 1
+//reflects average number of steps in position
+#define UCT_CHILDREN_NUM 25
 
 /**
  * Benchmarking class.

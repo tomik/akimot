@@ -277,7 +277,6 @@ void Aei::startSearch(const string& arg)
 
 void Aei::searchInThread()
 {
-  clock_t start = clock();
   engine_->doSearch(board_);
   state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?   
   send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
