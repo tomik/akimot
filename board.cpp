@@ -207,30 +207,6 @@ bool Step::operator== ( const Step& other) const
   return false;
 }
 
-//---------------------------------------------------------------------
-
-const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) const
-{
-  stringstream s;
-  s.str("");
-  string pieceRefStr(" RCDHMErcdhme");
-  string columnRefStr("abcdefgh");
-
-  s << pieceRefStr[piece + 6 * PLAYER_TO_INDEX(player)] << columnRefStr[from % 10 - 1] << from / 10; 
-  switch (to - from)
-  {
-    case NORTH : s << "n"; break;
-    case WEST :  s << "w"; break;
-    case EAST :  s << "e"; break;
-    case SOUTH : s << "s"; break;
-    default :
-      assert(false);
-      break;
-  }
-  s << " ";
-
-  return s.str();
-}
 
 //---------------------------------------------------------------------
 
@@ -270,6 +246,31 @@ const string Step::toString(bool resultPrint) const
     ss << ") ";
 
   return ss.str();
+}
+
+//---------------------------------------------------------------------
+
+const string Step::oneSteptoString(player_t player, piece_t piece, square_t from, square_t to) const
+{
+  stringstream s;
+  s.str("");
+  string pieceRefStr(" RCDHMErcdhme");
+  string columnRefStr("abcdefgh");
+
+  s << pieceRefStr[piece + 6 * PLAYER_TO_INDEX(player)] << columnRefStr[from % 10 - 1] << from / 10; 
+  switch (to - from)
+  {
+    case NORTH : s << "n"; break;
+    case WEST :  s << "w"; break;
+    case EAST :  s << "e"; break;
+    case SOUTH : s << "s"; break;
+    default :
+      assert(false);
+      break;
+  }
+  s << " ";
+
+  return s.str();
 }
 
 //---------------------------------------------------------------------

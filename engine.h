@@ -17,7 +17,7 @@
 using std::sqrt;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-#define EVAL_AFTER_LENGTH 8    //length of playout after which we evaluate
+#define EVAL_AFTER_LENGTH 2    //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
 #define MATURE_LEVEL  20
@@ -49,36 +49,76 @@ enum nodeType_e {NODE_MAX, NODE_MIN};
 // nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
 // NODE_MIN ( ~ siler node )  where we maximize -value + uncertainty_term
 
+/**
+ * Node in uct tree. 
+ */
 class Node
 {
-  private:
-    float       value_; 
-    int         visits_;
-    Step        step_;
-
-    Node*       sibling_;
-    Node*       firstChild_;  
-    Node*       father_;
-    nodeType_e  nodeType_;
-
   public:
     Node();
     Node(const Step&);
 
+    /**
+     * Node expansion.
+     *
+     * Creates children for every given step. 
+     * Steps are expected to be already filtered through 
+     * repetition tests, virtual pass test, transposition tables.
+     */
     void  expand(const StepArray& stepArray, uint len);
+
+    /**
+     * Finds child with highest UCB1 value.
+     */
     Node* findUctChild() const;
+
+    /**
+     * Finds random child.
+     *
+     * Mostly for testing.
+     */
     Node* findRandomChild() const;
+
+    /**
+     * Finds child with most visits. 
+     */
     Node* findMostExploredChild() const;
 
+    /**
+     * The UCB1 formula.
+     *
+     * Core of the UCT algorithm. 
+     */
     float ucb(float) const;
 
     void  addChild(Node*);
     void  removeChild(Node*);
+
+    /**
+     * Removes itself - TODO still might have issues ! 
+     */
     void  remove();
+
+    /**
+     * Delete children. 
+     */
     void  freeChildren();
+
+    /**
+     * Update after playout. 
+     *
+     * Updates value/visits.
+     */
     void  update(float);
 
+    /**
+     * Maturity test.
+     *
+     * Checks whether number of descends through node passed 
+     * some given threshold (around number of legal steps from average position) 
+     */
     bool  isMature() const;
+
     bool  hasChildren() const;
     Node* getFather() const;
     Node* getFirstChild() const;
@@ -89,19 +129,29 @@ class Node
     nodeType_e getNodeType() const;
 
     string toString() const; 
+
+    /**
+     * Recursively (children as well) to string. 
+     */
     string recToString(int) const;
+
+  private:
+    float       value_; 
+    int         visits_;
+    Step        step_;
+
+    Node*       sibling_;
+    Node*       firstChild_;  
+    Node*       father_;
+    nodeType_e  nodeType_;
 };
 
 
+/**
+ * Uct tree. 
+ */
 class Tree
 {
-  private:
-    Node*      history[UCT_MAX_DEPTH];
-    uint       historyTop;
-    
-    Logger     log_;
-
-    Tree();
 
   public:
     /**
@@ -181,8 +231,23 @@ class Tree
      * @param onlyLastMove if true then only steps from last move are returned.
      */
     string pathToActToString(bool onlyLastMove = false);
+
+  private:
+    Node*      history[UCT_MAX_DEPTH];
+    uint       historyTop;
+    
+    Logger     log_;
+
+    Tree();
 };
 
+
+/**
+ * Simple random playout.
+ *
+ * Performs random playout from position given in constructor.
+ * Playout returns playout status.
+ */
 class SimplePlayout
 {
 	public:
@@ -221,22 +286,12 @@ class SimplePlayout
 		SimplePlayout();
 };
 
+
+/**
+ * Uct search. 
+ */
 class Uct
 {
-  private:
-    Board* board_;
-    Tree* tree_;
-    Eval* eval_;
-    TT* tt_;              //!< Transposition table.
-    Logger log_;
-    Node* bestMoveNode_;  //pointer to the most visited last step of first move
-    int nodesPruned_;
-    int nodesExpanded_;
-    int nodesInTheTree_;
-    int playouts_;
-
-    Uct();
-
   public:
     Uct(Board*);
     ~Uct();
@@ -249,6 +304,29 @@ class Uct
      */
     void doPlayout();
 
+    /**
+     * Get uct search statistics.
+     *
+     * @param seconds Length of run of the search in seconds.
+     */
+    string statisticsToString(float seconds);
+
+    /**
+     * Finds the best move. 
+    void calculateBestMove();
+     */
+
+    /**
+     * String representation of best move.
+     */
+    string getBestMove();
+
+    /**
+     * Value of best move.
+     */
+    float getBestMoveValue();
+
+  private:
     /**
      * Decide winner of the game. 
      * 
@@ -278,33 +356,27 @@ class Uct
      */
     void updateTT(Node* nodeList, Board* board);
 
-    /**
-     * Get uct search statistics.
-     *
-     * @param seconds Length of run of the search in seconds.
-     */
-    string statisticsToString(float seconds);
+    Board* board_;
+    Tree* tree_;
+    Eval* eval_;
+    TT* tt_;              //!< Transposition table.
+    Logger log_;
+    Node* bestMoveNode_;  //!< Pointer to the most visited last step of first move.
+    int nodesPruned_;
+    int nodesExpanded_;
+    int nodesInTheTree_;
+    int playouts_;
 
-    /**
-     * Finds the best move. 
-    void calculateBestMove();
-     */
-
-    /**
-     * String representation of best move.
-     */
-    string getBestMove();
-
-    /**
-     * Value of best move.
-     */
-    float getBestMoveValue();
-
-    Tree* getTree() const;
+    Uct();
     
 };
 
 
+/**
+ * Time management.
+ *
+ * Accepts time settings and takes care of time management durint the game.
+ */
 class TimeManager
 {
   public:
@@ -354,6 +426,9 @@ class TimeManager
 };
 
 
+/**
+ * Interface to whole search. 
+ */
 class Engine
 {
   public:

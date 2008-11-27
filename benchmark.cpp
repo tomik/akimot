@@ -112,7 +112,7 @@ void Benchmark::benchmarkUct() const
   }
 
 	timeTotal = float (clock() - clockBegin) / CLOCKS_PER_SEC;
-  logRaw("Uct performance: \n  %d walks\n  %3.2f seconds\n  %d dps\n  %d nodes\n", 
+  logRaw("Uct performance: \n  %d walks\n  %3.2f seconds\n  %d wps\n  %d nodes\n", 
             walks, timeTotal, int ( float(walks) / timeTotal), UCT_NODES_NUM);
 
 }

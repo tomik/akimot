@@ -1,11 +1,12 @@
 
-#include "engine.h"
 
 /** 
  *  @file engine.cpp
  *  @brief Searching engine. 
  *  @full Implementation of UCT and supporting components.
  */
+
+#include "engine.h"
 
 //---------------------------------------------------------------------
 /* section Node*/
@@ -609,7 +610,42 @@ void Uct::doPlayout()
   delete playBoard;
 }
 
+//--------------------------------------------------------------------- 
+
+string Uct::statisticsToString(float seconds)
+{
+  assert(seconds > 0);
+  stringstream ss;
+
+    ss  << "UCT: " << endl
+        << "  " << playouts_ << " playouts" << endl 
+        << "  " << seconds << " seconds" << endl
+        << "  " << int(playouts_ / seconds) << " playouts per second" << endl
+        << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
+        << "  " << nodesExpanded_ << " nodes expanded" << endl 
+        << "  " << nodesPruned_ << " nodes pruned" << endl 
+      ;
+
+  return ss.str();
+}
+
 //---------------------------------------------------------------------
+
+string Uct::getBestMove()
+{
+  assert(bestMoveNode_ != NULL);
+  return tree_->findBestMove(bestMoveNode_, board_);
+}
+
+//---------------------------------------------------------------------
+
+float Uct::getBestMoveValue()
+{
+  assert(bestMoveNode_);
+  return bestMoveNode_->getValue();
+}
+
+//--------------------------------------------------------------------- 
 
 int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 {
@@ -666,47 +702,6 @@ void Uct::updateTT(Node* nodeList, Board* board)
   }
 }
 
-//--------------------------------------------------------------------- 
-
-string Uct::statisticsToString(float seconds)
-{
-  assert(seconds > 0);
-  stringstream ss;
-
-    ss  << "UCT: " << endl
-        << "  " << playouts_ << " playouts" << endl 
-        << "  " << seconds << " seconds" << endl
-        << "  " << int(playouts_ / seconds) << " playouts per second" << endl
-        << "  " << nodesInTheTree_ << " nodes in the tree" << endl 
-        << "  " << nodesExpanded_ << " nodes expanded" << endl 
-        << "  " << nodesPruned_ << " nodes pruned" << endl 
-      ;
-
-  return ss.str();
-}
-
-//---------------------------------------------------------------------
-
-string Uct::getBestMove()
-{
-  assert(bestMoveNode_ != NULL);
-  return tree_->findBestMove(bestMoveNode_, board_);
-}
-
-//---------------------------------------------------------------------
-
-float Uct::getBestMoveValue()
-{
-  assert(bestMoveNode_);
-  return bestMoveNode_->getValue();
-}
-
-//--------------------------------------------------------------------- 
-
-Tree* Uct::getTree() const
-{
-  return tree_;
-}
 
 //---------------------------------------------------------------------
 //  section TimeManager

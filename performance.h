@@ -51,9 +51,7 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           for (int i = 0; i < UCT_TEST_PLAYOUTS; i++) 
             uct->doPlayout();
           cerr << uct->getBestMove() << endl;
-          Tree* tree = uct->getTree();
 
-          //cerr << tree->toString();
           cerr << "Best move value: " << uct->getBestMoveValue() << endl;
           TS_ASSERT(uct->getBestMoveValue() > 0.6 );
 

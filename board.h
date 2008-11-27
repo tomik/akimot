@@ -1,3 +1,13 @@
+
+/** 
+ *  @file board.h
+ *
+ *  @brief Board interface.
+ *  @full Board representation with all its nuiances is defined here. 
+ *  Main pillar is class Board itself representing board and its manipulation 
+ *  along with move generation, verification and playing.
+ */
+
 #pragma once
 
 #include "utils.h"
@@ -31,16 +41,12 @@
 #define PIECE(square) (square & PIECE_MASK) 
 #define OPP(player) ((16 - player) + 8)
 
-//Player to indexation ... 0 for GOLD, 1 for SILVER - for indexation
+//GOLD ~ 0, SILVER ~ 1
 #define PLAYER_TO_INDEX(player)	((16-player)/8)	
-//Index to player 0 -> GOLD, 1 -> SILVER 
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
 
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
-
-//#define ROW(square) (9-square/10)
-//#define COL(square) (square%10)
 
 #define PLAYER_NUM    2
 #define PIECE_NUM     7
@@ -108,21 +114,24 @@ class PieceArray
 
 /**
  * Information about a kill in the trep. 
+ *
+ * Holds information on player, piece, square(trap).
  */
 class KillInfo 
 {
+  public:
+    KillInfo();
+    KillInfo( player_t player, piece_t piece, square_t square);
+    void setValues( player_t player, piece_t piece, square_t square);
+    const string toString() const;
+
   private:
     bool     active_;
     player_t player_;
     piece_t  piece_;
     square_t square_;
-  public:
-    KillInfo();
-    KillInfo( player_t player, piece_t piece, square_t square);
-    void setValues( player_t player, piece_t piece, square_t square);
-
-    const string toString() const;
 };
+
 
 /**
  * One step of a player.
@@ -135,6 +144,29 @@ class KillInfo
 */ 
 class Step
 {
+  public:
+		Step(){};
+		Step(stepType_t, player_t);
+    Step(stepType_t, player_t, piece_t, square_t, square_t);
+    Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
+
+    player_t getStepPlayer() const;
+    bool isPass() const;
+    bool isSingleStep() const;
+    bool isPushPull() const;
+
+    /**
+     * Checks whether step moves any piece. 
+     *
+     * @return false if step is STEP_PASS/STEP_NO_STEP otherwise true.
+     */
+		bool pieceMoved() const;
+		bool operator== (const Step&) const;
+
+    //TODO inline
+    void setValues( stepType_t, player_t, piece_t, square_t, square_t );
+    void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
+    const string toString(bool resultPrint = false) const;
 
 	protected:
     stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
@@ -150,40 +182,42 @@ class Step
     Logger        log_; 
 
     friend class  Board;
-
-  public:
-		Step(){};
-		Step(stepType_t, player_t);
-    Step(stepType_t, player_t, piece_t, square_t, square_t);
-    Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
-
-    player_t getStepPlayer() const;
-    bool isPass() const;
-    bool isSingleStep() const;
-    bool isPushPull() const;
-		bool pieceMoved() const;
-		bool operator== (const Step&) const;
-
-    //TODO inline
-    void setValues( stepType_t, player_t, piece_t, square_t, square_t );
-    void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
-
+  
+  private: 
+    /**
+     * Handles print of step of one piece. 
+     *
+     * Push/pull move calls this method twice.
+     */
     const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
-    const string toString(bool resultPrint = false) const;
     void dump(); 
-
+  
 };
 
 
+/**
+ * Step with kills. 
+ *
+ * Extension of Step with KillInfo ( 1-2 ).
+ * Used for printing of step with kill information.
+ */
 class StepWithKills: public Step
 {
-  private:
-    KillInfo kills[2];
   public:
     StepWithKills();
     StepWithKills(Step step);
+
+    /**
+     * Fills KillInfo. 
+     *
+     * Checks forward kill of the step and 
+     * adds kill if neccessary.
+     */
     void addKills(Board* board);
     const string toString() const;
+
+  private:
+    KillInfo kills[2];
 };
 
 
@@ -446,21 +480,64 @@ class Board
      */
     void performKill(square_t trapPos);
 
-    //TODO inline block
+    /**
+     * Virtual pass check.
+     *
+     * @param step - expected to be last step in current move
+     * @return true if position after given step is same as in the 
+     * beginning of the move, otherwise false. 
+     */
     bool stepIsVirtualPass( Step& ) const;
+
+    /**
+     * Third repetition check.
+     * 
+     * @param step - expected to be last step in current move
+     * @return true if position after given step leads to a third repetition
+     * according to thirdRep object.
+     */
     bool stepIsThirdRepetition( Step& ) const;
 
-    //TODO inline block
+    /**
+     * Has a friend test.
+     *
+     * Piece on given square has a friend test.
+     * Used in trap kill check.
+     */
 		bool hasFriend(square_t) const;
+
+    /**
+     * Two friends test. 
+     *
+     * This is used for forward tests (without actually moveing pieces).
+     * Therefore color of player must be supplied as well.
+     */
 		bool hasTwoFriends(square_t, player_t) const;
+
+    /**
+     * Has stronger enemy test. 
+     *
+     * Used for checking a trap kill. 
+     */
 		bool hasStrongerEnemy(square_t) const;
+
+    /**
+     * Frozen check.
+     */
 		bool isFrozen(square_t) const;
 
 		uint			getAllStepsNum(uint) const;
 		uint			getStepCount() const;
     u64       getPreMoveSignature() const;
 		
+    /**
+     * Sets square and updates signature. 
+     */
     void setSquare(square_t, player_t, piece_t);
+
+    /**
+     * Clears square and update signature.
+     */
     void clearSquare(square_t);
 
 		string allStepsToString() const;
