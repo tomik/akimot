@@ -10,3 +10,4 @@ akimot
 tests.cpp
 *.o
 input
+.*.swp

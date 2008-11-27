@@ -47,7 +47,10 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
     //compiler dependend function - allocates memory to fullmsg
     vasprintf(&fullmsg, msg, args);
     va_end(args);
-    std::cerr << timestamp << " --- " << "["  << logLevelStr[logLevel]  << "] " << file << "/" << function << "/" << line <<  ":" << fullmsg << std::endl;
+    if (logLevel == LL_RAW)
+      std::cerr << fullmsg << std::endl;
+    else
+      std::cerr << timestamp << " --- " << "["  << logLevelStr[logLevel]  << "] " << file << "/" << function << "/" << line <<  ":" << fullmsg << std::endl;
     free(fullmsg);
 
 }

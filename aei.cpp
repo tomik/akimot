@@ -129,7 +129,7 @@ void Aei::implicitSessionStart()
   handleInput("aei");
   //handleInput("newgame");
   handleInput(string(STR_SET_POSITION_FILE) + " " + "test/empty.txt");
-  //handleInput("setoption name tcmove value 2");
+  handleInput("setoption name tcmove value 2");
   handleInput("go");
   handleInput("makemove Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2");
   handleInput("makemove ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7");
@@ -259,8 +259,7 @@ void Aei::handleOption(const string& commandRest)
 
 void Aei::startSearch(const string& arg)
 {
-  int rc;
-
+  //int rc;
   if (arg == STR_PONDER || arg == STR_INFINITE)
     engine_->timeManager()->setNoTimeLimit();
   //no mutex is needed - this is done only when no engineThread runs
@@ -271,12 +270,14 @@ void Aei::startSearch(const string& arg)
     aeiLog("Fatal thread error occured.", AL_ERROR);
     quit();
   }
+*/
 }
 
 //--------------------------------------------------------------------- 
 
 void Aei::searchInThread()
 {
+  clock_t start = clock();
   engine_->doSearch(board_);
   state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?   
   send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());

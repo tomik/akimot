@@ -24,7 +24,7 @@ using std::sqrt;
 #define EXPLORE_RATE 0.2
 
 //how much time engine has for "clock clicking"
-#define CLOCK_CLICK_RESERVE 0.2
+#define CLOCK_CLICK_RESERVE 0.3
 
 /** Default time per move.*/
 #define TC_MOVE_DEFAULT 3
@@ -185,17 +185,11 @@ class Tree
 
 class SimplePlayout
 {
-  private:
-    Board*				board_;
-    uint					playoutLength_;
-
-		SimplePlayout();
-
 	public:
     /**
      * Constructor with board initialization.
      */
-		SimplePlayout(Board*);
+		SimplePlayout(Board*, uint, uint);
 
     /**
      * Performs whole playout. 
@@ -206,6 +200,9 @@ class SimplePlayout
      */
 		playoutStatus_e doPlayout();	
 
+		uint getPlayoutLength();  
+
+  private:
     /**
      * Performs one move of one player.
      *
@@ -213,7 +210,12 @@ class SimplePlayout
      */
     void playOne();	
 
-		uint getPlayoutLength();  
+    Board*				board_;
+    uint					playoutLength_;
+    uint          maxPlayoutLength_;
+    uint          evalAfterLength_;
+
+		SimplePlayout();
 };
 
 class Uct

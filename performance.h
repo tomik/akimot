@@ -3,6 +3,8 @@
 #include "hash.h"
 #include "engine.h"
 
+#include "benchmark.h"
+
 #define RABBIT_TEST_DIR "./test/rabbits/"
 #define RABBIT_TEST_LIST "./test/rabbits/list.txt"
 #define HASH_TABLE_INSERTS 100
@@ -59,4 +61,6 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           delete board;
         }
      }
+
+    
 };

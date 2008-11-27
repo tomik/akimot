@@ -451,17 +451,17 @@ SimplePlayout::SimplePlayout()
 
 //---------------------------------------------------------------------
 
-SimplePlayout::SimplePlayout(Board* board)
+SimplePlayout::SimplePlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength):
+  board_(board), playoutLength_(0), maxPlayoutLength_(maxPlayoutLength), evalAfterLength_(evalAfterLength)
 {
-	board_ = board;
-	playoutLength_ = 0;
+  ;
 }
 
 //---------------------------------------------------------------------
 
 playoutStatus_e SimplePlayout::doPlayout()
 {
-  int moves = 0;
+  uint moves = 0;
 
   while (true) {  
 		playOne();
@@ -470,10 +470,10 @@ playoutStatus_e SimplePlayout::doPlayout()
 		if ( board_->getWinner() != EMPTY ) //somebody won
 			return PLAYOUT_OK;
 
-		if ( playoutLength_ > 2 * MAX_PLAYOUT_LENGTH ) 
+		if ( playoutLength_ > 2 * maxPlayoutLength_ ) 
 			return PLAYOUT_TOO_LONG;
 
-    if (++moves > EVAL_AFTER_LENGTH  )
+    if (++moves > evalAfterLength_ && evalAfterLength_)
       return PLAYOUT_EVAL;
 	}
 }
@@ -574,7 +574,7 @@ void Uct::doPlayout()
       }
 
       //"random" playout
-      SimplePlayout simplePlayout(playBoard);
+      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
       playoutStatus = simplePlayout.doPlayout();
       tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
       break;
@@ -744,7 +744,7 @@ float TimeManager::secondsElapsed()
 {
   assert(clock() >= clockBegin_);
 
-  return float(clock() - clockBegin_)/CLOCKS_PER_SEC;
+  return (clock() - clockBegin_)/(1.0 * CLOCKS_PER_SEC);
 }
   
 //---------------------------------------------------------------------

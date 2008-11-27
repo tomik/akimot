@@ -20,6 +20,7 @@ Config::Config()
   playoutsPerMove_ = OptionInt("p","playouts_per_move","Playouts per move - mostly for debugging", OT_INT, PLAYOUTS_PER_MOVE);
   inputIsRecord_ = OptionBool("r","input_record","input is a record of the game",OT_BOOL_POS, false);
   debug_ = OptionBool("d","debug","loads aei session implicitly",OT_BOOL_POS, false);
+  benchmark_ = OptionBool("b","benchmark","runs in benchmarking mode",OT_BOOL_POS, false);
 
   options_.clear();
   options_.push_back(&useTimeControl_);
@@ -28,6 +29,7 @@ Config::Config()
   options_.push_back(&playoutsPerMove_);
   options_.push_back(&inputIsRecord_);
   options_.push_back(&debug_);
+  options_.push_back(&benchmark_);
 
 }
 
