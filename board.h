@@ -68,24 +68,41 @@ class Eval;
  * Array-like structure to hold pieces.
  *
  * This class is used to hold squares where pieces for 
- * one of the players are positioned.
+ * one of the players are positioned, order of pieces is not fixed, 
+ * just their presence is ensured.
  */
 class PieceArray
 { 
+  public: 
+    PieceArray();
+
+    /**
+     * Add piece position to array.
+     *
+     * Adds to the end in constant time. 
+     */
+    void add(square_t);
+
+    /**
+     * Delte piece from array. 
+     *
+     * Goes through array, when found deletes item 
+     * and replaces empty space with item from the end.
+     */
+    void del(square_t);
+
+    /**
+     * Remove all elements. 
+     */
+    void clear();
+
+    string toString() const;
+    uint getLen() const;
+    square_t operator[](uint) const;
 
   private:
     square_t elems[MAX_PIECES];      
     uint len;
-
-  public: 
-    PieceArray();
-
-    void add(square_t);
-    void del(square_t);
-    void clear();
-
-    uint getLen() const;
-    square_t operator[](uint) const;
 };
 
 
@@ -262,16 +279,24 @@ class Board
     /**
      *  Wraper for makeStep with commiting.
      *
-     *  Performs makestep on given step. If the move is over it commits.
+     *  Performs makestep on given step. 
+     *  If the move is over it updatesWinner and commits.
      *  @param step given step 
      *  @return true if commited false otherwise
      */
 		bool makeStepTryCommitMove(Step&);
 
     /**
+     * Updates winner of the game.
+     *
+     * Checks winner according to reaching goal, opponent has 0 rabbits.
+     */
+    void updateWinner();
+
+    /**
      * Commits the move.
      *
-     * Handles switching the sides, checking the winner, etc.
+     * Handles switching the sides, updating preMoveSignature.
      */
 		void commitMove();
 

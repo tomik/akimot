@@ -733,7 +733,7 @@ void TimeManager::startClock()
 
 bool TimeManager::checkClock()
 {
-  if (secondsElapsed() < timeControls_[TC_MOVE] || noTimeLimit_)
+  if (secondsElapsed() < (float(timeControls_[TC_MOVE]) - CLOCK_CLICK_RESERVE) || noTimeLimit_)
     return true;
   return false;
 }
@@ -818,6 +818,7 @@ void Engine::doSearch(Board* board)
     uct_->doPlayout();
 
 //  log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
+//  log_() << board->toString();
   bestMove_ = uct_->getBestMove(); 
   delete uct_;
 }

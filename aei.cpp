@@ -126,12 +126,17 @@ void Aei::runLoop()
 
 void Aei::implicitSessionStart()
 {
-  handleInput(STR_AEI);
-  handleInput(STR_NEW_GAME);
-  handleInput(string(STR_SET_POSITION_FILE) + " " + "test/move/t008.txt");
+  handleInput("aei");
+  //handleInput("newgame");
+  handleInput(string(STR_SET_POSITION_FILE) + " " + "test/empty.txt");
+  //handleInput("setoption name tcmove value 2");
+  handleInput("go");
+  handleInput("makemove Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2");
+  handleInput("makemove ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7");
+  handleInput("go");
+  //handleInput(string(STR_SET_POSITION_FILE) + " " + "test/move/t008.txt");
   //handleInput("setposition w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]");
-  handleInput("setoption name tcmove value 2");
-  handleInput(STR_GO);
+  //handleInput(STR_GO);
 }
 
 //--------------------------------------------------------------------- 
@@ -188,6 +193,7 @@ void Aei::handleInput(const string& line)
                   }
                   break;
     case AA_SET_POSITION: 
+                  board_->initNewGame();
                   if (! board_->initFromPositionCompactString(getStreamRest(ssLine))){
                     aeiLog(STR_LOAD_FAIL, AL_ERROR);
                     quit();
@@ -258,8 +264,9 @@ void Aei::startSearch(const string& arg)
   if (arg == STR_PONDER || arg == STR_INFINITE)
     engine_->timeManager()->setNoTimeLimit();
   //no mutex is needed - this is done only when no engineThread runs
-  rc = pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this);
-
+  while( pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this))
+    ;
+/*
   if (rc){ //allocating thread failed
     aeiLog("Fatal thread error occured.", AL_ERROR);
     quit();

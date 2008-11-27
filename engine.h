@@ -23,6 +23,9 @@ using std::sqrt;
 #define MATURE_LEVEL  20
 #define EXPLORE_RATE 0.2
 
+//how much time engine has for "clock clicking"
+#define CLOCK_CLICK_RESERVE 0.2
+
 /** Default time per move.*/
 #define TC_MOVE_DEFAULT 3
 #define TC_RESERVE_DEFAULT 60

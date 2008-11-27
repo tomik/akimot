@@ -11,6 +11,7 @@
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
+[3, board] get frozenboard back to work
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 

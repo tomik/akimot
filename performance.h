@@ -41,8 +41,8 @@ class PerformanceTestSuite : public CxxTest::TestSuite
           cerr << endl << "Processing " << fnPosition << endl;
 
           //TODO clear thirdRep table ! 
+          thirdRep.clear(); 
           Board* board = new Board();
-
           board->initFromPosition(fnPosition.c_str());
 
           Uct* uct = new Uct(board);

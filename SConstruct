@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 
-AKIMOT_AEI_DIR = '/home/tomik/src/tmp/arimaa/aei'
+AKIMOT_AEI_DIR = '/home/tomik/src/tmp/arimaa/aei/akimot'
 AKIMOT_LIBS = ['pthread']
 
 common = Environment(CC='g++', CCFLAGS = '-Wall ')

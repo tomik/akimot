@@ -57,6 +57,21 @@ void PieceArray::clear()
 }
 
 //---------------------------------------------------------------------
+
+string PieceArray::toString() const
+{
+  stringstream ss;
+  ss.clear();
+
+  for (uint i = 0; i < len; i++)
+    ss << elems[i] << " ";  
+  
+  ss << endl;
+  return ss.str();
+}
+
+//--------------------------------------------------------------------- 
+
  
 uint PieceArray::getLen() const
 {
@@ -581,6 +596,7 @@ void Board::makeMove(const string& move)
   commitMove();
 }
 
+
 //--------------------------------------------------------------------- 
 
 void Board::init(bool newGame)
@@ -607,7 +623,8 @@ void Board::init(bool newGame)
   for (int i = 1; i < 9; i++)
     for (int j = 1; j < 9; j++){
       board_[10*i+j]       = EMPTY_SQUARE;
-      frozenBoard_[10*i+j] = false;           //implicitly we consider everything not frozen
+      //frozenBoard is not in use now
+      //frozenBoard_[10*i+j] = false;           //implicitly we consider everything not frozen
     }
 
   toMove_    = GOLD;
@@ -997,15 +1014,16 @@ bool Board::makeStepTryCommitMove(Step& step)
 {
   makeStep(step);
 	if (stepCount_ >= 4 || ! step.pieceMoved()) {
+    updateWinner();
     commitMove();
     return true;
   }
   return false;
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------- 
 
-void Board::commitMove()
+void Board::updateWinner()
 {
   //assert(winner_ == EMPTY);
   //winner might be set already ( when player to move has no move ) 
@@ -1023,6 +1041,12 @@ void Board::commitMove()
 
   //logDebug("Commiting move %d from player %d", moveCount_, toMove_);
 
+}
+
+//---------------------------------------------------------------------
+
+void Board::commitMove()
+{
   assert(toMove_ == GOLD || toMove_ == SILVER);
   if (toMove_ == SILVER) 
     moveCount_++;
@@ -1346,6 +1370,8 @@ string Board::toString() const
 
   
   ss << endl;
+
+  //ss << pieceArray[0].toString() << pieceArray[1].toString();
 
 
   //print zobrist
