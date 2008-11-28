@@ -70,7 +70,7 @@ class Node
     /**
      * Finds child with highest UCB1 value.
      */
-    Node* findUctChild() const;
+    Node* findUctChild();
 
     /**
      * Finds random child.
@@ -92,17 +92,16 @@ class Node
     float ucb(float) const;
 
     void  addChild(Node*);
-    void  removeChild(Node*);
 
     /**
-     * Removes itself - TODO still might have issues ! 
+     * Removes one child. 
      */
-    void  remove();
+    void removeChild(Node* child);
 
     /**
      * Delete children. 
      */
-    void  freeChildren();
+    void  removeChildrenRec();
 
     /**
      * Update after playout. 
@@ -120,6 +119,7 @@ class Node
     bool  isMature() const;
 
     bool  hasChildren() const;
+    bool  hasOneChild() const;
     Node* getFather() const;
     Node* getFirstChild() const;
     Node* getSibling() const;
@@ -140,6 +140,8 @@ class Node
     int         visits_;
     Step        step_;
 
+    /** Best son cached to be used immediately for UCB descend*/
+    Node*       bestCached_; 
     Node*       sibling_;
     Node*       firstChild_;  
     Node*       father_;
@@ -213,6 +215,16 @@ class Tree
      * Gets the actual node (top of history stack). 
      */
     Node* actNode();
+
+    /**
+     * Cascade remove.
+     *
+     * Removes and goes up the tree and keeps 
+     * removing till it is possible. 
+     *
+     * @return Number of moves removed.
+     */
+    int  removeNodeCascade(Node* node);
 
     /**
      * Gets ply in which node lies.

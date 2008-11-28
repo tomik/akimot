@@ -24,6 +24,7 @@ Node::Node(const Step& step)
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
+  bestCached_ = NULL;
   visits_     = 0;
   value_      = 0;
 
@@ -45,9 +46,12 @@ void Node::expand(const StepArray& steps, uint len)
 
 //---------------------------------------------------------------------
 
-Node* Node::findUctChild() const
+Node* Node::findUctChild() 
 {
   assert(this->firstChild_ != NULL);
+  
+  if (bestCached_)
+    return bestCached_;
 
   Node* act = firstChild_;
   Node* best = firstChild_;
@@ -64,6 +68,9 @@ Node* Node::findUctChild() const
     }
     act = act->sibling_;
   }
+
+  //store best one - might be invalidated in update 
+  bestCached_ = best;
 
   return best;
 }
@@ -142,51 +149,32 @@ void Node::removeChild(Node* child)
     toDelete = toDelete->sibling_;
   }
   assert(toDelete == child);
+  if (toDelete == NULL)
+    return;
 
   if (previous == NULL)
     firstChild_ = toDelete->sibling_;
   else
     previous->sibling_ = toDelete->sibling_;
   
-  /*Node* node = this;
   //handle number of visits/wins num in ancestors
-  do {
-    node->visits_ -= toDelete->visits_;
-    //node->wins_ -= toDelete->wins_;
-    assert(node->visits_ >= 0);
-  } while (node != NULL);
-  */
-
+  //value_ = (value_ * visits_ - toDelete->value_ * toDelete->visits_)/TODO;
+  visits_ -= toDelete->visits_;
+  assert(visits_ >= 0);
+  //wins_ -= toDelete->wins_;
   
   delete toDelete;
-  if (firstChild_ == NULL){
-    remove();
-  }
 }
 
 //---------------------------------------------------------------------
 
-void Node::remove()
-{
-  assert(firstChild_ == NULL);
-  assert(father_ != NULL);
-
-  //TODO: is this correct ? father_->removeChild(this) destroys this object ! 
-  if (father_ != NULL) 
-    father_->removeChild(this);
-  return;
-  
-}
-
-//---------------------------------------------------------------------
-
-void Node::freeChildren()
+void Node::removeChildrenRec()
 {
   Node* actNode = firstChild_;
   Node* sibling;
   while(actNode != NULL){
     sibling = actNode->sibling_;
-    actNode->freeChildren();
+    actNode->removeChildrenRec();
     delete actNode;
     actNode = sibling;
   }
@@ -197,7 +185,12 @@ void Node::freeChildren()
 void Node::update(float sample)
 {
   visits_++;
-  value_ += (sample - value_)/visits_;         //TODO how this works ? 
+  value_ += (sample - value_)/visits_;         
+  if ((nodeType_ == NODE_MAX && sample == -1) || 
+      (nodeType_ == NODE_MIN && sample == 1)) {
+    bestCached_ = NULL;
+  }
+
 }
 
 //---------------------------------------------------------------------
@@ -212,6 +205,13 @@ bool Node::isMature() const
 bool Node::hasChildren() const
 {
   return firstChild_ != NULL;
+}
+
+//---------------------------------------------------------------------
+
+bool Node::hasOneChild() const
+{
+  return firstChild_ != NULL && firstChild_->sibling_ == NULL;
 }
 
 //---------------------------------------------------------------------
@@ -310,7 +310,7 @@ Tree::Tree(player_t firstPlayer)
 
 Tree::~Tree()
 {
-  history[0]->freeChildren();
+  history[0]->removeChildrenRec();
   delete history[0];
 }
 
@@ -402,6 +402,37 @@ Node* Tree::root()
 Node* Tree::actNode() 
 {
   return history[historyTop];
+}
+
+//--------------------------------------------------------------------- 
+
+int Tree::removeNodeCascade(Node* node)
+{
+  assert(node != NULL);
+  assert(! node->hasChildren());
+
+  Node* ancestor = node->getFather();
+  Node* toRemove = node;
+
+  int removedNodes = 0;
+
+  while (ancestor != NULL && ancestor->hasOneChild()){
+    toRemove = ancestor;
+    ancestor = ancestor->getFather();
+    removedNodes++;
+  } 
+
+  assert(ancestor != NULL); //removing root
+  //should never happen !!!
+  if (ancestor == NULL)
+    return 0;
+    
+  toRemove->removeChildrenRec();
+  ancestor->removeChild(toRemove);
+
+  //updates actual node
+  historyReset();
+  return removedNodes;
 }
 
 //---------------------------------------------------------------------
@@ -563,9 +594,7 @@ void Uct::doPlayout()
           nodesExpanded_++;
           nodesInTheTree_ += stepsNum;
         }else{
-          tree_->actNode()->remove();
-          //TODO remove might cause a cascade
-          nodesInTheTree_ -= 1; 
+          nodesInTheTree_ -= tree_->removeNodeCascade(tree_->actNode());
           break;
         }
 

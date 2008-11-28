@@ -132,7 +132,7 @@ class DebugTestSuite : public CxxTest::TestSuite
 
       //build the tree in UCT manner
       for (int i = 0; i < UCT_TREE_MAX_CHILDREN; i++)
-        steps[i] = Step();
+        steps[i] = Step(STEP_PASS, GOLD);
 
       while (true) {
         tree->historyReset();     //point tree's actNode to the root 
@@ -153,13 +153,12 @@ class DebugTestSuite : public CxxTest::TestSuite
         if (i >= UCT_TREE_NODES)
           break;
       }
-
       //remove given number of leafs
       for (int i = 0; i < UCT_TREE_NODES_DELETE; i++){
         tree->historyReset();
         while (tree->actNode()->hasChildren())
           tree->randomDescend(); 
-        tree->actNode()->remove();
+        tree->removeNodeCascade(tree->actNode());
       }
 
       //TODO DFS through tree and check child.father == father, etc. ? 
