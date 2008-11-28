@@ -55,7 +55,7 @@ Node* Node::findUctChild()
 
   Node* act = firstChild_;
   Node* best = firstChild_;
-  float bestUrgency = -100;       //TODO - something very large ! 
+  float bestUrgency = -100;       //TODO - something small !  
   float actUrgency = 0;
 
   float exploreCoeff = EXPLORE_RATE * log(visits_);
@@ -163,6 +163,7 @@ void Node::removeChild(Node* child)
   assert(visits_ >= 0);
   //wins_ -= toDelete->wins_;
   
+  bestCached_ = NULL; 
   delete toDelete;
 }
 
@@ -842,6 +843,7 @@ void Engine::doSearch(Board* board)
 // logRaw(uct_->statisticsToString(timeManager_->secondsElapsed()));
 // logRaw(board->toString());
   bestMove_ = uct_->getBestMove(); 
+  statistics_ = uct_->statisticsToString(timeManager_->secondsElapsed());
   delete uct_;
 }
 
@@ -853,6 +855,14 @@ void Engine::requestSearchStop()
 }
 
 //---------------------------------------------------------------------
+
+string Engine::getStatistics()
+{
+  return statistics_;
+}
+
+//--------------------------------------------------------------------- 
+
 
 string Engine::getBestMove()
 {

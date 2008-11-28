@@ -466,6 +466,11 @@ class Engine
      * After search pick the best move.
      */
   	string getBestMove();		
+
+    /**
+     * After move statistic string.
+     */
+  	string getStatistics();		
     
     /**
      * TimeManager getter. 
@@ -476,6 +481,7 @@ class Engine
     Uct* uct_;
     TimeManager* timeManager_;
     string bestMove_;
+    string statistics_;
     bool stopRequest_;
 
 

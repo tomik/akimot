@@ -36,6 +36,7 @@ class Benchmark
 		void benchmarkEval() const;
 		void benchmarkPlayout() const;
 		void benchmarkUct() const;
+		void benchmarkSearch() const;
     
     void benchmarkAll() const;
 };

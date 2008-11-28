@@ -116,6 +116,20 @@ void Benchmark::benchmarkUct() const
             walks, timeTotal, int ( float(walks) / timeTotal), UCT_NODES_NUM);
 
 }
+
+//--------------------------------------------------------------------- 
+
+void Benchmark::benchmarkSearch() const
+{
+  Engine* engine = new Engine();
+  Board *playBoard = new Board(*board_);
+
+  engine->doSearch(playBoard);
+  logRaw(engine->getStatistics().c_str());
+}
+
+
+
 //--------------------------------------------------------------------- 
 
 void Benchmark::benchmarkAll() const
@@ -123,6 +137,7 @@ void Benchmark::benchmarkAll() const
   benchmarkEval();
   benchmarkPlayout();
   benchmarkUct();
+  benchmarkSearch();
 }
 
 //--------------------------------------------------------------------- 
