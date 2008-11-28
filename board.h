@@ -42,7 +42,8 @@
 #define OPP(player) ((16 - player) + 8)
 
 //GOLD ~ 0, SILVER ~ 1
-#define PLAYER_TO_INDEX(player)	((16-player)/8)	
+////((16-player)/8)	
+#define PLAYER_TO_INDEX(player)	(player == GOLD ? 0 : 1 )
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
 
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 

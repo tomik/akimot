@@ -2,7 +2,6 @@
 # [urgency, category] item 
 
 === Actual ===
-[5,engine] uct should inherit from engine and become top level search handler
 [5,log] refactor logging through macro ! 
 [5,config] refactor to use only aei 
 [5,*] reorganize headers 

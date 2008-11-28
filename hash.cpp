@@ -27,11 +27,12 @@ void ThirdRep::update(u64 key, uint playerIndex)
 bool ThirdRep::isThirdRep(u64 key, uint playerIndex)
 {
   int positionVisited = 0;
-  bool found = false;
+  bool found;
 
   found = loadItem(key, playerIndex, positionVisited);
-  if (! found || positionVisited < 2);
+  if (!found || positionVisited < 2){
     return false;
+  }
   return true;
 }
 

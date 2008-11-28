@@ -6,7 +6,7 @@
 
 #define TEST_DIR "./test"
 #define INIT_TEST_DIR "./test/init/"
-#define INIT_TEST_LIST "./test/init/tests.txt"
+#define INIT_TEST_LIST "./test/init/list.txt"
 #define HASH_TABLE_INSERTS 100
 
 //mature level is defined in engine.h
@@ -165,4 +165,14 @@ class DebugTestSuite : public CxxTest::TestSuite
       //TODO DFS through tree and check child.father == father, etc. ? 
     } //testUct
 
+
+  void testThirdRepetition(void)
+  {
+    Board* board = new Board();
+    board->initNewGame();
+    thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
+    thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
+    TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove())), true);
+
+  }
 };
