@@ -93,7 +93,7 @@ bool Config::parseToken(string token, string value) {
 		if ( consistent ) 
 			return true;
 		else { 
-			//log_() << "Unknown option " << token << ", program terminated." << endl; 
+			logError("Unknown option %s, program terminated.", token.c_str()); 
 			return false;
     }
 }
@@ -112,10 +112,10 @@ bool Config::parseValue(string value)
 
 void Config::logAll()
 {
-  log_() << "Program configuration: " << endl;
+  logRaw("Program configuration: ");
   OptionList::iterator it;
   for ( it = options_.begin(); it != options_.end(); it++ ) 
-    log_() <<  (*it)->toString();
+    logRaw(((*it)->toString()).c_str());
 }
 
 //--------------------------------------------------------------------- 

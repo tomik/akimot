@@ -277,7 +277,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
 
 void Step::dump()
 {
-  log_() << toString();
+  logRaw(toString().c_str());
 }
 
 //--------------------------------------------------------------------- 
@@ -490,7 +490,7 @@ bool Board::initFromPositionCompactString(const string& s)
           PiecePair piecePair = parsePieceChar(c);
           board_[i*10+j] = (piecePair.first | piecePair.second);
         }catch (int e){
-          log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
+          logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
           return false;
         }
       }
@@ -686,7 +686,7 @@ bool Board::initFromPositionStream(istream& is)
             piecePair = parsePieceChar(c);
             board_[i*10+j] = (piecePair.first | piecePair.second);
           }catch (int e){
-            log_() << "Unknown character " << c << " encountered while reading board at [" << i << "," << j << "].\n" << endl;
+            logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
             return false;
           }
         } 
@@ -1468,14 +1468,14 @@ string Board::allStepsToString() const
 
 void Board::dump() const
 {
-  log_() << toString();
+  logRaw(toString().c_str());
 }
 
 //---------------------------------------------------------------------
 
 void Board::dumpAllSteps() const
 {
-  log_() << allStepsToString(); 
+  logRaw(allStepsToString().c_str());
 }
 
 //---------------------------------------------------------------------

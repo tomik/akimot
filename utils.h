@@ -51,16 +51,6 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
   #define logDebug(...) logFunction(LL_DEBUG, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #endif 
 
-class Logger
-{
-  string owner_;   //which class is logger part of i.e. board, benchmark, engine 
-
-	public:
-    Logger();
-    Logger(string);
-		ostream& operator()(unsigned int = 0) const;
-}; 
-
 /**
  * String to int converter.
  */

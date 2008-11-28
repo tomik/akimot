@@ -180,8 +180,6 @@ class Step
     square_t      oppFrom_;
     square_t      oppTo_;
 
-    Logger        log_; 
-
     friend class  Board;
   
   private: 
@@ -576,8 +574,6 @@ class Board
     player_t toMove_;
     uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
 		player_t winner_;
-
-    Logger        log_; 
 
     friend class Eval;
 

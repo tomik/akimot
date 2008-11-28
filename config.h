@@ -76,8 +76,6 @@ class Config
     OptionBool debug_; 
     OptionBool benchmark_; 
 
-    Logger      log_;
-
   public:
     Config();
 

@@ -77,10 +77,6 @@ template<typename T> class HashTable
 
 template<typename T> class HashTableBoard : public HashTable<T>
 {
-  protected:
-    u64 playerSignature_[2];
-    Logger log_;
-
   public:
     HashTableBoard(): HashTable<T>()
     {
@@ -124,6 +120,9 @@ template<typename T> class HashTableBoard : public HashTable<T>
 
       return HashTable<T>::loadItem(key, item);
     }
+
+  protected:
+    u64 playerSignature_[2];
 
 };
 

@@ -2,7 +2,6 @@
 # [urgency, category] item 
 
 === Actual ===
-[5,log] refactor logging through macro ! 
 [5,config] refactor to use only aei 
 [5,*] reorganize headers 
 [3,board] refactor board loading - use fromcompactstring
@@ -17,6 +16,7 @@
   [5,gen] implement hashing and step correctness check in uct 
   [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
   [3, uct] node which cannot expand must be deleted straightaway
+  [5,log] refactor logging through macro ! 
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 

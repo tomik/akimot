@@ -20,9 +20,6 @@
  */
 class Eval
 {
-  private:
-    Logger log_;
-
 	public:
     int evaluate(const Board*);
     float evaluateInPercent(const Board*); 

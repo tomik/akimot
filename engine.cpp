@@ -349,8 +349,6 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
     assert(false);
   }
 
-  //log_() << "Best move visited :" << bestMoveNode->getVisits() << endl;
-
   while (act != root()) {
     assert(stepNum < 4);
     steps[stepNum++] = StepWithKills(act->getStep());
@@ -812,8 +810,8 @@ void Engine::doSearch(Board* board)
   while (timeManager_->checkClock() && ! stopRequest_)
     uct_->doPlayout();
 
-//  log_() << uct_->statisticsToString(timeManager_->secondsElapsed());
-//  log_() << board->toString();
+// logRaw(uct_->statisticsToString(timeManager_->secondsElapsed()));
+// logRaw(board->toString());
   bestMove_ = uct_->getBestMove(); 
   delete uct_;
 }

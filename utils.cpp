@@ -3,38 +3,6 @@
 string logLevelStr[10] = { "debug", "warning", "error", "info"};
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
-Logger::Logger()
-{
-}
-
-
-Logger::Logger(string owner="owner")
-{
-  owner_ = owner;
-}
-
-
-ostream& Logger::operator()(unsigned int messageLevel) const{
-  /*
-
-  int logLevel = 0
-
-  #ifdef DEBUG1
-   logLevel = 1 
-  #endif
-  #ifdef DEBUG2
-   logLevel = 2 
-  #endif
-  #ifdef DEBUG3
-   logLevel = 3 
-  #endif
-
-  */
-  return cerr;
-}
-
-//--------------------------------------------------------------------- 
-
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...)
 {
 

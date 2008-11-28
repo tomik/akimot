@@ -236,8 +236,6 @@ class Tree
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
     
-    Logger     log_;
-
     Tree();
 };
 
@@ -360,7 +358,6 @@ class Uct
     Tree* tree_;
     Eval* eval_;
     TT* tt_;              //!< Transposition table.
-    Logger log_;
     Node* bestMoveNode_;  //!< Pointer to the most visited last step of first move.
     int nodesPruned_;
     int nodesExpanded_;
@@ -469,6 +466,5 @@ class Engine
     string bestMove_;
     bool stopRequest_;
 
-	  Logger log_;
 
 };
