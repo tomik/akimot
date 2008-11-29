@@ -27,11 +27,11 @@ using std::sqrt;
 #define CLOCK_CLICK_RESERVE 0.3
 
 /** Default time per move.*/
-#define TC_MOVE_DEFAULT 3
+#define TC_MOVE_DEFAULT 1
 #define TC_RESERVE_DEFAULT 60
 #define TC_MAX_DEFAULT 20
 
-#define TC_DEFAULT_ 5 
+//#define TC_DEFAULT_ 5 
 
 //this defines size of following enum !!!
 #define TIME_CONTROLS_NUM 13

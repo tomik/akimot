@@ -2,7 +2,7 @@
 # [urgency, category] item 
 
 === Actual ===
-[5,*] reorganize headers 
+[5,*] smoothen headers (privatexpublic, comments)
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
@@ -20,11 +20,10 @@
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
-[3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
-         this is difficult to test (positions with almost no moves to play)
 [1, uct]  history has a fixed size - change to dynamic + reallocation
 [3,board] refactor board loading - use fromcompactstring
   === Done  ===
+  [28.11][3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
   [29.11][3, uct] time control should be part of engine not uct 
   [29.11][3. board] makestep should be private
 

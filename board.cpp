@@ -1220,7 +1220,7 @@ bool Board::stepIsThirdRepetition( Step& step ) const
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   assert(1 - PLAYER_TO_INDEX(step.getStepPlayer()) == 
-         PLAYER_TO_INDEX(getPlayerToMoveAfterStep(step)));
+        PLAYER_TO_INDEX(getPlayerToMoveAfterStep(step)));
   //check whether position with opponent to move won't be a repetition
   if ( thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
     return true;

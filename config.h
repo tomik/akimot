@@ -79,7 +79,9 @@ class Config
     OptionList  options_;
 
     OptionString fnAeiInit_;
-    OptionBool benchmark_; 
+    OptionString fnInput_;
+    OptionBool benchmarkMode_; 
+    OptionBool getMoveMode_; 
 
   public:
     Config();
@@ -88,8 +90,10 @@ class Config
     bool parseToken(string, string);
     bool parseValue(string);
 
-    bool benchmark() { return benchmark_.getValue(); }
+    bool benchmarkMode() { return benchmarkMode_.getValue(); }
+    bool getMoveMode() { return getMoveMode_.getValue(); }
     string fnAeiInit() { return fnAeiInit_.getValue(); }
+    string fnInput() { return fnInput_.getValue(); }
 
     void printAll();
     
