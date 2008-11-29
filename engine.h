@@ -11,6 +11,7 @@
 #include "board.h"
 #include "eval.h"
 #include "hash.h"
+#include "timer.h"
 
 #include <cmath>
 
@@ -24,7 +25,7 @@ using std::sqrt;
 #define EXPLORE_RATE 0.2
 
 //how much time engine has for "clock clicking"
-#define CLOCK_CLICK_RESERVE 0.3
+#define CLOCK_CLICK_RESERVE 0.1
 
 /** Default time per move.*/
 #define TC_MOVE_DEFAULT 1
@@ -399,15 +400,15 @@ class TimeManager
     /**
      * Checks the clock.
      *
-     * @return true if there is time, false otherwise.
+     * @return True if time is up, false otherwise.
      * TODO: Searcher might provide importance of time addition.
      */
-    bool checkClock();
+    bool timeUp();
 
     /**
      *  Seconds elapsed since last startClock().
      */
-    float secondsElapsed(); 
+    double secondsElapsed(); 
 
     /**
      * Setting time controls from aei.
@@ -428,7 +429,7 @@ class TimeManager
     void setNoTimeLimit();
 
   private:
-    clock_t clockBegin_;
+    Timer timer;
     int timeControls_[TIME_CONTROLS_NUM];
     bool noTimeLimit_;
   

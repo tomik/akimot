@@ -753,25 +753,24 @@ TimeManager::TimeManager()
 
 void TimeManager::startClock()
 {
-  clockBegin_ = clock();
+  timer.setTimer(timeControls_[TC_MOVE] - CLOCK_CLICK_RESERVE);
+  timer.start();
 }
 
 //---------------------------------------------------------------------
 
-bool TimeManager::checkClock()
+bool TimeManager::timeUp()
 {
-  if (secondsElapsed() < (float(timeControls_[TC_MOVE]) - CLOCK_CLICK_RESERVE) || noTimeLimit_)
-    return true;
-  return false;
+  if ( noTimeLimit_ || ! timer.timeUp())
+    return false;
+  return true;
 }
 
 //---------------------------------------------------------------------
 
-float TimeManager::secondsElapsed()
+double TimeManager::secondsElapsed()
 {
-  assert(clock() >= clockBegin_);
-
-  return (clock() - clockBegin_)/(1.0 * CLOCKS_PER_SEC);
+  return timer.elapsed();
 }
   
 //---------------------------------------------------------------------
@@ -841,7 +840,7 @@ void Engine::doSearch(Board* board)
   stopRequest_ = false;
 
   timeManager_->startClock();
-  while (timeManager_->checkClock() && ! stopRequest_)
+  while (! timeManager_->timeUp() && ! stopRequest_)
     uct_->doPlayout();
 
 // logRaw(uct_->statisticsToString(timeManager_->secondsElapsed()));

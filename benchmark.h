@@ -4,13 +4,12 @@
 #include "board.h"
 #include "engine.h"
 #include "eval.h"
+#include "timer.h"
 
 #define START_POS_PATH "test/startpos.txt"
-#define PLAYOUT_NUM 10000
 #define PLAYOUT_DEPTH 1
-#define EVAL_NUM 1000000
-#define UCT_NODES_NUM 10000
 #define UCT_NODE_MATURE 1
+#define SEC_ONE 1
 //reflects average number of steps in position
 #define UCT_CHILDREN_NUM 25
 
@@ -25,18 +24,19 @@
  */
 class Benchmark
 {
-  private:
-    Board * board_; 
-    uint playoutCount_;
-
 	public: 
 		Benchmark();
 		Benchmark(Board*,uint);
 
-		void benchmarkEval() const;
-		void benchmarkPlayout() const;
-		void benchmarkUct() const;
+		void benchmarkEval(); 
+		void benchmarkPlayout(); 
+		void benchmarkUct(); 
 		void benchmarkSearch() const;
     
-    void benchmarkAll() const;
+    void benchmarkAll();
+
+  private:
+    Board * board_; 
+    uint playoutCount_;
+    Timer timer;
 };

@@ -10,8 +10,7 @@ Benchmark::Benchmark()
   board_->initNewGame(); 
   //TODO REPLACE LOADING FROM FILE WITH FUNCTION  
   board_->initFromPosition(START_POS_PATH);
-  playoutCount_ = PLAYOUT_NUM;
-
+  timer.setTimer(SEC_ONE);
 }
 
 //--------------------------------------------------------------------- 
@@ -19,43 +18,44 @@ Benchmark::Benchmark()
 Benchmark::Benchmark(Board* board, uint playoutCount)
 {
 	board_ = board;	
-	playoutCount_ = playoutCount;
 }
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkEval() const
+void Benchmark::benchmarkEval() 
 {
   Eval eval; 
-  clock_t clockBegin;
   float timeTotal;
 
-  clockBegin = clock();
+  timer.start();
 
-  for (uint i = 0 ; i < EVAL_NUM; i++)  
+  int i = 0;
+  while (! timer.timeUp()){
+    i++; 
     eval.evaluate(board_);
+  }
 
-	timeTotal = float (clock() - clockBegin) / CLOCKS_PER_SEC;
+	timeTotal = timer.elapsed(); 
 
   logRaw("Evaluation performance: \n  %d evals\n  %3.2f seconds\n  %d eps\n", 
-            EVAL_NUM, timeTotal, int ( float(EVAL_NUM) / timeTotal));
+            i, timeTotal, int ( float(i) / timeTotal));
 }
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkPlayout() const
+void Benchmark::benchmarkPlayout() 
 {
 		
-  clock_t				clockBegin;
   float					timeTotal;
 
   playoutStatus_e  playoutStatus;
 	uint			 playoutAvgLen = 0;
 
-  clockBegin = clock();
+  timer.start();
 
-  for (uint i = 0 ; i < playoutCount_; i++)  {
-
+  int i = 0;
+  while (! timer.timeUp()){
+    i++;
     //here we copy the given board
     Board *playBoard = new Board(*board_);
 
@@ -65,15 +65,15 @@ void Benchmark::benchmarkPlayout() const
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
   }
 
-	timeTotal = float (clock() - clockBegin) / CLOCKS_PER_SEC;
+	timeTotal = timer.elapsed(); 
   logRaw("Playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
-            playoutCount_, timeTotal, int ( float(playoutCount_) / timeTotal),int(playoutAvgLen/ float (playoutCount_)));
+            i, timeTotal, int ( float(i) / timeTotal),int(playoutAvgLen/ float (i)));
   
 }
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkUct() const
+void Benchmark::benchmarkUct() 
 {
   //tree with random player in the root
   Tree* tree = new Tree(INDEX_TO_PLAYER(random() % 2));
@@ -84,9 +84,8 @@ void Benchmark::benchmarkUct() const
   int walks = 0;
 
   float timeTotal;
-  clock_t clockBegin;
  
-  clockBegin = clock();
+  timer.start();
 
   stepsNum = UCT_CHILDREN_NUM;
   for (int i = 0; i < UCT_CHILDREN_NUM; i++)
@@ -94,7 +93,7 @@ void Benchmark::benchmarkUct() const
 
   while (true) {
     walks++;
-    if (i >= UCT_NODES_NUM)
+    if ( timer.timeUp() )
       break;
     tree->historyReset();     //point tree's actNode to the root 
     while (true) { 
@@ -111,9 +110,9 @@ void Benchmark::benchmarkUct() const
     } 
   }
 
-	timeTotal = float (clock() - clockBegin) / CLOCKS_PER_SEC;
+  timeTotal = timer.elapsed();
   logRaw("Uct performance: \n  %d walks\n  %3.2f seconds\n  %d wps\n  %d nodes\n", 
-            walks, timeTotal, int ( float(walks) / timeTotal), UCT_NODES_NUM);
+            walks, timeTotal, int ( float(walks) / timeTotal), i);
 
 }
 
@@ -132,7 +131,7 @@ void Benchmark::benchmarkSearch() const
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkAll() const
+void Benchmark::benchmarkAll() 
 {
   benchmarkEval();
   benchmarkPlayout();
