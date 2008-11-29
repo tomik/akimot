@@ -2,9 +2,7 @@
 # [urgency, category] item 
 
 === Actual ===
-[5,config] refactor to use only aei 
 [5,*] reorganize headers 
-[3,board] refactor board loading - use fromcompactstring
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
@@ -16,15 +14,19 @@
   [3, uct] node which cannot expand must be deleted straightaway
   [5,log] refactor logging through macro ! 
   [3, uct] remove node consistency - is it working properly ? 
-  [4,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
+  [28.11][4,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
+  [29.11][4,aei] add init from file 
+  [29.11][5,config] refactor not to use config, but only aei 
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
          this is difficult to test (positions with almost no moves to play)
 [1, uct]  history has a fixed size - change to dynamic + reallocation
-[3. uct] time control should be part of engine not uct 
-[3. board] makestep should be private
+[3,board] refactor board loading - use fromcompactstring
+  === Done  ===
+  [29.11][3, uct] time control should be part of engine not uct 
+  [29.11][3. board] makestep should be private
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

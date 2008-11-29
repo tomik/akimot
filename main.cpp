@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
 
   config.parse(argc, (const char **) (argv));
-  //config.logAll();
+  //config.printAll();
 
   Aei aei;
 
@@ -20,9 +20,8 @@ int main(int argc, char *argv[])
     return 0;
   }
   
-  //for debugging
-  if (config.debug())
-    aei.implicitSessionStart();
+  if (config.fnAeiInit() != "")
+    aei.initFromFile(config.fnAeiInit());
 
   aei.runLoop();
   return 0;

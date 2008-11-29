@@ -1,3 +1,4 @@
+
 #include "aei.h"
 //--------------------------------------------------------------------- 
 // section Strings used in communication
@@ -124,19 +125,30 @@ void Aei::runLoop()
 
 //--------------------------------------------------------------------- 
 
-void Aei::implicitSessionStart()
+void Aei::initFromFile(string fn)
 {
-  handleInput("aei");
-  //handleInput("newgame");
-  handleInput(string(STR_SET_POSITION_FILE) + " " + "test/empty.txt");
-  handleInput("setoption name tcmove value 2");
-  handleInput("go");
-  handleInput("makemove Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Md2 Ee2 Cf2 Dg2 Hh2");
-  handleInput("makemove ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7");
-  handleInput("go");
-  //handleInput(string(STR_SET_POSITION_FILE) + " " + "test/move/t008.txt");
-  //handleInput("setposition w [rrr r rrrdd  e                   ED     RhMH  C   mC   RRRR c RR]");
-  //handleInput(STR_GO);
+  fstream f;
+  string line;
+  stringstream ss;
+
+  try { 
+    f.open(fn.c_str(), fstream::in);
+    if (! f.good()){
+      f.close();
+      return; 
+    }
+
+    while (f.good()){
+      getline(f, line);
+      logRaw("received: %s", line.c_str());
+      handleInput(line);
+    }
+
+  }
+  catch(int e) {
+    return; 
+  }
+
 }
 
 //--------------------------------------------------------------------- 
@@ -155,7 +167,9 @@ void Aei::handleInput(const string& line)
   AeiRecord* record = NULL;
   AeiRecordList::iterator it; 
 
-  //log("received: " + line, LL_INFO);
+  //comments 
+  if (line == "" || line[0] == '#')
+    return;
 
   for (it = records_.begin(); it != records_.end(); it++)
     if ((it->state_ == state_ || it->state_ == AS_ALL) && it->command_ == command){
@@ -165,7 +179,7 @@ void Aei::handleInput(const string& line)
 
   if (! record) {
     aeiLog(STR_INVALID_COMMAND, AL_ERROR);
-    quit();
+    return;
   }
 
   if (record->nextState_ != AS_SAME)

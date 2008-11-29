@@ -832,6 +832,56 @@ void Board::makeSignature()
 
 //---------------------------------------------------------------------
 
+void Board::makeStep(Step& step)
+{
+
+  int playerIndex = PLAYER_TO_INDEX(step.player_);
+  if (step.stepType_ == STEP_NO_STEP)
+    return;
+
+  if (step.stepType_ == STEP_PASS ){
+    stepCount_++; 
+    return;
+  }
+
+  assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
+
+  //in STEP_PUSH victim's move must be made first ! 
+  if (step.stepType_ == STEP_PUSH ){  
+    assert( stepCount_ < 3 ); 
+    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    clearSquare(step.oppFrom_);
+    stepCount_++;
+    pieceArray[1 - playerIndex].del(step.oppFrom_);
+    pieceArray[1 - playerIndex].add(step.oppTo_);
+
+    checkKill(step.oppFrom_);
+  }
+
+  //single step
+  setSquare( step.to_, step.player_, step.piece_);
+  clearSquare(step.from_);
+  stepCount_++;
+  pieceArray[playerIndex].del(step.from_);
+  pieceArray[playerIndex].add(step.to_);
+
+  checkKill(step.from_);
+
+  //pull steps
+  if (step.stepType_ == STEP_PULL) {  
+    assert( stepCount_ < 4 ); 
+    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    clearSquare(step.oppFrom_);
+    stepCount_++;
+    pieceArray[1 - playerIndex].del(step.oppFrom_);
+    pieceArray[1 - playerIndex].add(step.oppTo_);
+
+    checkKill(step.oppFrom_);
+  }
+
+}
+//---------------------------------------------------------------------
+
 bool Board::findRandomStep(Step& step) const
 {
   
@@ -900,57 +950,6 @@ bool Board::findRandomStep(Step& step) const
     }
   }
     return false;
-}
-
-//---------------------------------------------------------------------
-
-void Board::makeStep(Step& step)
-{
-
-  int playerIndex = PLAYER_TO_INDEX(step.player_);
-  if (step.stepType_ == STEP_NO_STEP)
-    return;
-
-  if (step.stepType_ == STEP_PASS ){
-    stepCount_++; 
-    return;
-  }
-
-  assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
-
-  //in STEP_PUSH victim's move must be made first ! 
-  if (step.stepType_ == STEP_PUSH ){  
-    assert( stepCount_ < 3 ); 
-    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
-    clearSquare(step.oppFrom_);
-    stepCount_++;
-    pieceArray[1 - playerIndex].del(step.oppFrom_);
-    pieceArray[1 - playerIndex].add(step.oppTo_);
-
-    checkKill(step.oppFrom_);
-  }
-
-  //single step
-  setSquare( step.to_, step.player_, step.piece_);
-  clearSquare(step.from_);
-  stepCount_++;
-  pieceArray[playerIndex].del(step.from_);
-  pieceArray[playerIndex].add(step.to_);
-
-  checkKill(step.from_);
-
-  //pull steps
-  if (step.stepType_ == STEP_PULL) {  
-    assert( stepCount_ < 4 ); 
-    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
-    clearSquare(step.oppFrom_);
-    stepCount_++;
-    pieceArray[1 - playerIndex].del(step.oppFrom_);
-    pieceArray[1 - playerIndex].add(step.oppTo_);
-
-    checkKill(step.oppFrom_);
-  }
-
 }
 
 //--------------------------------------------------------------------- 
@@ -1148,12 +1147,14 @@ int Board::generateAllSteps(player_t player, StepArray& stepArray) const
             continue;
         }
         //create move
-        stepArray[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]),square, square + direction[i]);
+        stepArray[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]), 
+                                        square, square + direction[i]);
       }
   } //for pieces on board
 
   //add step pass, if it's legal
-  //other methods ( filterRepetitions ) are relying on fact, that stepPass is listed as a last one ! 
+  //other methods (filterRepetitions) are relying on fact, 
+  //that stepPass is listed as a last one ! 
   if (stepCount_ > 0 )
     stepArray[stepsNum++] = Step(STEP_PASS, player);
   
@@ -1169,7 +1170,8 @@ int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const
 
   //third time repetition check for pass move 
   //it is presumed, that pass move is in the very end ! TODO - cancel the presumption ? 
-  if ( stepsNum > 0 && stepArray[stepsNum - 1].isPass() && stepIsThirdRepetition(stepArray[stepsNum - 1])) 
+  if ( stepsNum > 0 && stepArray[stepsNum - 1].isPass() && 
+      stepIsThirdRepetition(stepArray[stepsNum - 1])) 
     stepsNum--;
 
   //check virtual passes ( immediate repetetitions ) 
@@ -1217,6 +1219,8 @@ bool Board::stepIsVirtualPass( Step& step ) const
 bool Board::stepIsThirdRepetition( Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
+  assert(1 - PLAYER_TO_INDEX(step.getStepPlayer()) == 
+         PLAYER_TO_INDEX(getPlayerToMoveAfterStep(step)));
   //check whether position with opponent to move won't be a repetition
   if ( thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
     return true;

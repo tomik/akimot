@@ -1,3 +1,9 @@
+/**
+ * @file config.h
+ *
+ * Command line configuration.
+ */
+
 #pragma once
 
 #include "utils.h"
@@ -62,18 +68,17 @@ typedef Option<string> OptionString;
 
 typedef list<OptionFather*> OptionList;
 
+/**
+ * Management of command line configuration. 
+ *
+ * After introduction of aei rather obsolete.
+ */
 class Config
 {
   private:
     OptionList  options_;
 
-    OptionBool  useTimeControl_;
-    OptionBool  inputIsRecord_;
-    OptionInt   secPerMove_;
-    OptionInt   playoutsPerMove_;
-    OptionString fnInput_;
-
-    OptionBool debug_; 
+    OptionString fnAeiInit_;
     OptionBool benchmark_; 
 
   public:
@@ -83,20 +88,10 @@ class Config
     bool parseToken(string, string);
     bool parseValue(string);
 
-    bool useTimeControl(){ return useTimeControl_.getValue(); } 
-    bool inputIsRecord(){ return inputIsRecord_.getValue(); } 
-    int secPerMove(){ return secPerMove_.getValue(); } 
-    int playoutsPerMove(){ return playoutsPerMove_.getValue(); } 
-    const char * fnInput() { return fnInput_.getValue().c_str(); }
-    bool debug() { return debug_.getValue(); }
     bool benchmark() { return benchmark_.getValue(); }
+    string fnAeiInit() { return fnAeiInit_.getValue(); }
 
-    //sometimes it is neccessary to set values in config - e.g. testing 
-    void playoutsPerMove(int playouts){ playoutsPerMove_.setValue(playouts); } 
-    void useTimeControl(bool use){ useTimeControl_.setValue(use); } 
-    void secPerMove(int sec){ secPerMove_.setValue(sec); } 
-
-    void logAll();
+    void printAll();
     
 };
 

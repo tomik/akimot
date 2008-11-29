@@ -14,21 +14,11 @@
 
 Config::Config()
 {
-  useTimeControl_ = OptionBool("t","use_time_tontrol","use time control",OT_BOOL_POS, false);
-  fnInput_ = OptionString("i","input","Input file", OT_STRING, "");
-  secPerMove_ = OptionInt("s","sec_per_move","Seconds per move - trivial time control", OT_INT, 3);
-  playoutsPerMove_ = OptionInt("p","playouts_per_move","Playouts per move - mostly for debugging", OT_INT, PLAYOUTS_PER_MOVE);
-  inputIsRecord_ = OptionBool("r","input_record","input is a record of the game",OT_BOOL_POS, false);
-  debug_ = OptionBool("d","debug","loads aei session implicitly",OT_BOOL_POS, false);
+  fnAeiInit_ = OptionString("i","init","Aei init file", OT_STRING, "");
   benchmark_ = OptionBool("b","benchmark","runs in benchmarking mode",OT_BOOL_POS, false);
 
   options_.clear();
-  options_.push_back(&useTimeControl_);
-  options_.push_back(&fnInput_);
-  options_.push_back(&secPerMove_);
-  options_.push_back(&playoutsPerMove_);
-  options_.push_back(&inputIsRecord_);
-  options_.push_back(&debug_);
+  options_.push_back(&fnAeiInit_);
   options_.push_back(&benchmark_);
 
 }
@@ -104,13 +94,13 @@ bool Config::parseValue(string value)
 {
   //todo ... quite dummy - just sets value for file input - undummyfy 
   //for instance - mark options without name ( and go through them and parse values to them ) 
-  fnInput_.setValueParsed(value);
+  fnAeiInit_.setValueParsed(value);
   return true;
 }
 
 //--------------------------------------------------------------------- 
 
-void Config::logAll()
+void Config::printAll()
 {
   logRaw("Program configuration: ");
   OptionList::iterator it;

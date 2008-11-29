@@ -360,16 +360,20 @@ string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
 
   stringstream ss; 
   ss.str("");
+
   //print the steps 
+  bool commited = false; 
   for (int i = stepNum - 1; i >= 0; i--){
     steps[i].addKills(board);
-    board->makeStep(steps[i]);
+    assert(! commited);
+    commited = board->makeStepTryCommitMove(steps[i]);
     ss << trimRight(steps[i].toString()) << " ";   //resultPrint of move
   } 
-
+  assert(commited);
+  
   //add signature of final position ! -> for future thirdRepetitionCheck
   //move is not commited - therefore it is 1 - index_of_player_to_move
-  thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
+  thirdRep.update(board->getSignature(), PLAYER_TO_INDEX(board->getPlayerToMove()) );
 
   delete(board);
   return ss.str(); 

@@ -81,7 +81,7 @@ class Aei
      *
      * For debugging purposes.  
      */
-    void implicitSessionStart();
+    void initFromFile(string fn);
 
   private:
     /**

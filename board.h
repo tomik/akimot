@@ -302,14 +302,6 @@ class Board
     //TODO from here till private: restructuralize in .cpp
     
     /**
-     * Making the step.
-     *
-     * One of the crucial methods in the boardstructure.
-     * Takes given step and performs it. Updates board structure and resolves kills.
-     */
-		void makeStep(Step&);
-
-    /**
      *  Wraper for makeStep with commiting.
      *
      *  Performs makestep on given step. 
@@ -456,6 +448,14 @@ class Board
      * Done by XOR-ing signatures for all pieces on the board.
      */
     void  makeSignature();
+
+    /**
+     * Making the step.
+     *
+     * One of the crucial methods in the boardstructure.
+     * Takes given step and performs it. Updates board structure and resolves kills.
+     */
+		void makeStep(Step&);
 
     /**
      * "Random" step generator.
