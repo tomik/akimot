@@ -11,4 +11,6 @@ tests.cpp
 *.o
 init
 .*.swp
-
+site_scons
+paths.py
+*.pyc

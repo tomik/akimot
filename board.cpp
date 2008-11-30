@@ -1054,7 +1054,7 @@ void Board::commitMove()
 
   toMove_ = OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
-  assert(toMoveIndex_ == PLAYER_TO_INDEX(toMove_));
+  assert(toMoveIndex_ == uint(PLAYER_TO_INDEX(toMove_)));
   stepCount_ = 0;
 
   //preMoveSignature of the next move is the actual signature

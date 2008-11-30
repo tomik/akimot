@@ -1,5 +1,10 @@
 #!/usr/bin/python 
 
+import paths
+CXX_TEST_PATH = paths.CXX_TEST_PATH
+CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
+
+
 AKIMOT_AEI_DIR = '/home/tomik/src/tmp/arimaa/aei/akimot'
 AKIMOT_MATCH_DIR = '/home/tomik/src/tmp/arimaa/matchOffline/bot_akimot'
 AKIMOT_LIBS = ['pthread']
@@ -43,7 +48,8 @@ if do_build:
   env.Alias('aei', AKIMOT_AEI_DIR)
   env.Install(AKIMOT_MATCH_DIR, akimot)
   env.Alias('match', AKIMOT_MATCH_DIR)
-  tst = Environment(tools = ['default','cxxtest'], CXXTEST='/usr/bin/cxxtestgen.py', LIBS = AKIMOT_LIBS, CXXTEST_DIR='')
+  tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
+                    CPPPATH=['.',CXX_INCLUDE_DIR])
   tst.CxxTest('func_test', ['tests.h'] + obj_files_test)
   tst.CxxTest('perf_test', ['performance.h'] + obj_files_test)
   #print "CCCOM is ",  env.subst('$CCCOM')

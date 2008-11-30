@@ -41,14 +41,14 @@ enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW};
 
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...);
 
-#define logInfo(...) logFunction(LL_INFO, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define logWarning(...) logFunction(LL_WARNING, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define logError(...) logFunction(LL_ERROR, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define logRaw(...) logFunction(LL_RAW, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logInfo(...) logFunction(LL_INFO, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logWarning(...) logFunction(LL_WARNING, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logError(...) logFunction(LL_ERROR, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define logRaw(...) logFunction(LL_RAW, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef NDEBUG 
   #define logDebug(...) ((void)0)
 #else
-  #define logDebug(...) logFunction(LL_DEBUG, __TIMESTAMP__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+  #define logDebug(...) logFunction(LL_DEBUG, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #endif 
 
 /**

@@ -30,6 +30,7 @@ class OptionFather
 
   public:
     OptionFather(){};
+    virtual ~OptionFather(){};
     OptionFather(string shortName, string longName, string description, optionType_e type):
       shortName_(shortName), longName_(longName), description_(description), type_(type) { parsed_ = false;};
     virtual void setValue(bool){};
@@ -46,9 +47,10 @@ template <typename T> class Option: public OptionFather
     T   value_;
 
   public:
-    Option(){};
+    Option(){;};
     Option(string shortName, string longName, string description, optionType_e type, T defaultValue):
-     OptionFather(shortName, longName, description, type), value_(defaultValue) {}
+     OptionFather(shortName, longName, description, type), value_(defaultValue) {;};
+    ~Option(){;};
 
     T getValue() { return value_;}
     void setValueParsed(T value) { if ( ! parsed_) { value_ = value; parsed_ = true;};}
