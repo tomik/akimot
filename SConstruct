@@ -3,9 +3,9 @@
 import paths
 CXX_TEST_PATH = paths.CXX_TEST_PATH
 CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
-
 AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
 AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
+
 AKIMOT_LIBS = ['pthread']
 
 TARGET = 'akimot'

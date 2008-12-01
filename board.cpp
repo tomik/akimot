@@ -887,7 +887,7 @@ bool Board::findRandomStep(Step& step) const
   
   bool found = false; //once set to true, move is generated and returned 
 
-  for ( int i = 0; i < 30; i++){ 
+  for ( int i = 0; i < 10; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
     step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
 

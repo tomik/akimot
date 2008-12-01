@@ -1,0 +1,117 @@
+# This file contains two main sections; the bot section and
+#   the virtual bot (or mixed bot) section.
+# Any line which does not begin with a letter number or _ is ignored
+
+################################################
+# The bot section
+################################################
+#   Each line of the bot section has this format:
+#   <bot name>  <bot directory>  <bot command>
+#     The <bot name> is what is given to the 'match' script
+#       so it can use it to lookup the <bot directory> and
+#       the <bot command> in order to run the bot.
+#       For example: match r0 r0xn
+#     The <bot directory> can be relative to where the 'match'
+#       script is being run from or it can be an absolute path.
+#     The <bot command> is the command needed to run the bot.
+#       The bot command should be relative to the <bot directory>.
+#       If the bot command contains the string [seed], then this
+#       string is substituted with a number to be used by the bot 
+#       program to seed the random number generator.
+
+bomb2004CC	/home/arimaa/web/arimaa/bots/bot_Bomb2004CC	getMove
+bomb2005CC	/home/arimaa/web/arimaa/bots/bot_Bomb2005CC	getMove
+
+
+akimot		./bot_akimot		akimot -g 
+
+# pure random bot
+r0		./bot_r0		r0 -b -r [seed]
+
+# random bot which avoids passing any steps
+r0np		./bot_r0		r0 -b -np -r [seed]
+
+# random bot which avoids moves that trap pieces (self or opponents)
+r0xn		./bot_r0		r0 -b -xn -r [seed]
+
+# random bot which avoids trapping (suiciding) its own pieces
+r0xs		./bot_r0		r0 -b -xs -r [seed]
+
+# random bot which tries for rabbit advance moves
+r0ar		./bot_r0		r0 -b -ar -r [seed]
+
+
+
+# random bot which uses the setup file for the first move
+r0s		./bot_r0		r0 -b -r [seed] -1 setups
+
+
+
+
+############################
+# Dons sample Arimaa bot limited to 4 step search
+sample1		./bot_SampleC		getMove -d 4
+
+# Don's sample bot limited to 8 step search
+sample2		./bot_SampleC		getMove -d 8
+
+# Don's sample bot limited to search for only 15 seconds
+sample15s	./bot_SampleC		getMove -t 15
+
+# Don's sample bot limited to search for only 30 seconds
+sample30s	./bot_SampleC		getMove -t 30
+
+# Dons sample Arimaa bot limited to 4 step search
+sample15s2		./bot_SampleC		getMove -d 4 -1 setups
+
+
+###########################
+# Jeff's sample Arimaa bots
+
+# j1 picks at random; generates all possible unique postions and picks one
+j1              ./bot_JeffBacher              java -classpath test.jar arimaa_bb.RandomPlayer 1 [seed]
+
+# j2 pick a reasonable move at random, else any move
+j2              ./bot_JeffBacher              java -classpath test.jar arimaa_bb.RandomPlayer 2 [seed]
+
+jf              ./bot_JeffBacher_FAME         java -classpath test.jar arimaa3.ArimaaMain 
+
+
+
+###########################
+# The Arimaa scoreing system bot
+score1		./bot_Score		getMove -d 4
+
+
+# Sample bot written in Perl
+ps1		./bot_SamplePerl	perl getMove
+
+
+
+# A line begining with and containing only the word 'mix'
+#   marks the start of the virtual bot section.
+mix
+
+################################################
+# The virtual bot section
+################################################
+#   Each line in this section defines a virtual bot that is made
+#   by mixing one or more bots from the bot section above.
+#   Each virtual bot line has this format:
+#   <virtual bot name>   <bot name 1> <bot weight 1>, <bot name 2> <bot weight 2>, ...
+#     The <virtual bot name> gets passed to the 'match' script
+#       so it can look up what bots to mix when running this virtual bot.
+#       The <bot weight N> associated with each <bot name N> defines
+#       the relative probability with which the bot is selected.
+#       The first bot in the list is always selected for the
+#       setup move (ie move 1w or 1b).
+
+# equal mix of the pure random bot (r0) with the random no passing 
+#   of steps bot (r0np)
+v1  r0np 50, r0 50
+
+# equal 20-80 mix the pure random bot (r0) with the random bot that avoids trapping
+#   its own pieces.
+v2  r0xs 80, r0 20
+
+

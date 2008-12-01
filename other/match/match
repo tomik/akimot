@@ -1,0 +1,494 @@
+#!/usr/bin/perl
+
+use Cwd;
+require "position.pl";
+
+$wp = $ARGV[0];
+$bp = $ARGV[1];
+$seeds = $ARGV[2];
+$movfile = $ARGV[3];
+
+# move list file can be given as the 3rd arg if seed is not given
+if ($seeds !~ m/^\d/){
+  $movfile = $seeds;
+  $seeds = "";
+}
+
+if ($seeds eq ""){
+  $seeds = int(rand(999999) + 1);
+}
+
+if ($seeds =~ m/\-/){
+  ($seedlo, $seedhi) = ($seeds =~ m/(\d+)\-(\d+)/);
+}
+if ($seedhi eq ""){
+  $seedlo = $seeds;
+  $seedhi = $seeds;
+}
+
+if ($seedlo == $seedhi){ $showMoves = 1; }
+
+$mixmode = 0;
+open(FH, "<bots");
+@bn = <FH>;
+close FH;
+foreach (@bn){
+  chomp $_;
+  if (! $mixmode){
+    if ($_ =~ m/^mix *$/i){ $mixmode = 1; }
+    ($bn, $bd, $bc) = ($_ =~ m/^(\w+)\s+(\S+)\s+(.+)/);
+    if ($bc ne ""){ $botCommand{$bn} = $bc; $botDir{$bn} = $bd; }
+  }
+  else{
+    ($bn, $bc) = ($_ =~ m/^(\w+)\s+(.+)/);
+    $bc =~ s/[\,\;]//g;
+    if ($bc ne ""){ $mix{$bn} = $bc; }
+  }
+}
+
+
+
+for($i=$seedlo;$i<=$seedhi;$i++){
+  srand($i);
+  playGame($wp, $bp, $i);
+}
+
+exit;
+
+
+sub playGame{
+  my($wp, $bp, $seed) = @_;
+  my($rdir, $ml, $moveCount, $moveFile, $posFile, $gameStateFile, $m, $result);
+  my($wpc, $wpmix, $wps);
+  my($bpc, $bpmix, $bps);
+
+  $rdir = "running";
+  # Jeff added 2005.05.08
+  # Creates running dir in root directory
+  if (! -d "$rdir"){
+      mkdir "$rdir";
+  }
+
+  if ($showMoves){ print "random seed is $seed\n"; }
+
+  PositionMakeNewBoard("$rdir/position$$");
+  $ml = "";
+  $moveCount = "1w";
+
+  if ($movfile ne ""){
+    ($ml, $moveCount) = movesAlreadyMade("$rdir/position$$", $movfile);
+  }
+
+  while(1){
+
+######################
+# Setup the command string for the two players
+    $wpc = $botCommand{$wp}; $wpn = $wp;
+    if ($wpc eq ""){ 
+      if ($mix{$wp} eq ""){ die "no entry in bots for $wp\n"; }
+      $wpmix = pickBot($mix{$wp}, $moveCount);
+      $wpc = $botCommand{$wpmix}; $wpn = $wpmix;
+      if ($wpc eq ""){ die "no entry in bots for $wpmix from mix entry $wp\n"; }
+    }
+    $bpc = $botCommand{$bp}; $bpn = $bp;
+    if ($bpc eq ""){ 
+      if ($mix{$bp} eq ""){ die "no entry in bots for $bp\n"; }
+      $bpmix = pickBot($mix{$bp}, $moveCount);
+      $bpc = $botCommand{$bpmix}; $bpn = $bpmix;
+      if ($bpc eq ""){ die "no entry in bots for $bpmix from mix entry $bp\n"; }
+    }
+#print "wpc is ($wpmix): $wpc\n";
+#print "bpc is ($bpmix): $bpc\n";
+
+
+
+######################
+# white player moves
+    if ($moveCount =~ m/w$/){
+      $ml = "$ml$moveCount";
+      makeRunningDir($botDir{$wpn});
+      $moveFile = makeMoveFile($ml, $botDir{$wpn});
+      $posFile = makePosFile("$rdir/position$$", $botDir{$wpn});
+      $gameStateFile = makeGameStateFile("gamestate", $botDir{$wpn});
+
+      $wps = $wpc;
+      $wps =~ s/\[seed\]/$seed/g;
+      $m = getMove($wps, $botDir{$wpn}, $posFile, $moveFile, $gameStateFile);
+      if ($showMoves){ print "$moveCount $m"; }
+      chomp $m;
+      ($valid, $err) = PositionUpdate("$rdir/position$$", $m);
+#print "v=$valid e=$err\n";
+      if (! $valid){ print "$err\n"; last; }
+      $result = checkWin("$rdir/position$$");
+      if ($result ne ""){ print "$result $moveCount     $seed\n"; last; }
+      $m = "$m\n";
+ 
+      $moveCount = incMove($moveCount);
+      $ml = "$ml $m";
+    }
+  
+  
+######################
+# black player moves
+    if ($moveCount =~ m/b$/){
+      $ml = "$ml$moveCount";
+#print "ml is $ml\n";
+      makeRunningDir($botDir{$bpn});
+      $moveFile = makeMoveFile($ml, $botDir{$bpn});
+      $posFile = makePosFile("$rdir/position$$", $botDir{$bpn});
+      $gameStateFile = makeGameStateFile("gamestate", $botDir{$bpn});
+ 
+      $bps = $bpc;
+      $bps =~ s/\[seed\]/$seed/g;
+      $m = getMove($bps, $botDir{$bpn}, $posFile, $moveFile, $gameStateFile);
+      if ($showMoves){ print "$moveCount $m"; }
+      chomp $m;
+      ($valid, $err) = PositionUpdate("$rdir/position$$", $m);
+      if (! $valid){ print "$err\n"; last; }
+      $result = checkWin("$rdir/position$$");
+      if ($result ne ""){ print "$result $moveCount     $seed\n"; last; }
+      $m = "$m\n";
+ 
+      $moveCount = incMove($moveCount);
+      $ml = "$ml $m";
+    }
+
+  }
+
+#  removeTempFiles($botDir{$wp});
+#  removeTempFiles($botDir{$bp});
+  removeTempFiles($wp);
+  removeTempFiles($bp);
+  unlink "$rdir/position$$";
+  unlink "$rdir/position$$.hist";
+
+}
+
+sub pickBot{
+  my($s, $mc) = @_;
+  my(@f, $i, $tot, @bp, @bn, $r, $sum);
+
+  @f = split(/ +/, $s);
+  foreach (@f){
+    if ($i%2){ push(@bp, $_); $tot += $_; }
+    else{ push(@bn, $_); }
+    $i += 1;
+  }
+  if ($mc =~ m/^1[wb]/){ return $bn[0]; } # on setup use the first bot
+  if ($tot <= 0){ return $bn[0]; }
+  $r = int(rand()*$tot);
+  for($i=0;$i<=$#bp;$i++){
+    $sum += $bp[$i];
+    if ($sum > $r){ return $bn[$i]; }
+  }
+}
+
+sub getMove{
+  my($p, $dir, $pos, $mov, $gam) = @_;
+  my($m, $ld, $pc);
+
+  if ($pos eq ""){ $pos = "$rdir/position$$"; }
+  if ($mov eq ""){ $mov = "movelist"; }
+  if ($gam eq ""){ $gam = "gamestate"; }
+  
+  $ld = getcwd();
+#  chdir "./$dir";
+  if (! -d "$dir"){
+    die "directory not found: $dir\n";
+  }
+  chdir "$dir";
+  $p = "./$p";
+  $pc = $p;
+  $pc =~ s/ .*$//;
+  if (! -e "$pc"){
+    die "can't execute command: $p in directory: $dir\n";
+  }
+#print qq(  chdir "./$dir     $ld  " \n);
+#print "  $m = `$p $pos $mov $gam` \n";
+  $m = `$p $pos $mov $gam`;
+  chdir "$ld";
+  $m =~ s/^\s+//s;
+  $m =~ s/\s+$//s;
+#  if ($m !~ m/\n$/s){ $m .= "\n"; }
+  $m .= "\n";
+  return $m;
+}
+
+sub makeRunningDir{
+  my($d) = @_;
+  if (! -d "$d"){
+    print "directory $d not found\n";
+    return;
+  }
+  if (! -d "$d/running"){
+    mkdir "$d/running";
+  }
+}
+
+sub makeMoveFile{
+  my($ml, $dir) = @_;
+  local(*FH);
+  my($f);
+
+  if ($dir eq ""){ $dir = "."; }
+  $f = "running/matchMove$$";
+  open(FH, ">$dir/$f");
+  print FH $ml;
+  close FH;
+  return $f;
+}
+
+sub makePosFile{
+  my($pf, $dir) = @_;
+  local(*FH);
+  my($f, $pos);
+
+  if ($dir eq ""){ $dir = "."; }
+  $f = "running/matchPos$$";
+
+  open(FH, "<$pf");
+  $pos = join('', <FH>);
+  close FH;
+
+  open(FH, ">$dir/$f");
+  print FH $pos;
+  close FH;
+  return $f;
+}
+
+# This doesn't really do much right now, but if we want to
+#   use this with bots that really look at the gamestate file
+#   then we have to put valid data in the gamestate file; which
+#   includes the movelist and board position; so this should
+#   probably be called after making other files so that we
+#   just read in those files and use them when making the 
+#   game state file.
+sub makeGameStateFile{
+  my($gf, $dir) = @_;
+  local(*FH);
+  my($f, $gs);
+
+  if ($dir eq ""){ $dir = "."; }
+  $f = "running/matchGamestate$$";
+
+  open(FH, "<$gf");
+  $gs = join('', <FH>);
+  close FH;
+
+  if ($gs eq ""){
+
+# sample time control file
+$gs = <<EOM;
+tcmove=10
+starttime=1114495092
+tcbreserve=229
+bpresent=1114495091
+title=Game Number: 20052
+warrived=1114495070
+tcgamenow=12
+postal=0
+bused=11
+gameId=131680650
+timecontrol=2/2/100/10/8
+lastmoveused=11
+tctotal=28800
+auth=680141855064
+lastchange=8
+wplayer=* bot_gnobot2005cc
+tcreserve=120
+tcmax=600
+roomId=3
+lastmovereserve=120
+tableId=20052
+chat=w 1w: This bot was developed by Toby Hudson (99of9).%13
+e=bot_gnobot2005cc
+barrived=1114495091
+bplayer=* omar
+moves=1w Ra1 Rb1 Rc1 Dd1 De1 Rf1 Rg1 Rh1 Hb2 Ra2 Cc2 Md2 Ee2 Cf2 Rh2 Hg2%131b ha7 db7 cc7 md7 ee7 cf7 dg7 hh7 ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8%132w
+turn=w
+tcturns=0
+tcwreserve=239
+wpresent=1114495070
+tcturntime=0
+r=w
+s=w
+timeonserver=1114495104
+t=20052
+tcgame=12
+rated=0
+position=2w %13 +-----------------+%138| r r r r r r r r |%137| h d c m e c d h 
+|%136|     X     X     |%135|                 |%134|                 |%133|     
+X     X     |%132| R H C M E C H R |%131| R R R D D R R R |%13 +----------------
+-+%13   a b c d e f g h%13
+wstartmove=1114495104
+tcpercent=100
+plycount=1
+creattime=1114495069
+wused=0
+--END--
+EOM
+
+# a reduced version with parameters that define the time control
+#   tcmove is probably the most important one.
+$gs = <<EOM;
+tcmove=5
+tcbreserve=229
+tcgamenow=12
+bused=11
+lastmoveused=11
+tctotal=28800
+tcreserve=120
+tcmax=600
+lastmovereserve=120
+turn=w
+tcturns=0
+tcwreserve=239
+tcturntime=0
+r=w
+s=w
+t=20052
+tcgame=12
+rated=0
+wstartmove=1114495104
+tcpercent=100
+plycount=1
+creattime=1114495069
+wused=0
+--END--
+EOM
+
+  }
+
+
+  open(FH, ">$dir/$f");
+  print FH $gs;
+  close FH;
+  return $f;
+}
+
+sub removeTempFiles{
+  my($p) = @_;
+  my(@p, $i, $dir);
+
+  if ($mix{$p} ne ""){
+    @p = split(/ +/, $mix{p});
+    foreach (@p){
+      if ($i%2){ next; }
+      removeTempFiles($_);
+    }
+  }
+  else{
+    $dir = $botDir{$p};
+    if ($dir eq ""){ $dir = "."; }
+    unlink "$dir/running/matchMove$$";
+    unlink "$dir/running/matchPos$$";
+    unlink "$dir/running/matchGamestate$$";
+  }
+}
+
+
+sub incMove{
+  local($m) = @_;
+  local($s, $n);
+
+  ($n,$s) = ($m =~ m/(\d+)(\w)/);
+  if ($s eq "w"){
+    $s = "b";
+  }
+  else{
+    $s = "w";
+    $n += 1;
+  }
+  $m = "$n$s";
+  return $m;
+}
+
+sub checkWin{
+  local($f) = @_;
+  local($res);
+
+# Check if our rabbit reached the goal; then check if opponents rabbit reached goal
+  $res = PositionCheckGoal("$f");
+  if ($res ne ""){
+    return "$res g";
+  }
+# Added on 2008.07.01
+# Check if opponent lost all rabbits; then check if we lost all rabbits
+  $res = PositionCheckElimination("games/$roomId/tab$tableId/position");
+#writelog("res is '$res' for $roomId $tableId", "elim");
+  if ($res ne ""){
+    return "$res e";
+  }
+# Check if opponent has no possible move; opponent loses by immobilization
+  $res = PositionCheckStalemate("$f");
+  if ($res ne ""){
+    return "$res m";
+  }
+# Added on 2008.07.01
+# Check if opponents only move is a 3rd time repitition; opponent loses by immobilization
+#   It may be possible that opponent has more than one move and they are all
+#   3rd time repeats; we don't check for this.
+  $res = PositionCheckOnlyMoveIsRepeat("games/$roomId/tab$tableId/position");
+#writelog("res is '$res' for $roomId $tableId", "elim");
+  if ($res ne ""){
+    return "$res m";
+  }
+
+# 2008.07.01 Draws are no longer allowed. See http://arimaa.com/arimaa/forum/cgi/YaBB.cgi?board=talk;action=display;num=1206399208
+}
+
+sub checkWin_pre_20080701{
+  local($f) = @_;
+  local($res);
+
+# Rabbit reached the goal
+  $res = PositionCheckGoal("$f");
+  if ($res ne ""){
+    return "$res g";
+  }
+# Player has no possible move
+  $res = PositionCheckStalemate("$f");
+  if ($res ne ""){
+    return "$res m";
+  }
+# Both players lost all rabbits
+#   Decided on 2002.12.23 that if both players lose all the rabbits
+#   then the game will be considered a draw rather then determined
+#   by score
+  $res = PositionCheckDraw("$f");
+  if ($res ne ""){
+    return "d n";
+  }
+# Check for lose due to repeat of same position 3 times
+  $res = PositionCheckRepeat("$f");
+  if ($res ne ""){
+    return "$res p";
+  }
+}
+
+sub movesAlreadyMade{
+  my($pf, $mf) = @_;
+  my($m, $mc, $ml, @ml, $valid, $err);
+  local(*FH);
+
+  open(FH, "<$mf");
+  @ml = <FH>;
+  close FH;
+
+  foreach $m (@ml){
+    ($mc, $m) = ($m =~ /^(\d+[wb]) *([\s\S]*)$/s);
+    if ($mc eq ""){ next; }
+    chomp $m;
+    $m =~ s/^ +//;
+    $m =~ s/ +$//;
+    if ($m ne ""){
+      ($valid, $err) = PositionUpdate("$pf", $m);
+      $ml .= "$mc $m\n";
+      if ($showMoves){ print "$mc $m\n"; }
+      $mc = incMove($mc);
+    }
+  }
+  return($ml, $mc);
+}
+
+
