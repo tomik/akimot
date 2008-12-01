@@ -14,3 +14,4 @@ init
 site_scons
 paths.py
 *.pyc
+opt_akimot

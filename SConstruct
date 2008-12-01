@@ -8,6 +8,9 @@ AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR
 AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
 AKIMOT_LIBS = ['pthread']
 
+TARGET = 'akimot'
+OPT_TARGET = 'opt_akimot'
+
 common = Environment(CC='g++', CCFLAGS = '-Wall ')
 opt = common.Clone()
 opt.Append(CCFLAGS = '-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -frename-registers') #-march=native
@@ -28,6 +31,7 @@ do_build = False
 if ARGUMENTS.get('opt'): 
   env = opt.Clone()
   do_build = True
+  TARGET = OPT_TARGET
 elif ARGUMENTS.get('dbg'):
   env = dbg.Clone()
   do_build = True
@@ -42,7 +46,7 @@ else:   #standard
 if do_build:
   #akimot = env.Program(target = 'akimot', source = src_files_build, CPPPATH = '.')
   env.Object(src_files_build)
-  akimot = env.Program(target = 'akimot', source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
+  akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
   env.Install(AKIMOT_AEI_DIR, akimot)
   env.Alias('aei', AKIMOT_AEI_DIR)
   env.Install(AKIMOT_MATCH_DIR, akimot)

@@ -29,4 +29,4 @@
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 
-[uct] uctDescend should be FAST ( now slow :( )
+[uct] uctDescend should be FAST ( unlike now :( )
