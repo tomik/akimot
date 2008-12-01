@@ -4,14 +4,13 @@ import paths
 CXX_TEST_PATH = paths.CXX_TEST_PATH
 CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
 
-
-AKIMOT_AEI_DIR = '/home/tomik/src/tmp/arimaa/aei/akimot'
-AKIMOT_MATCH_DIR = '/home/tomik/src/tmp/arimaa/matchOffline/bot_akimot'
+AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
+AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
 AKIMOT_LIBS = ['pthread']
 
 common = Environment(CC='g++', CCFLAGS = '-Wall ')
 opt = common.Clone()
-opt.Append(CCFLAGS = '-O3 -DNDEBUG -march=native -ffast-math -fomit-frame-pointer -frename-registers')
+opt.Append(CCFLAGS = '-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -frename-registers') #-march=native
 dbg = common.Clone()
 dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
 std = common.Clone()
