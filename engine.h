@@ -426,7 +426,7 @@ class TimeManager
     /**
      * Sets time unlimited search. 
      */
-    void setNoTimeLimit();
+    void setNoTimeLimit(bool value);
 
   private:
     Timer timer;

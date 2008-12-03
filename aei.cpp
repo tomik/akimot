@@ -78,9 +78,11 @@ Aei::Aei()
   records_.push_back(AeiRecord(STR_SET_OPTION, AS_ALL, AS_SAME, AA_SET_OPTION));
   records_.push_back(AeiRecord(STR_GO, AS_MAIN, AS_SEARCH, AA_GO));
   records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_MAIN, AA_STOP));
+  records_.push_back(AeiRecord(STR_STOP, AS_PONDER, AS_MAIN, AA_STOP));
   //TODO MAKE_MOVE might come also during search ( pondering ) 
   //should end pondering and make move, no output !
   records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_MAIN, AS_SAME, AA_MAKE_MOVE));
+  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_PONDER, AS_MAIN, AA_MAKE_MOVE));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
@@ -163,6 +165,7 @@ void Aei::handleInput(const string& line)
   string command;
   ssLine >> command; 
   response_ = "";
+  aeiState_e oldState; 
   
   AeiRecord* record = NULL;
   AeiRecordList::iterator it; 
@@ -182,6 +185,7 @@ void Aei::handleInput(const string& line)
     return;
   }
 
+  oldState = state_;
   if (record->nextState_ != AS_SAME)
     state_ = record->nextState_;
 
@@ -214,12 +218,18 @@ void Aei::handleInput(const string& line)
                   }
                   break;
     case AA_GO:    
+                  if (getStreamRest(ssLine) == STR_PONDER){
+                    state_ = AS_PONDER;
+                  }
                   startSearch(getStreamRest(ssLine));
                   break;
     case AA_STOP: 
-                  engine_->requestSearchStop();
+                  stopSearch();
                   break;
     case AA_MAKE_MOVE:
+                  if (oldState == AS_PONDER){
+                    stopSearch(false);
+                  }
                   board_->makeMove(getStreamRest(ssLine));
                   break;
     case AA_QUIT: 
@@ -229,6 +239,7 @@ void Aei::handleInput(const string& line)
              assert(false);
              break;
   }
+
 
   send(response_);
 }
@@ -275,9 +286,9 @@ void Aei::startSearch(const string& arg)
 {
   //int rc;
   if (arg == STR_PONDER || arg == STR_INFINITE)
-    engine_->timeManager()->setNoTimeLimit();
+    engine_->timeManager()->setNoTimeLimit(true);
   //no mutex is needed - this is done only when no engineThread runs
-  while( pthread_create(&engineThread, NULL, Aei::SearchInThreadWrapper, this))
+  while( pthread_create(&engineThread_, NULL, Aei::SearchInThreadWrapper, this))
     ;
 /*
   if (rc){ //allocating thread failed
@@ -291,9 +302,14 @@ void Aei::startSearch(const string& arg)
 
 void Aei::searchInThread()
 {
+  //REFACTOR ! 
+  sendMoveAfterSearch_ = true;
   engine_->doSearch(board_);
-  state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?   
-  send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
+  engine_->timeManager()->setNoTimeLimit(false);
+  if (sendMoveAfterSearch_){
+    send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
+    state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?  
+  } 
 }
 
 //--------------------------------------------------------------------- 
@@ -304,6 +320,19 @@ void * Aei::SearchInThreadWrapper(void* instance)
   aei->searchInThread();
   return NULL;
 }
+
+//--------------------------------------------------------------------- 
+
+void Aei::stopSearch(bool sendBestMove )
+{
+  void* status;
+
+  if (!sendBestMove)
+    sendMoveAfterSearch_ = false;
+  engine_->requestSearchStop();
+  pthread_join(engineThread_, &status);
+}
+
 
 //--------------------------------------------------------------------- 
 

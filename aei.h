@@ -24,7 +24,7 @@ using std::flush;
 #define ID_VERSION "0.1"
 
 
-enum aeiState_e {AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH};
+enum aeiState_e {AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH, AS_PONDER};
 enum aeiAction_e {AA_OPEN, AA_READY, AA_QUIT, AA_SET_POSITION, 
                   AA_SET_POSITION_FILE, AA_SET_OPTION, AA_NEW_GAME, 
                   AA_SET_VARIABLE, AA_GO, AA_STOP, AA_MAKE_MOVE};
@@ -113,6 +113,18 @@ class Aei
      */
     static void* SearchInThreadWrapper(void *instance);
 
+
+    /**
+     * Stop search.
+     *
+     * Gives request to stop the search. 
+     * Waits for the search thread to join. 
+     *
+     * @param sendBestMove If true sends the best move through aei protocol, 
+     *                        otherwise does nothing ( e.g. when makemove stopped go ponder)
+     */
+    void stopSearch(bool sendBestMove=true);
+
     /**
      * Communicate log messages. 
      */
@@ -143,10 +155,11 @@ class Aei
     aeiState_e state_;
     /** Response to be send through communication channel.*/
     string response_;
+    bool sendMoveAfterSearch_;
 
     Board* board_;
     Engine* engine_;
     /** Thread handler for running search.*/
-    pthread_t engineThread;
+    pthread_t engineThread_;
 };
 
