@@ -66,14 +66,14 @@ def playgame(engines, position=None, waittime=300, movetime=0, reserve=None):
             if reserve:
                 movelength = float(time.time()) - float(starttime)
                 moveexcess = movelength - movetime
-                print movelength, moveexcess
+                #print movelength, moveexcess
                 eng.reserve = max(min(int(eng.reserve - moveexcess), reserve), -1)
                 if eng.reserve < 0:
                     print "Engine", eng.ident['name'], "would have timed out."
             steps = board.parse_move(resp.move)
             position = position.do_move(steps)
-            print ["g", "s"][position.color], resp.move
-            print position.to_long_str()
+            #print ["g", "s"][position.color], resp.move
+            #print position.to_long_str()
             for engine in engines:
                 engine.makemove(resp.move)
         else:

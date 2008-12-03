@@ -9,7 +9,7 @@ AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR
 AKIMOT_LIBS = ['pthread']
 
 TARGET = 'akimot'
-OPT_TARGET = 'opt_akimot'
+OPT_TARGET = TARGET #'opt_akimot'
 
 common = Environment(CC='g++', CCFLAGS = '-Wall ')
 opt = common.Clone()
