@@ -557,8 +557,9 @@ Step Board::findStepToPlay()
 
 //---------------------------------------------------------------------
 
-void Board::makeMove(const string& move)
+void Board::makeMove(const string& moveRaw)
 {
+  string move = trimLeft(trimRight(moveRaw));
   if (move == "")
     return; 
 

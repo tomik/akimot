@@ -796,9 +796,16 @@ int TimeManager::getTimeControl(timeControl_e tc)
 
 //--------------------------------------------------------------------- 
 
-void TimeManager::setNoTimeLimit(bool timeLimit)
+void TimeManager::setNoTimeLimit()
 {
-  noTimeLimit_ = timeLimit;
+  noTimeLimit_ = true; 
+}
+
+//--------------------------------------------------------------------- 
+
+void TimeManager::resetSettings()
+{
+  noTimeLimit_ = false;
 }
 
 //---------------------------------------------------------------------

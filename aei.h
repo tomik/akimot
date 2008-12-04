@@ -26,9 +26,18 @@ using std::flush;
 
 enum aeiState_e {AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH, AS_PONDER};
 enum aeiAction_e {AA_OPEN, AA_READY, AA_QUIT, AA_SET_POSITION, 
-                  AA_SET_POSITION_FILE, AA_SET_OPTION, AA_NEW_GAME, 
-                  AA_SET_VARIABLE, AA_GO, AA_STOP, AA_MAKE_MOVE};
-enum  aeiLogLevel_e {AL_ERROR, AL_WARNING, AL_INFO, AL_DEBUG};
+                  AA_SET_POSITION_FILE, AA_SET_OPTION, AA_NEW_GAME, AA_SET_VARIABLE, 
+                  AA_GO, AA_GO_NO_THREAD, AA_STOP, AA_MAKE_MOVE, AA_MAKE_MOVE_REC, 
+                  AA_DUMP};
+enum aeiLogLevel_e {AL_ERROR, AL_WARNING, AL_INFO, AL_DEBUG};
+
+/**
+ * Command Set definition
+ * AC_STD : standard AEI
+ * AC_EXT : extended AC_STD with debug/shortcut stuff. 
+ * More info in states definition.
+ */
+enum aeiCommandSet_e {AC_STD, AC_EXT};
 
 class Engine;
 class Aei;
@@ -43,13 +52,17 @@ class Aei;
 class AeiRecord 
 {
   public:
-    AeiRecord(string command, aeiState_e state, aeiState_e nextState, aeiAction_e action);
+    AeiRecord(string command, aeiState_e state, aeiState_e nextState, 
+                aeiAction_e action);
+    AeiRecord(string command, aeiState_e state, aeiState_e nextState, 
+                aeiAction_e action, aeiCommandSet_e commandSet_);
 
   private:
     aeiState_e state_; 
     string command_;
     aeiState_e nextState_; 
     aeiAction_e action_;
+    aeiCommandSet_e commandSet_;
     friend class Aei;
 };
 
@@ -72,6 +85,11 @@ class Aei
     ~Aei();
 
     /**
+     * Constructor with specified command set. 
+     */
+    Aei(aeiCommandSet_e commandSet);
+
+    /**
      * Waits for commands in loop. 
      */
     void runLoop();
@@ -84,6 +102,14 @@ class Aei
     void initFromFile(string fn);
 
   private:
+    /**
+     * Initialization.
+     *
+     * Inits the parsing automata states and variables.
+     * Reused in both constructors.
+     */
+    void init();
+
     /**
      * Handles single command; 
      */
@@ -155,7 +181,9 @@ class Aei
     aeiState_e state_;
     /** Response to be send through communication channel.*/
     string response_;
-    bool sendMoveAfterSearch_;
+
+    aeiCommandSet_e commandSet_;
+    //bool sendMoveAfterSearch_;
 
     Board* board_;
     Engine* engine_;

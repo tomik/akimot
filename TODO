@@ -22,6 +22,7 @@
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [1, uct]  history has a fixed size - change to dynamic + reallocation
 [3,board] refactor board loading - use fromcompactstring
+[1, *] add init to repository
   === Done  ===
   [28.11][3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
   [29.11][3, uct] time control should be part of engine not uct 

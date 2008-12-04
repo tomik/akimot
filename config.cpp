@@ -17,12 +17,14 @@ Config::Config()
   fnInput_ = OptionString("i","input","input file - in combination with -g", OT_STRING, "");
   fnAeiInit_ = OptionString("a","aeiinit","Aei init file", OT_STRING, "");
   benchmarkMode_ = OptionBool("b","benchmark","runs in benchmarkModeing mode",OT_BOOL_POS, false);
+  localMode_ = OptionBool("l","local","runs in localMode - for debugging",OT_BOOL_POS, false);
   getMoveMode_ = OptionBool("g","getmove","runs in getMove mode",OT_BOOL_POS, false);
 
   options_.clear();
   options_.push_back(&fnAeiInit_);
   options_.push_back(&fnInput_);
   options_.push_back(&benchmarkMode_);
+  options_.push_back(&localMode_);
   options_.push_back(&getMoveMode_);
 
 }

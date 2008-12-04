@@ -84,6 +84,7 @@ class Config
     OptionString fnInput_;
     OptionBool benchmarkMode_; 
     OptionBool getMoveMode_; 
+    OptionBool  localMode_;
 
   public:
     Config();
@@ -93,6 +94,7 @@ class Config
     bool parseValue(string);
 
     bool benchmarkMode() { return benchmarkMode_.getValue(); }
+    bool localMode() { return localMode_.getValue(); }
     bool getMoveMode() { return getMoveMode_.getValue(); }
     string fnAeiInit() { return fnAeiInit_.getValue(); }
     string fnInput() { return fnInput_.getValue(); }

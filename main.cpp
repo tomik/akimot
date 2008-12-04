@@ -40,7 +40,15 @@ int main(int argc, char *argv[])
 
   //aei protocol;
 
-  Aei aei;
+  Aei* aei;
+
+  if (config.localMode()){
+    //use extended aei command set
+    aei = new Aei(AC_EXT);
+  } else
+  {
+    aei = new Aei();
+  }
 
   if (config.benchmarkMode()){
     Benchmark benchmark;
@@ -49,9 +57,9 @@ int main(int argc, char *argv[])
   }
   
   if (config.fnAeiInit() != "")
-    aei.initFromFile(config.fnAeiInit());
+    aei->initFromFile(config.fnAeiInit());
 
-  aei.runLoop();
+  aei->runLoop();
   return 0;
 
 }

@@ -16,13 +16,16 @@
 #define STR_OPTION_VALUE "value"
 #define STR_UNKNOWN_OPTION "unknown option "
 #define STR_GO "go"
+#define STR_GO_NO_THREAD "gonothread"
 #define STR_PONDER "ponder"
 #define STR_INFINITE "infinite"
 #define STR_STOP "stop"
 #define STR_MAKE_MOVE "makemove"
+#define STR_MAKE_MOVE_REC "makemoverec"
 #define STR_BEST_MOVE "bestmove"
 #define STR_QUIT "quit"
 #define STR_BYE "bye"
+#define STR_DUMP "dump"
 
 #define STR_TC_MOVE "tcmove"
 #define STR_TC_RESERVE "tcreserve"
@@ -38,9 +41,9 @@
 #define STR_TC_LAST_MOVE_USED "lastmoveused"
 #define STR_TC_MOVE_USED "tcmoveused"
 
-#define STR_LOG_ERROR "log Error:"
-#define STR_LOG_WARNING "log Warning:"
-#define STR_LOG_DEBUG "log Debug:"
+#define STR_LOG_ERROR "log Error: "
+#define STR_LOG_WARNING "log Warning: "
+#define STR_LOG_DEBUG "log Debug: "
 #define STR_LOG_INFO "log "
 
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
@@ -60,6 +63,15 @@
 AeiRecord::AeiRecord(string command, aeiState_e state, aeiState_e nextState, aeiAction_e action):
   state_(state), command_(command), nextState_(nextState), action_(action)
 {
+  commandSet_ = AC_STD;
+}
+
+//--------------------------------------------------------------------- 
+
+AeiRecord::AeiRecord(string command, aeiState_e state,
+                        aeiState_e nextState, aeiAction_e action, aeiCommandSet_e commandSet):
+  state_(state), command_(command), nextState_(nextState), action_(action), commandSet_(commandSet)
+{
 }
 
 //--------------------------------------------------------------------- 
@@ -67,40 +79,17 @@ AeiRecord::AeiRecord(string command, aeiState_e state, aeiState_e nextState, aei
 //--------------------------------------------------------------------- 
 
 Aei::Aei()
+{ 
+  init();
+
+}
+
+//--------------------------------------------------------------------- 
+
+Aei::Aei(aeiCommandSet_e commandSet)
 {
-  records_.clear();
-  records_.push_back(AeiRecord(STR_AEI, AS_OPEN, AS_MAIN, AA_OPEN));
-  records_.push_back(AeiRecord(STR_READY, AS_ALL, AS_SAME, AA_READY));
-  records_.push_back(AeiRecord(STR_QUIT, AS_ALL, AS_SAME, AA_QUIT));
-  records_.push_back(AeiRecord(STR_NEW_GAME, AS_MAIN, AS_SAME, AA_NEW_GAME));
-  records_.push_back(AeiRecord(STR_SET_POSITION, AS_MAIN, AS_SAME, AA_SET_POSITION));
-  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_MAIN, AS_SAME, AA_SET_POSITION_FILE));
-  records_.push_back(AeiRecord(STR_SET_OPTION, AS_ALL, AS_SAME, AA_SET_OPTION));
-  records_.push_back(AeiRecord(STR_GO, AS_MAIN, AS_SEARCH, AA_GO));
-  records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_MAIN, AA_STOP));
-  records_.push_back(AeiRecord(STR_STOP, AS_PONDER, AS_MAIN, AA_STOP));
-  //TODO MAKE_MOVE might come also during search ( pondering ) 
-  //should end pondering and make move, no output !
-  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_MAIN, AS_SAME, AA_MAKE_MOVE));
-  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_PONDER, AS_MAIN, AA_MAKE_MOVE));
-
-  timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
-  timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
-  timeControls_.push_back(timeControlPair(STR_TC_PERCENT, TC_PERCENT));
-  timeControls_.push_back(timeControlPair(STR_TC_MAX, TC_MAX));
-  timeControls_.push_back(timeControlPair(STR_TC_TOTAL, TC_TOTAL));
-  timeControls_.push_back(timeControlPair(STR_TC_TURNS, TC_TURNS));
-  timeControls_.push_back(timeControlPair(STR_TC_TURN_TIME, TC_TURN_TIME));
-  timeControls_.push_back(timeControlPair(STR_TC_W_RESERVE, TC_W_RESERVE));
-  timeControls_.push_back(timeControlPair(STR_TC_B_RESERVE, TC_B_RESERVE));
-  timeControls_.push_back(timeControlPair(STR_TC_W_USED, TC_W_USED));
-  timeControls_.push_back(timeControlPair(STR_TC_B_USED, TC_B_USED));
-  timeControls_.push_back(timeControlPair(STR_TC_LAST_MOVE_USED, TC_LAST_MOVE_USED));
-  timeControls_.push_back(timeControlPair(STR_TC_MOVE_USED, TC_MOVE_USED));
-
-  state_ = AS_OPEN;
-  board_ = new Board();
-  engine_ = new Engine();
+  init();
+  commandSet_ = commandSet;
 }
 
 //--------------------------------------------------------------------- 
@@ -140,8 +129,10 @@ void Aei::initFromFile(string fn)
       return; 
     }
 
-    while (f.good()){
+    while (! f.eof()){
       getline(f, line);
+      if (! line.length())
+        continue;
       logRaw("received: %s", line.c_str());
       handleInput(line);
     }
@@ -151,6 +142,50 @@ void Aei::initFromFile(string fn)
     return; 
   }
 
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::init()
+{
+
+  records_.clear();
+  records_.push_back(AeiRecord(STR_AEI, AS_OPEN, AS_MAIN, AA_OPEN));
+  records_.push_back(AeiRecord(STR_READY, AS_ALL, AS_SAME, AA_READY));
+  records_.push_back(AeiRecord(STR_QUIT, AS_ALL, AS_SAME, AA_QUIT));
+  records_.push_back(AeiRecord(STR_NEW_GAME, AS_MAIN, AS_SAME, AA_NEW_GAME));
+  records_.push_back(AeiRecord(STR_SET_POSITION, AS_MAIN, AS_SAME, AA_SET_POSITION));
+  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_MAIN, AS_SAME, AA_SET_POSITION_FILE));
+  records_.push_back(AeiRecord(STR_SET_OPTION, AS_ALL, AS_SAME, AA_SET_OPTION));
+  records_.push_back(AeiRecord(STR_GO, AS_MAIN, AS_SEARCH, AA_GO));
+  records_.push_back(AeiRecord(STR_GO_NO_THREAD, AS_MAIN, AS_SAME, AA_GO_NO_THREAD, AC_EXT));
+  records_.push_back(AeiRecord(STR_STOP, AS_SEARCH, AS_MAIN, AA_STOP));
+  records_.push_back(AeiRecord(STR_STOP, AS_PONDER, AS_MAIN, AA_STOP));
+  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_MAIN, AS_SAME, AA_MAKE_MOVE));
+  records_.push_back(AeiRecord(STR_MAKE_MOVE, AS_PONDER, AS_MAIN, AA_MAKE_MOVE));
+  //makes move recommended from last search
+  records_.push_back(AeiRecord(STR_MAKE_MOVE_REC, AS_MAIN, AS_SAME, AA_MAKE_MOVE_REC, AC_EXT));
+  //board dump
+  records_.push_back(AeiRecord(STR_DUMP, AS_MAIN, AS_SAME, AA_DUMP, AC_EXT));
+
+  timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
+  timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_PERCENT, TC_PERCENT));
+  timeControls_.push_back(timeControlPair(STR_TC_MAX, TC_MAX));
+  timeControls_.push_back(timeControlPair(STR_TC_TOTAL, TC_TOTAL));
+  timeControls_.push_back(timeControlPair(STR_TC_TURNS, TC_TURNS));
+  timeControls_.push_back(timeControlPair(STR_TC_TURN_TIME, TC_TURN_TIME));
+  timeControls_.push_back(timeControlPair(STR_TC_W_RESERVE, TC_W_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_B_RESERVE, TC_B_RESERVE));
+  timeControls_.push_back(timeControlPair(STR_TC_W_USED, TC_W_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_B_USED, TC_B_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_LAST_MOVE_USED, TC_LAST_MOVE_USED));
+  timeControls_.push_back(timeControlPair(STR_TC_MOVE_USED, TC_MOVE_USED));
+
+  state_ = AS_OPEN;
+  commandSet_ = AC_STD;
+  board_ = new Board();
+  engine_ = new Engine();
 }
 
 //--------------------------------------------------------------------- 
@@ -175,7 +210,8 @@ void Aei::handleInput(const string& line)
     return;
 
   for (it = records_.begin(); it != records_.end(); it++)
-    if ((it->state_ == state_ || it->state_ == AS_ALL) && it->command_ == command){
+    if ((it->state_ == state_ || it->state_ == AS_ALL) 
+        && it->command_ == command && commandSet_ >= it->commandSet_){
       record = &(*it); 
       break;
     }
@@ -223,15 +259,29 @@ void Aei::handleInput(const string& line)
                   }
                   startSearch(getStreamRest(ssLine));
                   break;
+    case AA_GO_NO_THREAD: 
+                  engine_->timeManager()->resetSettings();
+                  engine_->doSearch(board_);
+                  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
+                  break;
     case AA_STOP: 
                   stopSearch();
+                  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
                   break;
     case AA_MAKE_MOVE:
                   if (oldState == AS_PONDER){
                     stopSearch(false);
                   }
                   board_->makeMove(getStreamRest(ssLine));
+                  aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
                   break;
+    case AA_MAKE_MOVE_REC:
+                  aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
+                  board_->makeMove(engine_->getBestMove());
+                  break;
+    case AA_DUMP:
+                 aeiLog(board_->toString(), AL_DEBUG);
+                 break;
     case AA_QUIT: 
                   quit();
                   break;
@@ -285,12 +335,13 @@ void Aei::handleOption(const string& commandRest)
 void Aei::startSearch(const string& arg)
 {
   //int rc;
+  engine_->timeManager()->resetSettings();
   if (arg == STR_PONDER || arg == STR_INFINITE)
-    engine_->timeManager()->setNoTimeLimit(true);
+    engine_->timeManager()->setNoTimeLimit();
   //no mutex is needed - this is done only when no engineThread runs
   while( pthread_create(&engineThread_, NULL, Aei::SearchInThreadWrapper, this))
-    ;
-/*
+    aeiLog("Thread error occured - trying again.", AL_WARNING);
+    /*
   if (rc){ //allocating thread failed
     aeiLog("Fatal thread error occured.", AL_ERROR);
     quit();
@@ -303,13 +354,15 @@ void Aei::startSearch(const string& arg)
 void Aei::searchInThread()
 {
   //REFACTOR ! 
-  sendMoveAfterSearch_ = true;
+  //sendMoveAfterSearch_ = true;
   engine_->doSearch(board_);
-  engine_->timeManager()->setNoTimeLimit(false);
+  handleInput(STR_STOP);
+    /*
   if (sendMoveAfterSearch_){
     send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
-    state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?  
   } 
+  state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?  
+    */
 }
 
 //--------------------------------------------------------------------- 
@@ -327,12 +380,14 @@ void Aei::stopSearch(bool sendBestMove )
 {
   void* status;
 
-  if (!sendBestMove)
-    sendMoveAfterSearch_ = false;
+  //if (!sendBestMove)
+  // sendMoveAfterSearch_ = false;
   engine_->requestSearchStop();
   pthread_join(engineThread_, &status);
+  if (sendBestMove){
+    send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
+  } 
 }
-
 
 //--------------------------------------------------------------------- 
 
