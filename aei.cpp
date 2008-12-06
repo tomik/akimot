@@ -217,7 +217,7 @@ void Aei::handleInput(const string& line)
     }
 
   if (! record) {
-    aeiLog(STR_INVALID_COMMAND, AL_ERROR);
+    aeiLog(string(STR_INVALID_COMMAND) + string(" ") + command, AL_ERROR);
     return;
   }
 
@@ -353,16 +353,15 @@ void Aei::startSearch(const string& arg)
 
 void Aei::searchInThread()
 {
-  //REFACTOR ! 
-  //sendMoveAfterSearch_ = true;
+  Timer t;
+
+  t.start();
   engine_->doSearch(board_);
   handleInput(STR_STOP);
-    /*
-  if (sendMoveAfterSearch_){
-    send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
-  } 
-  state_ = AS_MAIN; //after search switch back to GAME mood - TODO mutex this?  
-    */
+  stringstream ss;
+  ss <<  "Time spent in search: " << t.elapsed() << "s";
+  aeiLog(ss.str(), AL_DEBUG);
+
 }
 
 //--------------------------------------------------------------------- 
