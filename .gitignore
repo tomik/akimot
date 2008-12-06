@@ -14,3 +14,4 @@ site_scons
 paths.py
 *.pyc
 opt_akimot
+other/ats/log

@@ -35,6 +35,16 @@ int str2int(const string& str)
 
 //--------------------------------------------------------------------- 
 
+float str2float(const string& str)
+{
+  stringstream ss(str);
+  float f;
+  ss >> f;
+  return f;
+}
+
+//--------------------------------------------------------------------- 
+
 string trimRight(const string& s)
 {
   string ret = s;

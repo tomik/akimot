@@ -57,6 +57,11 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
 int str2int(const string& str);
 
 /**
+ * String to float converter.
+ */
+float str2float(const string& str);
+
+/**
  * Spaces trim from right.
  */
 string trimRight(const string& str);

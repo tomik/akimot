@@ -23,6 +23,7 @@ using std::sqrt;
 
 #define MATURE_LEVEL  20
 #define EXPLORE_RATE 0.2
+#define FPU 0
 
 //how much time engine has for "clock clicking"
 #define CLOCK_CLICK_RESERVE 0.1
@@ -428,12 +429,12 @@ class TimeManager
      * @param tc Time control identifier - used as index into timeControls array.
      * @param value Value for option in seconds (all controal are aligned to secs). 
      */
-    void setTimeControl(timeControl_e tc, int value);
+    void setTimeControl(timeControl_e tc, float value);
 
     /**
      * Time Control getter.
      */
-    int getTimeControl(timeControl_e tc);
+    float getTimeControl(timeControl_e tc);
 
     /**
      * Sets time unlimited search. 
@@ -447,7 +448,7 @@ class TimeManager
 
   private:
     Timer timer;
-    int timeControls_[TIME_CONTROLS_NUM];
+    float timeControls_[TIME_CONTROLS_NUM];
     bool noTimeLimit_;
   
 };

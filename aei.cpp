@@ -264,6 +264,18 @@ void Aei::handleInput(const string& line)
                   }
                   break;
     case AA_GO:    
+                /*
+                  for (int i = 0; i < 5000; i++){
+                      startSearch(lineRest);
+                      stopSearch();
+                      stringstream ss; 
+                      ss << i;
+                      aeiLog(ss.str(), AL_DEBUG);
+                  }
+                  break;
+
+                */
+
                   if (lineRest == STR_PONDER){
                     state_ = AS_PONDER;
                   }
@@ -333,7 +345,7 @@ void Aei::handleOption(const string& commandRest)
   TimeControlList::iterator it;
   for (it = timeControls_.begin(); it != timeControls_.end(); it++)
     if (it->first == option){
-      engine_->timeManager()->setTimeControl(it->second, str2int(value));
+      engine_->timeManager()->setTimeControl(it->second, str2float(value));
       return;
     }
 
@@ -344,19 +356,29 @@ void Aei::handleOption(const string& commandRest)
 
 void Aei::startSearch(const string& arg)
 {
-  //int rc;
+  int rc;
   engine_->timeManager()->resetSettings();
   if (arg == STR_PONDER || arg == STR_INFINITE)
     engine_->timeManager()->setNoTimeLimit();
   //no mutex is needed - this is done only when no engineThread runs
-  while( pthread_create(&engineThread_, NULL, Aei::SearchInThreadWrapper, this))
+  /*while( pthread_create(&engineThread_, NULL, Aei::SearchInThreadWrapper, this)){
+    assert(false);
     aeiLog("Thread error occured - trying again.", AL_WARNING);
-    /*
+  }
+    */
+
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  rc = pthread_create(&engineThread_, &attr, Aei::SearchInThreadWrapper, this);
+
+
   if (rc){ //allocating thread failed
-    aeiLog("Fatal thread error occured.", AL_ERROR);
+    stringstream ss;
+    ss << "Fatal thread error no. " << rc << " when creating.";
+    aeiLog(ss.str(), AL_ERROR);
     quit();
   }
-*/
 }
 
 //--------------------------------------------------------------------- 
@@ -388,14 +410,23 @@ void * Aei::SearchInThreadWrapper(void* instance)
 void Aei::stopSearch(bool sendBestMove )
 {
   void* status;
+  int rc;
 
   //if (!sendBestMove)
   // sendMoveAfterSearch_ = false;
   engine_->requestSearchStop();
-  pthread_join(engineThread_, &status);
+  rc=pthread_join(engineThread_, &status);
+  if (rc){
+    stringstream ss;
+    ss << "Fatal thread error no. " << rc << " when joining.";
+    aeiLog(ss.str(), AL_ERROR);
+    pthread_detach(engineThread_);
+    //quit();
+  }
+    
   if (sendBestMove){
     send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
-  } 
+  }   
 }
 
 //--------------------------------------------------------------------- 

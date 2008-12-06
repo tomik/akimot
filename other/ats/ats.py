@@ -23,8 +23,8 @@ from aei.aei import StdioEngine, EngineController
 
 import tests
 
-CYCLES = 100
-TIME_PER_TEST = 1
+CYCLES = 500
+TIME_PER_TEST = 0.2
 
 class Test(object):
     """
@@ -80,13 +80,14 @@ class Suite:
     def run(self):
         print("Running the test suite...") 
         passed = {}
-        #i = float(0)
         #unit_total = CYCLES * len(self.tests)
         #unit = float(unit_total) / 100
         #unit_finished = 0
+        i = 0
         for c in xrange(CYCLES):
             for test in self.tests:
-                #i += 1 
+                i += 1 
+                log.debug("trial %d", i) 
                 if test.do_test(self.engine):
                     passed[test] = passed.get(test, 0) + 1 
                     log.debug("%s passed.", test) 

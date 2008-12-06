@@ -25,8 +25,8 @@ Node::Node(const Step& step)
   sibling_    = NULL;
   father_     = NULL;  
   bestCached_ = NULL;
-  visits_     = 0;
-  value_      = 0;
+  visits_     = FPU;
+  value_      = FPU;
 
   step_ = step;
   assert(IS_PLAYER(step.getStepPlayer()));
@@ -789,7 +789,7 @@ double TimeManager::secondsElapsed()
   
 //---------------------------------------------------------------------
 
-void TimeManager::setTimeControl(timeControl_e tc, int value)
+void TimeManager::setTimeControl(timeControl_e tc, float value)
 {
   assert(tc >= 0 && tc < TIME_CONTROLS_NUM);
 
@@ -799,7 +799,7 @@ void TimeManager::setTimeControl(timeControl_e tc, int value)
 
 //--------------------------------------------------------------------- 
 
-int TimeManager::getTimeControl(timeControl_e tc)
+float TimeManager::getTimeControl(timeControl_e tc)
 {
   assert(tc >= 0 && tc < TIME_CONTROLS_NUM);
 
