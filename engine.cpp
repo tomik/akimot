@@ -757,6 +757,13 @@ void TimeManager::startClock()
   timer.start();
 }
 
+//--------------------------------------------------------------------- 
+
+void TimeManager::stopClock()
+{
+  timer.stop();
+}
+
 //---------------------------------------------------------------------
 
 bool TimeManager::timeUp()
@@ -850,9 +857,10 @@ void Engine::doSearch(Board* board)
   while (! timeManager_->timeUp() && ! stopRequest_)
     uct_->doPlayout();
 
-// logRaw(uct_->statisticsToString(timeManager_->secondsElapsed()));
-// logRaw(board->toString());
+  timeManager_->stopClock();
   bestMove_ = uct_->getBestMove(); 
+  //TODO change
+  winRatio_ = uct_->getBestMoveValue();
   statistics_ = uct_->statisticsToString(timeManager_->secondsElapsed());
   delete uct_;
 }
@@ -877,6 +885,13 @@ string Engine::getStatistics()
 string Engine::getBestMove()
 {
   return bestMove_; 
+}
+
+//--------------------------------------------------------------------- 
+
+float Engine::getWinRatio()
+{
+  return winRatio_;
 }
 
 //---------------------------------------------------------------------

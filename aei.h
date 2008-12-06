@@ -157,6 +157,11 @@ class Aei
     void aeiLog(const string& msg, const aeiLogLevel_e logLevel) const;
 
     /**
+     * Sending additional information.
+     */
+    void sendInfo(const string& type, const string& value) const;
+
+    /**
      * Quit the program. 
      */
     void quit() const;

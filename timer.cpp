@@ -5,12 +5,14 @@
 
 Timer::Timer()
 {
+  elapsed_ = 0;
 }
 
 //--------------------------------------------------------------------- 
 
 Timer::Timer(double swTime): swTime_(swTime)
 {
+  elapsed_ = 0;
 }
 
 //--------------------------------------------------------------------- 
@@ -40,11 +42,25 @@ void Timer::start()
 
 //--------------------------------------------------------------------- 
 
-double Timer::elapsed()
+void Timer::stop()
 {
   timeval t;
   gettimeofday(&t, NULL); 
-  return toSeconds(t) - start_; 
+
+  elapsed_ = toSeconds(t) - start_; 
+}
+
+//--------------------------------------------------------------------- 
+
+double Timer::elapsed()
+{
+  #ifdef NDEBUG
+    timeval t;
+    gettimeofday(&t, NULL);
+    assert( toSeconds(t) - start_ >= elapsed_); 
+  #endif
+
+  return elapsed_;
 }
 
 //--------------------------------------------------------------------- 

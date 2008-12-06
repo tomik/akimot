@@ -398,6 +398,11 @@ class TimeManager
     void  startClock();
 
     /**
+     * Stops the clock. 
+     */
+    void stopClock();
+
+    /**
      * Checks the clock.
      *
      * @return True if time is up, false otherwise.
@@ -474,6 +479,11 @@ class Engine
   	string getBestMove();		
 
     /**
+     * Get position win Ratio. 
+     */
+    float getWinRatio();
+
+    /**
      * After move statistic string.
      */
   	string getStatistics();		
@@ -486,9 +496,11 @@ class Engine
   private:
     Uct* uct_;
     TimeManager* timeManager_;
-    string bestMove_;
-    string statistics_;
     bool stopRequest_;
+
+    string bestMove_;
+    float winRatio_;
+    string statistics_;
 
 
 };

@@ -35,6 +35,7 @@ void Benchmark::benchmarkEval()
     eval.evaluate(board_);
   }
 
+  timer.stop();
 	timeTotal = timer.elapsed(); 
 
   logRaw("Evaluation performance: \n  %d evals\n  %3.2f seconds\n  %d eps\n", 
@@ -65,6 +66,7 @@ void Benchmark::benchmarkPlayout()
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
   }
 
+  timer.stop();
 	timeTotal = timer.elapsed(); 
   logRaw("Playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
             i, timeTotal, int ( float(i) / timeTotal),int(playoutAvgLen/ float (i)));
@@ -110,6 +112,7 @@ void Benchmark::benchmarkUct()
     } 
   }
 
+  timer.stop();
   timeTotal = timer.elapsed();
   logRaw("Uct performance: \n  %d walks\n  %3.2f seconds\n  %d wps\n  %d nodes\n", 
             walks, timeTotal, int ( float(walks) / timeTotal), i);

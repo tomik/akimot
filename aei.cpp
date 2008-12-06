@@ -27,6 +27,13 @@
 #define STR_BYE "bye"
 #define STR_DUMP "dump"
 
+#define STR_INFO "info"  
+#define STR_INFO_TIME "time" 
+#define STR_INFO_WIN_RATIO "winratio"
+//TODO 
+#define STR_INFO_DEPTH "depth"
+#define STR_INFO_NODES "nodes"
+
 #define STR_TC_MOVE "tcmove"
 #define STR_TC_RESERVE "tcreserve"
 #define STR_TC_PERCENT "tcpercent"
@@ -44,7 +51,7 @@
 #define STR_LOG_ERROR "log Error: "
 #define STR_LOG_WARNING "log Warning: "
 #define STR_LOG_DEBUG "log Debug: "
-#define STR_LOG_INFO "log "
+#define STR_LOG_INFO "log Info: "
 
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
 
@@ -353,15 +360,15 @@ void Aei::startSearch(const string& arg)
 
 void Aei::searchInThread()
 {
-  Timer t;
-
-  t.start();
   engine_->doSearch(board_);
   handleInput(STR_STOP);
   stringstream ss;
-  ss <<  "Time spent in search: " << t.elapsed() << "s";
-  aeiLog(ss.str(), AL_DEBUG);
-
+  //send info from search
+  ss << engine_->timeManager()->secondsElapsed(); 
+  sendInfo(STR_INFO_TIME, ss.str());
+  ss.str(""); 
+  ss << engine_->getWinRatio();
+  sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
 }
 
 //--------------------------------------------------------------------- 
@@ -412,6 +419,15 @@ void Aei::aeiLog(const string& msg, const aeiLogLevel_e logLevel) const
                   break;
   }
   send(completeMsg);
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::sendInfo(const string& type, const string& value) const
+{
+  stringstream ss;
+  ss << STR_INFO << " " << type << " " <<  value;
+  send(ss.str());
 }
 
 //--------------------------------------------------------------------- 

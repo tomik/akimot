@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <iostream>
 #include <ostream>
+#include <cassert>
 
 #define MICRO_IN_SEC 1000000
 
@@ -42,9 +43,14 @@ class Timer
      * Starts the timer. 
      */
     void start();
+    
+    /**
+     * Stops the timer. 
+     */
+    void stop();
 
     /**
-     * Time elapsed between since start. 
+     * Time elapsed since start. 
      */
     double elapsed(); 
 
@@ -66,4 +72,7 @@ class Timer
 
     /** Stop watch time. */
     double swTime_;
+
+    /** Elapsed time.*/
+    double elapsed_;
 };
