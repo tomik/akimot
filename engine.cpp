@@ -679,6 +679,13 @@ float Uct::getBestMoveValue()
 
 //--------------------------------------------------------------------- 
 
+float Uct::getWinRatio()
+{
+  return (bestMoveNode_->getValue() + 1 )/2;
+}
+
+//--------------------------------------------------------------------- 
+
 int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 {
   if IS_PLAYER(playBoard->getWinner())
@@ -860,7 +867,7 @@ void Engine::doSearch(Board* board)
   timeManager_->stopClock();
   bestMove_ = uct_->getBestMove(); 
   //TODO change
-  winRatio_ = uct_->getBestMoveValue();
+  winRatio_ = uct_->getWinRatio();
   statistics_ = uct_->statisticsToString(timeManager_->secondsElapsed());
   delete uct_;
 }

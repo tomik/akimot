@@ -54,7 +54,7 @@ void Timer::stop()
 
 double Timer::elapsed()
 {
-  #ifdef NDEBUG
+  #ifndef NDEBUG
     timeval t;
     gettimeofday(&t, NULL);
     assert( toSeconds(t) - start_ >= elapsed_); 

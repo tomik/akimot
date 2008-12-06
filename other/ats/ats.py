@@ -8,18 +8,23 @@ import sys
 #for importing aei
 sys.path.append('..')
 
+logging.basicConfig(
+        level = logging.DEBUG,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+        #stream = sys.stdout,
+         filename = 'log',
+        )
+
+log = logging.getLogger("ats")
+
 from aei import board
 from aei.aei import StdioEngine, EngineController 
 
 import tests
 
-
-logging.basicConfig(level = logging.DEBUG,
-        #filename = logfilename,
-        stream = sys.stderr, 
-        datefmt="%Y-%m-%d %H:%M:%S",
-        format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-        )
+CYCLES = 100
+TIME_PER_TEST = 1
 
 class Test(object):
     """
@@ -30,31 +35,38 @@ class Test(object):
         self.mod = __import__(self.mod_name) 
 
     def do_test(self, engine):
-        logging.info("Doing the test %s." % self) 
+        log.debug("Doing the test %s." % self) 
         lines = self.mod.pos.strip('\n').split('\n')
         movenum, pos = board.parse_long_pos(lines)
 
-        print pos.to_long_str()
+        log.debug('\n' + pos.to_long_str())
 
-        engine.setoption("tcmove", 2)
+        engine.setoption("tcmove", TIME_PER_TEST)
+        engine.newgame()
         engine.setposition(pos)
         engine.go()
 
         while True:
             resp = engine.get_response()
             if resp.type == "info":
-                print resp.message
+                log.debug(resp.message)
+                lmsg = resp.message.split(' ')
+                if lmsg[0] == 'winratio':
+                    winratio = float(lmsg[1])
+                    break
             elif resp.type == "log":
-                print "log: %s" % resp.message
+                log.debug( "log: %s" % resp.message)
             elif resp.type == "bestmove":
-                print "bestmove: %s" % resp.move
-                break
+                log.debug( "bestmove: %s" % resp.move)
 
-        engine.quit()
-        engine.cleanup()
+
+        if winratio >= self.mod.win_ratio:
+            return True
+        return False
 
     def __str__(self):
-        return "Test %s: %s." % (self.mod_name ,self.mod.__doc__)
+        return "%s" % (self.mod_name)
+        #return "Test %s: %s." % (self.mod_name ,self.mod.__doc__)
 
 
 class Suite:
@@ -63,12 +75,35 @@ class Suite:
     """
     def __init__(self, test_files, engine_cmd):
         self.tests = [ Test(test_file) for test_file in test_files]
-        self.engine = EngineController(StdioEngine(engine_cmd, logging))
+        self.engine = EngineController(StdioEngine(engine_cmd, log))
 
     def run(self):
-       logging.info("Running the test suite.") 
-       for test in self.tests:
-           test.do_test(self.engine)
+        print("Running the test suite...") 
+        passed = {}
+        #i = float(0)
+        #unit_total = CYCLES * len(self.tests)
+        #unit = float(unit_total) / 100
+        #unit_finished = 0
+        for c in xrange(CYCLES):
+            for test in self.tests:
+                #i += 1 
+                if test.do_test(self.engine):
+                    passed[test] = passed.get(test, 0) + 1 
+                    log.debug("%s passed.", test) 
+                else:
+                    log.debug("%s failed.", test) 
+                #for p in xrange(i/unit - unit_finished):
+                #    unit_finished += 1
+                #    print r"-" 
+                
+        passed_num = sum(passed.values())
+        for test in self.tests:
+            print ("%s passed %d/%d times." % (test, passed.get(test,0), CYCLES))
+        print("Passed %d/%d tests." % (passed_num, CYCLES * len(self.tests)))
+    
+    def __del__(self):
+        self.engine.quit()
+        self.engine.cleanup()
 
 
 if __name__ == '__main__':
@@ -77,14 +112,14 @@ if __name__ == '__main__':
     try:
         config_file = sys.argv[1]
     except IndexError:
-        print "Usage: %s config_file." % sys.argv[0]
+        log.error("Usage: %s config_file." % sys.argv[0])
         sys.exit(1)
       
     config = SafeConfigParser()
     try:
         config.readfp(open(config_file, 'rU'))
     except IOError:
-        print "Could not open configuration file: %s." % config_file
+        log.error("Could not open configuration file: %s." % config_file)
         sys.exit(1)
     
     engine = config.get("global", "engine")

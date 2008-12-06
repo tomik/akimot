@@ -4,6 +4,7 @@ import paths
 CXX_TEST_PATH = paths.CXX_TEST_PATH
 CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
 AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
+AKIMOT_ATS_DIR = paths.AKIMOT_ATS_DIR
 AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
 
 AKIMOT_LIBS = ['pthread']
@@ -49,6 +50,8 @@ if do_build:
   akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
   env.Install(AKIMOT_AEI_DIR, akimot)
   env.Alias('aei', AKIMOT_AEI_DIR)
+  env.Install(AKIMOT_ATS_DIR, akimot)
+  env.Alias('ats', AKIMOT_ATS_DIR)
   env.Install(AKIMOT_MATCH_DIR, akimot)
   env.Alias('match', AKIMOT_MATCH_DIR)
   tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 

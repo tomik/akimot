@@ -337,6 +337,13 @@ class Uct
      */
     float getBestMoveValue();
 
+    /**
+     * Estimated win ratio.
+     *
+     * Win ratio(percentage) ~ chance of winning for player to move.
+     */
+    float getWinRatio();
+
   private:
     /**
      * Decide winner of the game. 

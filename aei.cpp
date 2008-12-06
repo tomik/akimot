@@ -208,6 +208,7 @@ void Aei::handleInput(const string& line)
   ssLine >> command; 
   response_ = "";
   aeiState_e oldState; 
+  string lineRest;
   
   AeiRecord* record = NULL;
   AeiRecordList::iterator it; 
@@ -232,6 +233,8 @@ void Aei::handleInput(const string& line)
   if (record->nextState_ != AS_SAME)
     state_ = record->nextState_;
 
+  lineRest = getStreamRest(ssLine);
+
   aeiAction_e action = record->action_;
   switch (action) {
     case AA_OPEN:
@@ -245,26 +248,26 @@ void Aei::handleInput(const string& line)
                   board_->initNewGame(); 
                   break;
     case AA_SET_OPTION:
-                  handleOption(getStreamRest(ssLine));
+                  handleOption(lineRest);
                   break;
     case AA_SET_POSITION_FILE: 
-                  if (! board_->initFromPosition(getStreamRest(ssLine).c_str())){
+                  if (! board_->initFromPosition(lineRest.c_str())){
                     aeiLog(STR_LOAD_FAIL, AL_ERROR);
                     quit();
                   }
                   break;
     case AA_SET_POSITION: 
                   board_->initNewGame();
-                  if (! board_->initFromPositionCompactString(getStreamRest(ssLine))){
+                  if (! board_->initFromPositionCompactString(lineRest)){
                     aeiLog(STR_LOAD_FAIL, AL_ERROR);
                     quit();
                   }
                   break;
     case AA_GO:    
-                  if (getStreamRest(ssLine) == STR_PONDER){
+                  if (lineRest == STR_PONDER){
                     state_ = AS_PONDER;
                   }
-                  startSearch(getStreamRest(ssLine));
+                  startSearch(lineRest);
                   break;
     case AA_GO_NO_THREAD: 
                   engine_->timeManager()->resetSettings();
@@ -279,8 +282,8 @@ void Aei::handleInput(const string& line)
                   if (oldState == AS_PONDER){
                     stopSearch(false);
                   }
-                  board_->makeMove(getStreamRest(ssLine));
-                  aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
+                  board_->makeMove(lineRest);
+                  aeiLog("Making move: " + lineRest, AL_DEBUG);
                   break;
     case AA_MAKE_MOVE_REC:
                   aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
