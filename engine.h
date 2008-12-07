@@ -51,6 +51,163 @@ enum nodeType_e {NODE_MAX, NODE_MIN};
 // nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
 // NODE_MIN ( ~ siler node )  where we maximize -value + uncertainty_term
 
+
+/**
+ * Time management.
+ *
+ * Accepts time settings and takes care of time management durint the game.
+ */
+class TimeManager
+{
+  public:
+    TimeManager();
+    
+    /**
+     * Starts clock for given move. 
+     */
+    void  startClock();
+
+    /**
+     * Stops the clock. 
+     */
+    void stopClock();
+
+    /**
+     * Checks the clock.
+     *
+     * @return True if time is up, false otherwise.
+     * TODO: Searcher might provide importance of time addition.
+     */
+    bool timeUp();
+
+    /**
+     *  Seconds elapsed since last startClock().
+     */
+    double secondsElapsed(); 
+
+    /**
+     * Setting time controls from aei.
+     *
+     * @param tc Time control identifier - used as index into timeControls array.
+     * @param value Value for option in seconds (all controal are aligned to secs). 
+     */
+    void setTimeControl(timeControl_e tc, float value);
+
+    /**
+     * Time Control getter.
+     */
+    float getTimeControl(timeControl_e tc);
+
+    /**
+     * Sets time unlimited search. 
+     */
+    void setNoTimeLimit();
+    
+    /**
+     * Resets temporary settings like noTimeLimit.
+     */
+    void resetSettings();
+
+  private:
+    Timer timer;
+    float timeControls_[TIME_CONTROLS_NUM];
+    bool noTimeLimit_;
+  
+};
+
+
+/**
+ * Interface to whole search.
+ *
+ * Abstract class implementing interface memthods for search
+ * and retrieving after-search information.
+ */
+class Engine
+{
+  public:
+    Engine();
+    virtual ~Engine();
+
+    /**
+     * Returns initial setup. 
+     */
+  	string initialSetup(bool isGold) const;
+
+    /**
+     * Wrapper around searching method. 
+     */
+  	void doSearch(const Board*);		
+
+    /**
+     * Interface to crucial method implementing search.
+     */
+    virtual void searchTree(const Board*)=0;
+
+    /**
+     * Requests search stop. 
+     *
+     * Search will stop after current playout is finished.
+     */
+    void requestSearchStop();
+
+    /**
+     * TimeManager getter. 
+     */
+    TimeManager* timeManager();
+
+    /**
+     * Ponder mode setter.
+     */
+    void setPonder(bool value);
+
+    /**
+     * Ponder mode getter. 
+     */
+    bool getPonder() const;
+
+    /**
+     * Move to be performed.
+     *
+     * @return initialMove_ if it is set. 
+     *         best Move from search otherwise. 
+     */
+    virtual string getBestMove() const;
+
+    /**
+     * Interface to best move getter.
+     */
+    virtual string getBestMoveRepr() const =0;
+
+    /**
+     * Interface to get search statistics.
+     */
+    virtual string getStatistics() const =0;
+
+    /**
+     * Interface to winr ration getter. 
+     */
+    virtual float getWinRatio() const =0;
+
+  protected:
+
+    /**
+     * Check whether search should be stop.
+     *
+     * @return True if Time is up or stop reaeust returned,
+     *              otherwise false.
+     */
+    bool checkSearchStop() const;
+
+    TimeManager* timeManager_;
+    /**Flag to stop search.*/
+    bool stopRequest_;
+
+  private: 
+    string initialMove_;
+    /**Ponder mode flag.*/
+    bool ponder_;
+};
+
 /**
  * Node in uct tree. 
  */
@@ -159,8 +316,15 @@ class Tree
 
   public:
     /**
-     * Constructor with player initialization.
+     * Simple constructor.
      *
+     * Sets the root to NULL. 
+     */
+    Tree();   
+
+    /**
+     * Constructor which creates root node. 
+     * 
      * Root node is created(bottom of history stack) with given player.
      */
     Tree(player_t firstPlayer);   
@@ -171,6 +335,13 @@ class Tree
      * Recursively deletes the tree.
      */
     ~Tree();
+
+    /**
+     * Tree reset for reuse. 
+     *
+     * Old tree is dropped and new root created.
+     */
+    void reset(player_t firstPlayer);
 
     /**
      * UCT-based descend to next level.
@@ -194,7 +365,7 @@ class Tree
      * for player who owns the root and returns it's string representation 
      * to be outputted (also trap falls are outputed ... e,g. RC1n RC2n RC3x RB1n)
      */
-    string findBestMove(Node* bestFirstNode = NULL, const Board* boardGiven = NULL);
+    string findBestMoveRepr(Node* bestFirstNode, const Board* boardGiven);
 
     /**
      * Backpropagation of playout sample.
@@ -250,7 +421,6 @@ class Tree
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
     
-    Tree();
 };
 
 
@@ -302,11 +472,23 @@ class SimplePlayout
 /**
  * Uct search. 
  */
-class Uct
+class Uct:public Engine
 {
   public:
-    Uct(Board*);
+    Uct();
     ~Uct();
+
+    /**
+     * Update before every search.
+     */
+    void reset(const Board*);
+
+    /**
+     * Crucial method implementing search.
+     *
+     * Runs the doPlayout loop.
+     */
+    void searchTree(const Board*);
 
     /**
      * Does one uct-monte carlo playout. 
@@ -314,45 +496,38 @@ class Uct
      * Crucial method of search. Performs UCT descend as deep as possible and 
      * then starts the "monte carlo" playout through object SimplePlayout.
      */
-    void doPlayout();
+    void doPlayout(const Board* board);
 
     /**
      * Get uct search statistics.
-     *
-     * @param seconds Length of run of the search in seconds.
      */
-    string statisticsToString(float seconds);
-
-    /**
-     * Finds the best move. 
-    void calculateBestMove();
-     */
+    string getStatistics() const;
 
     /**
      * String representation of best move.
      */
-    string getBestMove();
+    string getBestMoveRepr() const;
 
     /**
      * Value of best move.
      */
-    float getBestMoveValue();
+    float getBestMoveValue() const;
 
     /**
      * Estimated win ratio.
      *
      * Win ratio(percentage) ~ chance of winning for player to move.
      */
-    float getWinRatio();
+    float getWinRatio() const;
 
   private:
     /**
      * Decide winner of the game. 
-     * 
-     * Always returns 1 ( GOLD wins ) or -1 (SILVER wins). If winner is not known ( no winning criteria reached )
-     * position is evaluated and biased coin si flipped to estimate the winner 
+     * @return Returns 1 ( GOLD wins ) or -1 (SILVER wins). 
+     *         If winner is not known ( no winning criteria reached ), position
+     *         is evaluated and biased coin si flipped to estimate the winner
      */
-    int decidePlayoutWinner(Board*, playoutStatus_e);
+    int decidePlayoutWinner(const Board*, playoutStatus_e) const;
 
     /**
      * Filtering steps through Transposition tables.
@@ -363,7 +538,7 @@ class Uct
      * 
      * @return Number of steps in steps array after update.
      */
-    int filterTT(StepArray& steps, uint stepsNum, Board* board);
+    int filterTT(StepArray& steps, uint stepsNum, const Board* board);
 
     /**
      * Updates Transposition tables after nodes were added. 
@@ -373,153 +548,25 @@ class Uct
      * @param nodes Dynamic List of children (retrieved by getBrother())
      * @return Number of steps in steps array after update.
      */
-    void updateTT(Node* nodeList, Board* board);
+    void updateTT(Node* nodeList, const Board* board);
 
-    Board* board_;
+    //Board* board_;
     Tree* tree_;
     Eval* eval_;
-    TT* tt_;              //!< Transposition table.
-    Node* bestMoveNode_;  //!< Pointer to the most visited last step of first move.
+    /**Transposition table.*/
+    TT* tt_;              
+    /**Pointer to the most visited last step of first move.*/
+    Node* bestMoveNode_;  
+    /**Best move string representation.*/
+    string bestMoveRepr_;  
+
     int nodesPruned_;
+    //TODO move to tree
     int nodesExpanded_;
+    //TODO move to tree
     int nodesInTheTree_;
     int playouts_;
 
-    Uct();
-    
 };
 
 
-/**
- * Time management.
- *
- * Accepts time settings and takes care of time management durint the game.
- */
-class TimeManager
-{
-  public:
-    TimeManager();
-    
-    /**
-     * Starts clock for given move. 
-     */
-    void  startClock();
-
-    /**
-     * Stops the clock. 
-     */
-    void stopClock();
-
-    /**
-     * Checks the clock.
-     *
-     * @return True if time is up, false otherwise.
-     * TODO: Searcher might provide importance of time addition.
-     */
-    bool timeUp();
-
-    /**
-     *  Seconds elapsed since last startClock().
-     */
-    double secondsElapsed(); 
-
-    /**
-     * Setting time controls from aei.
-     *
-     * @param tc Time control identifier - used as index into timeControls array.
-     * @param value Value for option in seconds (all controal are aligned to secs). 
-     */
-    void setTimeControl(timeControl_e tc, float value);
-
-    /**
-     * Time Control getter.
-     */
-    float getTimeControl(timeControl_e tc);
-
-    /**
-     * Sets time unlimited search. 
-     */
-    void setNoTimeLimit();
-    
-    /**
-     * Resets temporary settings like noTimeLimit.
-     */
-    void resetSettings();
-
-  private:
-    Timer timer;
-    float timeControls_[TIME_CONTROLS_NUM];
-    bool noTimeLimit_;
-  
-};
-
-
-/**
- * Interface to whole search. 
- */
-class Engine
-{
-  public:
-    Engine();
-    ~Engine();
-
-    /**
-     * Returns initial setup. 
-     */
-  	string initialSetup(bool isGold) const;
-
-    /**
-     * Search loop.  *
-     * Crucial method running the search.
-     */
-  	void doSearch(Board*);		
-
-    /**
-     * Requests search stop. 
-     *
-     * Search will stop after current playout is finished.
-     */
-    void requestSearchStop();
-
-    /**
-     * After search pick the best move.
-     */
-  	string getBestMove();		
-
-    /**
-     * Get position win Ratio. 
-     */
-    float getWinRatio();
-
-    /**
-     * After move statistic string.
-     */
-  	string getStatistics();		
-    
-    /**
-     * TimeManager getter. 
-     */
-    TimeManager* timeManager();
-
-    /**
-     * Ponder mode setter.
-     */
-    void setPonder(bool value);
-
-    /**
-     * Ponder mode getter. 
-     */
-    bool getPonder() const;
-
-  private:
-    Uct* uct_;
-    TimeManager* timeManager_;
-    bool stopRequest_;
-    /**Ponder mode flag.*/
-    bool ponder_;
-
-    string bestMove_;
-    float winRatio_;
-    string statistics_;
-
-};

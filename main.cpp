@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
   if (config.getMoveMode()){
 
     Board board;
-    Engine engine;
+    Engine* engine = new Uct();
 
     srand((unsigned) time(NULL));
 
@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
       return 1;
     } 
     cerr << board.toString();
-    engine.doSearch(&board);
-    cout << engine.getBestMove() << endl;
+    engine->doSearch(&board);
+    cout << engine->getBestMove() << endl;
     return 0;
   } 
 

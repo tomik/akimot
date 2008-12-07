@@ -57,5 +57,4 @@ if do_build:
   tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
                     CPPPATH=['.',CXX_INCLUDE_DIR])
   tst.CxxTest('func_test', ['tests.h'] + obj_files_test)
-  tst.CxxTest('perf_test', ['performance.h'] + obj_files_test)
   #print "CCCOM is ",  env.subst('$CCCOM')

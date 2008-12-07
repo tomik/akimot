@@ -296,23 +296,35 @@ string Node::recToString(int depth) const
 
 Tree::Tree()
 {
-  assert(false);
+  history[0] = NULL; 
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------- 
 
 Tree::Tree(player_t firstPlayer)
 {
-  historyTop = 0;
-  history[historyTop] = new Node(Step(STEP_NO_STEP, firstPlayer));
+  history[0] = NULL; 
+  reset(firstPlayer);
 }
 
-//---------------------------------------------------------------------
+//--------------------------------------------------------------------- 
 
 Tree::~Tree()
 {
   history[0]->removeChildrenRec();
   delete history[0];
+}
+
+//--------------------------------------------------------------------- 
+
+void Tree::reset(player_t firstPlayer)
+{
+  if (history[0] != NULL){
+    history[0]->removeChildrenRec();
+    delete history[0];
+  }
+  historyTop = 0;
+  history[historyTop] = new Node(Step(STEP_NO_STEP, firstPlayer));
 }
 
 //---------------------------------------------------------------------
@@ -335,7 +347,7 @@ void Tree::randomDescend()
 
 //---------------------------------------------------------------------
 
-string Tree::findBestMove(Node* bestMoveNode,const Board* boardGiven)
+string Tree::findBestMoveRepr(Node* bestMoveNode,const Board* boardGiven)
 {
 
   Board *board = new Board (*boardGiven);
@@ -476,7 +488,7 @@ string Tree::pathToActToString(bool onlyLastMove )
 }
 
 //---------------------------------------------------------------------
-/* section SimplePlayout*/
+//  section SimplePlayout
 //---------------------------------------------------------------------
 
 SimplePlayout::SimplePlayout()
@@ -524,7 +536,8 @@ void SimplePlayout::playOne()
 		//board_->makeStep(step);
 	}
   //TODO IS this correct ? 
-	while (! board_->makeStepTryCommitMove(step));//(board_->getStepCount() < 4 && step.pieceMoved()); 
+	while (! board_->makeStepTryCommitMove(step));
+  //(board_->getStepCount() < 4 && step.pieceMoved()); 
 	//board_->commitMove();
 	return;
 }
@@ -537,27 +550,15 @@ uint SimplePlayout::getPlayoutLength()
 }
 
 //---------------------------------------------------------------------
-/* section Uct*/
+//  section Uct
 //---------------------------------------------------------------------
 
-Uct::Uct()
+Uct::Uct(): Engine()
 {
-  assert(false);      //use only constructor with board ! 
-}
-
-//---------------------------------------------------------------------
-
-Uct::Uct(Board* board) 
-{
-  board_ = board;
-  tree_  = new Tree(board->getPlayerToMove());
+  tree_  = new Tree();
   eval_  = new Eval();
-  tt_    = new TT();
-  bestMoveNode_ = NULL;
-  nodesPruned_ = 0;
-  nodesExpanded_ = 0;
-  nodesInTheTree_ = 1;
-  playouts_ = 0;
+  tt_    = NULL;
+
 }
 
 //---------------------------------------------------------------------
@@ -569,12 +570,40 @@ Uct::~Uct()
   delete tt_;
 }
 
+void Uct::reset(const Board* board)
+{
+  if (tt_){
+    delete tt_;
+  }
+    tt_    = new TT();
+
+  bestMoveNode_ = NULL;
+  nodesPruned_ = 0;
+  nodesExpanded_ = 0;
+  nodesInTheTree_ = 1;
+  playouts_ = 0;
+
+  tree_->reset(board->getPlayerToMove());
+
+}
+
 //---------------------------------------------------------------------
 
-void Uct::doPlayout()
+void Uct::searchTree(const Board* board)
 {
-  //TODO ... change playBoard to an object not pointer
-  Board *playBoard = new Board(*board_);
+  reset(board);
+  while (! checkSearchStop())
+    doPlayout(board);
+
+  assert(bestMoveNode_ != NULL);
+  bestMoveRepr_ = tree_->findBestMoveRepr(bestMoveNode_, board);
+}
+
+//---------------------------------------------------------------------
+
+void Uct::doPlayout(const Board* board)
+{
+  Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;
   Node* MoveNode = NULL;
   int descendNum = 0;
@@ -645,8 +674,10 @@ void Uct::doPlayout()
 
 //--------------------------------------------------------------------- 
 
-string Uct::statisticsToString(float seconds)
+string Uct::getStatistics() const
 {
+  //TODO this is only place where timemanager is used - make private in engine! 
+  float seconds = timeManager_->secondsElapsed();
   assert(seconds > 0);
   stringstream ss;
 
@@ -664,15 +695,14 @@ string Uct::statisticsToString(float seconds)
 
 //---------------------------------------------------------------------
 
-string Uct::getBestMove()
+string Uct::getBestMoveRepr() const
 {
-  assert(bestMoveNode_ != NULL);
-  return tree_->findBestMove(bestMoveNode_, board_);
+  return bestMoveRepr_;
 }
 
 //---------------------------------------------------------------------
 
-float Uct::getBestMoveValue()
+float Uct::getBestMoveValue() const
 {
   assert(bestMoveNode_);
   return bestMoveNode_->getValue();
@@ -680,14 +710,15 @@ float Uct::getBestMoveValue()
 
 //--------------------------------------------------------------------- 
 
-float Uct::getWinRatio()
+float Uct::getWinRatio() const
 {
-  return (bestMoveNode_->getValue() + 1 )/2;
+  return (bestMoveNode_) ? (bestMoveNode_->getValue() + 1 )/2 : 0.5;
+
 }
 
 //--------------------------------------------------------------------- 
 
-int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
+int Uct::decidePlayoutWinner(const Board* playBoard, playoutStatus_e playoutStatus) const
 {
   if IS_PLAYER(playBoard->getWinner())
     return playBoard->getWinner() == GOLD ? 1 : -1;
@@ -702,12 +733,10 @@ int Uct::decidePlayoutWinner(Board* playBoard, playoutStatus_e playoutStatus)
 
 //--------------------------------------------------------------------- 
 
-int Uct::filterTT(StepArray& steps, uint stepsNum, Board* board)
+int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
 {
   uint i = 0;
   u64 afterStepSignature;
-  //player_t newNodePlayer;
-  //Node* node
 
   while (i < stepsNum){
     afterStepSignature = board->calcAfterStepSignature(steps[i]);
@@ -727,7 +756,7 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, Board* board)
 
 //--------------------------------------------------------------------- 
 
-void Uct::updateTT(Node* nodeList, Board* board)
+void Uct::updateTT(Node* nodeList, const Board* board)
 {
   assert(nodeList != NULL); 
   Node* node = nodeList; 
@@ -851,26 +880,19 @@ string Engine::initialSetup(bool isGold) const
 
 //---------------------------------------------------------------------
 
-void Engine::doSearch(Board* board) 
+void Engine::doSearch(const Board* board) 
 { 
+  initialMove_ = "";
   if (board->isSetupPhase()){
-    bestMove_ = initialSetup(board->getPlayerToMove() == GOLD);
+    initialMove_ = initialSetup(board->getPlayerToMove() == GOLD);
     return;
   }
 
-  uct_ = new Uct(board);
   stopRequest_ = false;
-
   timeManager_->startClock();
-  while (! timeManager_->timeUp() && ! stopRequest_)
-    uct_->doPlayout();
+  searchTree(board);
 
   timeManager_->stopClock();
-  bestMove_ = uct_->getBestMove(); 
-  //TODO change
-  winRatio_ = uct_->getWinRatio();
-  statistics_ = uct_->statisticsToString(timeManager_->secondsElapsed());
-  delete uct_;
 }
 
 //---------------------------------------------------------------------
@@ -880,29 +902,7 @@ void Engine::requestSearchStop()
   stopRequest_ = true;
 }
 
-//---------------------------------------------------------------------
-
-string Engine::getStatistics()
-{
-  return statistics_;
-}
-
 //--------------------------------------------------------------------- 
-
-
-string Engine::getBestMove()
-{
-  return bestMove_; 
-}
-
-//--------------------------------------------------------------------- 
-
-float Engine::getWinRatio()
-{
-  return winRatio_;
-}
-
-//---------------------------------------------------------------------
 
 TimeManager* Engine::timeManager()
 {
@@ -921,6 +921,20 @@ void Engine::setPonder(bool value)
 bool Engine::getPonder() const
 {
   return ponder_;
+}
+
+//--------------------------------------------------------------------- 
+
+string Engine::getBestMove() const
+{
+  return (initialMove_ != "") ? initialMove_ : getBestMoveRepr();
+}
+
+//--------------------------------------------------------------------- 
+
+bool Engine::checkSearchStop() const
+{
+  return timeManager_->timeUp() || stopRequest_;
 }
 
 //---------------------------------------------------------------------

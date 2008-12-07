@@ -194,7 +194,7 @@ void Aei::init()
   state_ = AS_OPEN;
   commandSet_ = AC_STD;
   board_ = new Board();
-  engine_ = new Engine();
+  engine_ = new Uct();
 }
 
 //--------------------------------------------------------------------- 
