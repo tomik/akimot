@@ -156,7 +156,7 @@ class Engine
     /**
      * Interface to get search statistics.
      */
-    virtual string getStatistics() const =0;
+    virtual string getStats() const =0;
 
     /**
      * Interface to winr ration getter. 

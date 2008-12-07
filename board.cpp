@@ -613,7 +613,6 @@ void Board::init(bool newGame)
   //game initialization - done in the first run or when newgame is specified
   if (! classInit || newGame) {
     classInit = true;
-    srand(time(0));
     initZobrist();  
     thirdRep.clear();
     thirdRep_ = &thirdRep;

@@ -1,4 +1,6 @@
 """
+    Elephant at c2 is in danger, but 
+    rabbit at e5 can score a goal.
 """
 pos = """
 2w
@@ -9,9 +11,10 @@ pos = """
 5|         R       |
 4| H           D   |
 3| h D c e     C   |
-2| R   M    C      |
+2| R   M     C     |
 1| R R             |
  +-----------------+
+   a b c d e f g h 
 """
 #tags: goal, trap kill, rabbit, ... 
 #example: tags= "goal, rabbit"

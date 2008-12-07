@@ -16,10 +16,10 @@
 using std::sqrt;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-#define EVAL_AFTER_LENGTH 2    //length of playout after which we evaluate
+#define EVAL_AFTER_LENGTH 4     //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
-#define MATURE_LEVEL  1
+#define MATURE_LEVEL 20
 #define EXPLORE_RATE 0.2
 #define FPU 0
 
@@ -337,7 +337,7 @@ class Uct:public Engine
     /**
      * Get uct search statistics.
      */
-    string getStatistics() const;
+    string getStats() const;
 
     /**
      * String representation of best move.

@@ -36,7 +36,7 @@ INIT_TIME = 15.0
 
 logging.basicConfig(level = logging.DEBUG,
                     format = '%(asctime)s %(levelname)s %(message)s',
-                    filename = 'log',
+                    filename = 'aeilog',
                     filemode = 'w')
 
 #eng = EngineController(SocketEngine("./bot_opfor2008cc", legacy_mode=True))

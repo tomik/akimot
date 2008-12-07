@@ -4,7 +4,7 @@ pos = """
 2w
  +-----------------+
 8|   r r   r   r r |
-7| r d d   R c D   |
+7| r d d   R c     |
 6| m         C     |
 5|           E     |
 4| H               |
@@ -13,9 +13,6 @@ pos = """
 1| R R             |
  +-----------------+
 """
-#tags: goal, trap kill, rabbit, ... 
-#example: tags= "goal, rabbit"
-tags = "goal, rabbit"
+tags = "goal, rabbit, sacrifice"
 
-#winning percentage
 win_ratio = 1

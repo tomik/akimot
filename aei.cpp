@@ -32,7 +32,9 @@
 #define STR_INFO_WIN_RATIO "winratio"
 //TODO 
 #define STR_INFO_DEPTH "depth"
+#define STR_INFO_STATS "stat"
 #define STR_INFO_NODES "nodes"
+
 
 #define STR_TC_MOVE "tcmove"
 #define STR_TC_RESERVE "tcreserve"
@@ -412,18 +414,25 @@ void Aei::stopSearch(bool fromThread)
 
 void Aei::sendSearchInfo()
 {
+  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
   //send info from search, when not pondering
   if (! engine_->getPonder()){
+    send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
     stringstream ss;
+    ss.str(engine_->getStats());
+    string s;
+    while (getline(ss, s)){
+      sendInfo(STR_INFO_STATS, s);
+    }
+    ss.clear();
+    ss.str("");
     ss << engine_->timeManager()->secondsElapsed(); 
     sendInfo(STR_INFO_TIME, ss.str());
     ss.str(""); 
     ss << engine_->getWinRatio();
     sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
     //send the answer
-    send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
   }   
-  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
 }
 
 //--------------------------------------------------------------------- 

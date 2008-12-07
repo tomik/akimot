@@ -592,9 +592,10 @@ void Uct::reset(const Board* board)
   if (tt_){
     delete tt_;
   }
-    tt_    = new TT();
+    tt_ = new TT();
 
   bestMoveNode_ = NULL;
+  bestMoveRepr_ = "";
   nodesPruned_ = 0;
   playouts_ = 0;
 
@@ -649,9 +650,9 @@ void Uct::doPlayout(const Board* board)
       }
 
       //"random" playout
-      //SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
-      //playoutStatus = simplePlayout.doPlayout();
-      playoutStatus = PLAYOUT_EVAL;
+      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
+      playoutStatus = simplePlayout.doPlayout();
+      //playoutStatus = PLAYOUT_EVAL;
       tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
       break;
     }
@@ -687,7 +688,7 @@ void Uct::doPlayout(const Board* board)
 
 //--------------------------------------------------------------------- 
 
-string Uct::getStatistics() const
+string Uct::getStats() const
 {
   //TODO this is only place where timemanager is used - make private in engine! 
   float seconds = timeManager_->secondsElapsed();
@@ -727,7 +728,6 @@ float Uct::getBestMoveValue() const
 float Uct::getWinRatio() const
 {
   return (bestMoveNode_) ? (bestMoveNode_->getValue() + 1 )/2 : 0.5;
-
 }
 
 //--------------------------------------------------------------------- 
@@ -737,6 +737,7 @@ int Uct::decidePlayoutWinner(const Board* playBoard, playoutStatus_e playoutStat
   if IS_PLAYER(playBoard->getWinner())
     return playBoard->getWinner() == GOLD ? 1 : -1;
 
+  //TODO test this
   float evalGold = eval_->evaluateInPercent(playBoard);
   double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)

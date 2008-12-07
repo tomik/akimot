@@ -127,7 +127,7 @@ void Benchmark::benchmarkSearch() const
   Board *playBoard = new Board(*board_);
 
   engine->doSearch(playBoard);
-  logRaw(engine->getStatistics().c_str());
+  logRaw(engine->getStats().c_str());
 }
 
 

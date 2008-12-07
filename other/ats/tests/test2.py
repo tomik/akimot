@@ -1,5 +1,5 @@
 """
-  Reaching the goal.
+    Simple reaching the goal.
 """
 pos = """
 2w
@@ -10,13 +10,11 @@ pos = """
 5|               R |
 4| H           D   |
 3| h D c e     C   |
-2| R   M    C      |
+2| R     M   C     |
 1| R R             |
  +-----------------+
+   a b c d e f g h  
 """
-#tags: goal, trap kill, rabbit, ... 
-#example: tags= "goal, rabbit"
 tags = "goal, rabbit"
 
-#winning percentage
 win_ratio = 1

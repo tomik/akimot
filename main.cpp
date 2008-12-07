@@ -9,6 +9,8 @@
 int main(int argc, char *argv[]) 
 {
 
+  srand(time(0));
+
   config.parse(argc, (const char **) (argv));
   //config.printAll();
  

@@ -4,6 +4,7 @@
 import logging
 import socket
 import sys
+import re
 
 #for importing aei
 sys.path.append('..')
@@ -12,8 +13,8 @@ logging.basicConfig(
         level = logging.DEBUG,
         datefmt="%Y-%m-%d %H:%M:%S",
         format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-        #stream = sys.stdout,
-         filename = 'log',
+        stream = sys.stdout,
+        #filename = 'log',
         )
 
 log = logging.getLogger("ats")
@@ -23,8 +24,8 @@ from aei.aei import StdioEngine, EngineController
 
 import tests
 
-CYCLES = 500
-TIME_PER_TEST = 1
+CYCLES = 100
+TIME_PER_TEST = 0.2
 
 class Test(object):
     """
@@ -35,17 +36,17 @@ class Test(object):
         self.mod = __import__(self.mod_name) 
 
     def do_test(self, engine):
-        log.debug("Doing the test %s." % self) 
         lines = self.mod.pos.strip('\n').split('\n')
         movenum, pos = board.parse_long_pos(lines)
 
         log.debug('\n' + pos.to_long_str())
 
-        engine.setoption("tcmove", TIME_PER_TEST)
         engine.newgame()
+        engine.setoption("tcmove", TIME_PER_TEST)
         engine.setposition(pos)
         engine.go()
 
+        log.debug("Doing the test %s." % self) 
         while True:
             resp = engine.get_response()
             if resp.type == "info":
@@ -80,12 +81,9 @@ class Suite:
     def run(self):
         print("Running the test suite...") 
         passed = {}
-        #unit_total = CYCLES * len(self.tests)
-        #unit = float(unit_total) / 100
-        #unit_finished = 0
         i = 0
-        for c in xrange(CYCLES):
-            for test in self.tests:
+        for test in self.tests:
+            for c in xrange(CYCLES):
                 i += 1 
                 log.debug("trial %d", i) 
                 if test.do_test(self.engine):
@@ -93,9 +91,6 @@ class Suite:
                     log.debug("%s passed.", test) 
                 else:
                     log.debug("%s failed.", test) 
-                #for p in xrange(i/unit - unit_finished):
-                #    unit_finished += 1
-                #    print r"-" 
                 
         passed_num = sum(passed.values())
         for test in self.tests:
@@ -106,6 +101,16 @@ class Suite:
         self.engine.quit()
         self.engine.cleanup()
 
+def filter_test_files(filter, test_files):
+    if filter == 'all' or filter == '*':
+        return test_files
+    l = []
+    for item in filter.split(' '):
+        left, right = (int(item.split('-')[0]), int(item.split('-')[-1]))
+        l += range(left, right + 1)
+    d = dict(zip(l,l))
+    test_files_nums = [ int(re.sub(r'[a-z/]*([0-9])*.*',r'\1',f)) for f in test_files]
+    return [ t for t,n in zip(test_files, test_files_nums) if d.has_key(n)]
 
 if __name__ == '__main__':
     from ConfigParser import SafeConfigParser
@@ -124,6 +129,7 @@ if __name__ == '__main__':
         sys.exit(1)
     
     engine = config.get("global", "engine")
-    s = Suite(tests.get_test_files(), engine) 
+    filter = config.get("global","tests","*")
+    s = Suite(filter_test_files(filter, tests.get_test_files()), engine) 
     s.run()
 
