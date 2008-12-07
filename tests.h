@@ -2,14 +2,14 @@
 #include "utils.h"
 #include "board.h"
 #include "hash.h"
-#include "engine.h"
+#include "uct.h"
 
 #define TEST_DIR "./test"
 #define INIT_TEST_DIR "./test/init/"
 #define INIT_TEST_LIST "./test/init/list.txt"
 #define HASH_TABLE_INSERTS 100
 
-//mature level is defined in engine.h
+//mature level is defined in uct.h
 #define UCT_TREE_TEST_MATURE 1 
 #define UCT_TREE_NODES 100000
 #define UCT_TREE_NODES_DELETE 100
@@ -140,7 +140,7 @@ class DebugTestSuite : public CxxTest::TestSuite
           if (! tree->actNode()->hasChildren()) { 
             //if (tree->actNode()->getVisits() > UCT_TREE_TEST_MATURE) {
               stepsNum = (rand() % UCT_TREE_MAX_CHILDREN) + 1;
-              tree->actNode()->expand(steps,stepsNum);
+              tree->expandNode(tree->actNode(), steps, stepsNum);
               i++;
               break;
             //}

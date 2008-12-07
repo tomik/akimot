@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "config.h"
 #include "board.h"
-#include "engine.h"
+#include "uct.h"
 
 using std::list;
 using std::flush;

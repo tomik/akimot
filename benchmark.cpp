@@ -101,7 +101,7 @@ void Benchmark::benchmarkUct()
     while (true) { 
       if (! tree->actNode()->hasChildren()) { 
         if (tree->actNode()->getVisits() > UCT_NODE_MATURE) {
-          tree->actNode()->expand(steps,stepsNum);
+          tree->expandNode(tree->actNode(), steps, stepsNum);
           i++;
           continue;
         }
