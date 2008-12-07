@@ -146,10 +146,16 @@ class Aei
      * Gives request to stop the search. 
      * Waits for the search thread to join. 
      *
-     * @param sendBestMove If true sends the best move through aei protocol, 
+     * @param fromThread      If true, method is called from thread 
+     *                          -> doesn't need to join the thread 
      *                        otherwise does nothing ( e.g. when makemove stopped go ponder)
      */
-    void stopSearch(bool sendBestMove=true);
+    void stopSearch(bool fromThread=false);
+
+    /**
+     * Sends bestmove/winration/timeinfo. 
+     */
+    void sendSearchInfo();
 
     /**
      * Communicate log messages. 

@@ -607,8 +607,9 @@ void Uct::doPlayout()
       }
 
       //"random" playout
-      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
-      playoutStatus = simplePlayout.doPlayout();
+      //SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
+      //playoutStatus = simplePlayout.doPlayout();
+      playoutStatus = PLAYOUT_EVAL;
       tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
       break;
     }
@@ -907,5 +908,20 @@ TimeManager* Engine::timeManager()
 {
   return timeManager_;
 }
+
+//--------------------------------------------------------------------- 
+
+void Engine::setPonder(bool value)
+{
+  ponder_ = value;
+}
+
+//--------------------------------------------------------------------- 
+
+bool Engine::getPonder() const
+{
+  return ponder_;
+}
+
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------

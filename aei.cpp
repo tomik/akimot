@@ -140,8 +140,10 @@ void Aei::initFromFile(string fn)
       getline(f, line);
       if (! line.length())
         continue;
-      logRaw("received: %s", line.c_str());
-      handleInput(line);
+      if (line[0] != '#'){
+        logRaw("received: %s", line.c_str());
+        handleInput(line);
+      }
     }
 
   }
@@ -264,18 +266,6 @@ void Aei::handleInput(const string& line)
                   }
                   break;
     case AA_GO:    
-                /*
-                  for (int i = 0; i < 5000; i++){
-                      startSearch(lineRest);
-                      stopSearch();
-                      stringstream ss; 
-                      ss << i;
-                      aeiLog(ss.str(), AL_DEBUG);
-                  }
-                  break;
-
-                */
-
                   if (lineRest == STR_PONDER){
                     state_ = AS_PONDER;
                   }
@@ -284,22 +274,21 @@ void Aei::handleInput(const string& line)
     case AA_GO_NO_THREAD: 
                   engine_->timeManager()->resetSettings();
                   engine_->doSearch(board_);
-                  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
+                  sendSearchInfo();
                   break;
     case AA_STOP: 
                   stopSearch();
-                  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
                   break;
     case AA_MAKE_MOVE:
                   if (oldState == AS_PONDER){
-                    stopSearch(false);
+                    stopSearch();
                   }
                   board_->makeMove(lineRest);
                   aeiLog("Making move: " + lineRest, AL_DEBUG);
                   break;
     case AA_MAKE_MOVE_REC:
-                  aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
                   board_->makeMove(engine_->getBestMove());
+                  aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
                   break;
     case AA_DUMP:
                  aeiLog(board_->toString(), AL_DEBUG);
@@ -356,22 +345,16 @@ void Aei::handleOption(const string& commandRest)
 
 void Aei::startSearch(const string& arg)
 {
-  int rc;
+  engine_->setPonder(arg == STR_PONDER);
   engine_->timeManager()->resetSettings();
   if (arg == STR_PONDER || arg == STR_INFINITE)
     engine_->timeManager()->setNoTimeLimit();
-  //no mutex is needed - this is done only when no engineThread runs
-  /*while( pthread_create(&engineThread_, NULL, Aei::SearchInThreadWrapper, this)){
-    assert(false);
-    aeiLog("Thread error occured - trying again.", AL_WARNING);
-  }
-    */
-
+  int rc;
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  //no mutex is needed - this is done only when no engineThread runs
   rc = pthread_create(&engineThread_, &attr, Aei::SearchInThreadWrapper, this);
-
 
   if (rc){ //allocating thread failed
     stringstream ss;
@@ -386,47 +369,61 @@ void Aei::startSearch(const string& arg)
 void Aei::searchInThread()
 {
   engine_->doSearch(board_);
-  handleInput(STR_STOP);
-  stringstream ss;
-  //send info from search
-  ss << engine_->timeManager()->secondsElapsed(); 
-  sendInfo(STR_INFO_TIME, ss.str());
-  ss.str(""); 
-  ss << engine_->getWinRatio();
-  sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
+  stopSearch(true);
 }
 
 //--------------------------------------------------------------------- 
 
 void * Aei::SearchInThreadWrapper(void* instance)
 {
-  Aei* aei= (Aei*) instance;
-  aei->searchInThread();
+  ((Aei*) instance)->searchInThread();
   return NULL;
 }
 
 //--------------------------------------------------------------------- 
 
-void Aei::stopSearch(bool sendBestMove )
+void Aei::stopSearch(bool fromThread)
 {
   void* status;
   int rc;
 
-  //if (!sendBestMove)
-  // sendMoveAfterSearch_ = false;
-  engine_->requestSearchStop();
-  rc=pthread_join(engineThread_, &status);
-  if (rc){
-    stringstream ss;
-    ss << "Fatal thread error no. " << rc << " when joining.";
-    aeiLog(ss.str(), AL_ERROR);
+  if (fromThread){
+    //detach itself
     pthread_detach(engineThread_);
-    //quit();
+    //TODO refactor - not to alter state manually
+    state_ = AS_MAIN;
   }
-    
-  if (sendBestMove){
+  else{
+    //wait for search thread to finish
+    engine_->requestSearchStop();
+    rc=pthread_join(engineThread_, &status);
+    if (rc){
+      stringstream ss;
+      ss << "Fatal thread error no. " << rc << " when joining.";
+      aeiLog(ss.str(), AL_ERROR);
+      pthread_detach(engineThread_);
+    }
+  }
+
+  sendSearchInfo();
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::sendSearchInfo()
+{
+  //send info from search, when not pondering
+  if (! engine_->getPonder()){
+    stringstream ss;
+    ss << engine_->timeManager()->secondsElapsed(); 
+    sendInfo(STR_INFO_TIME, ss.str());
+    ss.str(""); 
+    ss << engine_->getWinRatio();
+    sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
+    //send the answer
     send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
   }   
+  aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
 }
 
 //--------------------------------------------------------------------- 

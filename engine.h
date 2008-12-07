@@ -21,7 +21,7 @@ using std::sqrt;
 #define EVAL_AFTER_LENGTH 2    //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
-#define MATURE_LEVEL  20
+#define MATURE_LEVEL  1
 #define EXPLORE_RATE 0.2
 #define FPU 0
 
@@ -501,14 +501,25 @@ class Engine
      */
     TimeManager* timeManager();
 
+    /**
+     * Ponder mode setter.
+     */
+    void setPonder(bool value);
+
+    /**
+     * Ponder mode getter. 
+     */
+    bool getPonder() const;
+
   private:
     Uct* uct_;
     TimeManager* timeManager_;
     bool stopRequest_;
+    /**Ponder mode flag.*/
+    bool ponder_;
 
     string bestMove_;
     float winRatio_;
     string statistics_;
-
 
 };
