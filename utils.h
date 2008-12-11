@@ -76,3 +76,38 @@ string trimLeft(const string& str);
  * Get stream rest.
  */
 string getStreamRest(istream& is);
+
+
+/**
+ * Simpler file read.
+ */
+class FileRead
+{
+  public: 
+    /**
+     * Constructor with filename. 
+     */
+    FileRead(string fn);
+
+    /**
+     * Line read.
+     *
+     * @return True if read was successfull, 
+     *         False otherwise. 
+     */
+    bool getLine(string & s);
+
+    /**
+     * Line read. 
+     * 
+     * Expects line to be a pair of stuff.
+     *
+     * @return True if read was successfull,
+     *         False otherwise.
+     */
+    bool getLineAsPair(string & s1, string & s2);
+
+  private: 
+    FileRead();
+    fstream f_;
+};

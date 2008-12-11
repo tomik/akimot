@@ -24,7 +24,50 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
 }
 
 //--------------------------------------------------------------------- 
+// section FileRead
+//--------------------------------------------------------------------- 
 
+FileRead::FileRead(string fn){
+  f_.open(fn.c_str(), fstream::in);
+}
+
+//--------------------------------------------------------------------- 
+
+FileRead::FileRead(){
+  assert(false);
+}
+
+//--------------------------------------------------------------------- 
+
+bool FileRead::getLine(string & s){
+  while (f_.good()){
+    getline(f_, s);
+    if (s != "") 
+      return true;
+  }
+  return false;
+} 
+
+//--------------------------------------------------------------------- 
+
+bool FileRead::getLineAsPair(string & s1, string & s2){
+  string s;
+  stringstream ss;
+  ss.str("");
+  while (f_.good()){
+    getline(f_, s);
+    if (s != "") {
+      ss.str(s);
+      ss >> s1;
+      s2 = getStreamRest(ss);
+      return true;
+    }
+  }
+  return false;
+} 
+
+//--------------------------------------------------------------------- 
+  
 int str2int(const string& str)
 {
   stringstream ss(str);
@@ -99,3 +142,5 @@ string getStreamRest(istream& is)
 
 //--------------------------------------------------------------------- 
 
+
+//--------------------------------------------------------------------- 

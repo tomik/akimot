@@ -17,43 +17,8 @@
 #define UCT_TREE_NODES_DELETE 100
 #define UCT_TREE_MAX_CHILDREN 30
 
-class FileRead
-{
-  public: 
-    FileRead();
-    FileRead(string fn){
-      f_.open(fn.c_str(), fstream::in);
-    }
+class FileRead;
 
-    bool getLine(string & s){
-      while (f_.good()){
-        getline(f_, s);
-        if (s != "") 
-          return true;
-      }
-      return false;
-    } 
-
-    bool getLineAsPair(string & s1, string & s2){
-      string s;
-      stringstream ss;
-      ss.str("");
-      while (f_.good()){
-        getline(f_, s);
-        if (s != "") {
-          ss.str(s);
-          ss >> s1;
-          s2 = getStreamRest(ss);
-          return true;
-        }
-      }
-      return false;
-    } 
-
-  private: 
-    fstream f_;
-
-};
 
 class DebugTestSuite : public CxxTest::TestSuite 
 {
@@ -227,3 +192,4 @@ class DebugTestSuite : public CxxTest::TestSuite
 
   }
 };
+
