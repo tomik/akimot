@@ -7,6 +7,8 @@
 #define TEST_DIR "./test"
 #define INIT_TEST_DIR "./test/init/"
 #define INIT_TEST_LIST "./test/init/list.txt"
+#define RABBITS_TEST_DIR "./test/rabbits/"
+#define RABBITS_TEST_LIST "./test/rabbits/list.txt"
 #define HASH_TABLE_INSERTS 100
 
 //mature level is defined in uct.h
@@ -14,6 +16,44 @@
 #define UCT_TREE_NODES 100000
 #define UCT_TREE_NODES_DELETE 100
 #define UCT_TREE_MAX_CHILDREN 30
+
+class FileRead
+{
+  public: 
+    FileRead();
+    FileRead(string fn){
+      f_.open(fn.c_str(), fstream::in);
+    }
+
+    bool getLine(string & s){
+      while (f_.good()){
+        getline(f_, s);
+        if (s != "") 
+          return true;
+      }
+      return false;
+    } 
+
+    bool getLineAsPair(string & s1, string & s2){
+      string s;
+      stringstream ss;
+      ss.str("");
+      while (f_.good()){
+        getline(f_, s);
+        if (s != "") {
+          ss.str(s);
+          ss >> s1;
+          s2 = getStreamRest(ss);
+          return true;
+        }
+      }
+      return false;
+    } 
+
+  private: 
+    fstream f_;
+
+};
 
 class DebugTestSuite : public CxxTest::TestSuite 
 {
@@ -52,23 +92,12 @@ class DebugTestSuite : public CxxTest::TestSuite
      {
         Board board1;
         Board board2;
-        fstream f;
         string fnPosition;
         string fnRecord;
         string s1, s2;
-        stringstream ss;
-        string line;
+        FileRead* f = new FileRead(string(INIT_TEST_LIST));
 
-        f.open(INIT_TEST_LIST, fstream::in);
-
-        while (f.good()){
-          getline(f, line);
-          if (line == "")
-            continue;
-          ss.clear();
-          ss.str(line);
-          ss >> s1;
-          ss >> s2;
+        while (f->getLineAsPair(s1, s2)){
           fnPosition = INIT_TEST_DIR + s1;
           fnRecord = INIT_TEST_DIR + s2;
 
@@ -172,6 +201,29 @@ class DebugTestSuite : public CxxTest::TestSuite
     thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
     thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
     TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove())), true);
+
+  }
+
+  /**
+   * Search evaluation test. 
+   */
+  void testSearchEval(void)
+  {
+    Board* board = new Board();
+    SearchExt* searchExt_ = new SearchExt();
+    string s1, s2;
+    bool expected;
+
+    FileRead* f = new FileRead(string(RABBITS_TEST_LIST));
+    while (f->getLineAsPair(s1,s2)){
+      expected = bool(str2int(s2));
+
+      string fn = string(RABBITS_TEST_DIR) + s1;
+      board->initNewGame();
+      board->initFromPosition(fn.c_str());
+      cerr << board->toString();
+      TS_ASSERT_EQUALS(searchExt_->quickGoalCheck(board, GOLD, STEPS_IN_MOVE), expected);
+    }
 
   }
 };

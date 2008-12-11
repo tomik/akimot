@@ -7,7 +7,78 @@
 #include "uct.h"
 
 //---------------------------------------------------------------------
-/* section Node*/
+//  section SimplePlayout
+//---------------------------------------------------------------------
+
+SimplePlayout::SimplePlayout()
+{
+  assert(false);
+}
+
+//---------------------------------------------------------------------
+
+SimplePlayout::SimplePlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength):
+  board_(board), playoutLength_(0), maxPlayoutLength_(maxPlayoutLength), evalAfterLength_(evalAfterLength)
+{
+  ;
+}
+
+//---------------------------------------------------------------------
+
+playoutStatus_e SimplePlayout::doPlayout()
+{
+  uint moves = 0;
+
+  while (true) {  
+		playOne();
+		playoutLength_++;
+
+		if ( board_->getWinner() != EMPTY ) //somebody won
+			return PLAYOUT_OK;
+
+		if ( playoutLength_ > 2 * maxPlayoutLength_ ) 
+			return PLAYOUT_TOO_LONG;
+
+    if (++moves > evalAfterLength_ && evalAfterLength_)
+      return PLAYOUT_EVAL;
+	}
+}
+
+//---------------------------------------------------------------------
+
+void SimplePlayout::playOne()
+{
+	Step step;
+
+	do {
+		step = board_->findStepToPlay();
+		//board_->makeStep(step);
+	}
+  //TODO IS this correct ? 
+	while (! board_->makeStepTryCommitMove(step));
+  //(board_->getStepCount() < 4 && step.pieceMoved()); 
+	//board_->commitMove();
+	return;
+}
+
+//---------------------------------------------------------------------
+
+uint SimplePlayout::getPlayoutLength()
+{
+	return playoutLength_/2;
+}
+
+//---------------------------------------------------------------------
+// section SearchExt
+//---------------------------------------------------------------------
+
+bool SearchExt::quickGoalCheck(const Board* board, player_t player, int stepsLimit)
+{
+  return board->quickGoalCheck(player, stepsLimit);
+}
+
+//---------------------------------------------------------------------
+// section Node
 //---------------------------------------------------------------------
 
 Node::Node()
@@ -505,68 +576,6 @@ string Tree::pathToActToString(bool onlyLastMove )
 }
 
 //---------------------------------------------------------------------
-//  section SimplePlayout
-//---------------------------------------------------------------------
-
-SimplePlayout::SimplePlayout()
-{
-  assert(false);
-}
-
-//---------------------------------------------------------------------
-
-SimplePlayout::SimplePlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength):
-  board_(board), playoutLength_(0), maxPlayoutLength_(maxPlayoutLength), evalAfterLength_(evalAfterLength)
-{
-  ;
-}
-
-//---------------------------------------------------------------------
-
-playoutStatus_e SimplePlayout::doPlayout()
-{
-  uint moves = 0;
-
-  while (true) {  
-		playOne();
-		playoutLength_++;
-
-		if ( board_->getWinner() != EMPTY ) //somebody won
-			return PLAYOUT_OK;
-
-		if ( playoutLength_ > 2 * maxPlayoutLength_ ) 
-			return PLAYOUT_TOO_LONG;
-
-    if (++moves > evalAfterLength_ && evalAfterLength_)
-      return PLAYOUT_EVAL;
-	}
-}
-
-//---------------------------------------------------------------------
-
-void SimplePlayout::playOne()
-{
-	Step step;
-
-	do {
-		step = board_->findStepToPlay();
-		//board_->makeStep(step);
-	}
-  //TODO IS this correct ? 
-	while (! board_->makeStepTryCommitMove(step));
-  //(board_->getStepCount() < 4 && step.pieceMoved()); 
-	//board_->commitMove();
-	return;
-}
-
-//---------------------------------------------------------------------
-
-uint SimplePlayout::getPlayoutLength()
-{
-	return playoutLength_/2;
-}
-
-//---------------------------------------------------------------------
 //  section Uct
 //---------------------------------------------------------------------
 
@@ -575,6 +584,8 @@ Uct::Uct(): Engine()
   tree_  = new Tree();
   eval_  = new Eval();
   tt_    = NULL;
+
+  searchExt_ = new SearchExt();
 
 }
 

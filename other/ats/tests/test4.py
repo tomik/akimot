@@ -11,7 +11,7 @@ pos = """
 5|           E c   |
 4| H           D   |
 3| h D c e     C   |
-2| R     M     C   |
+2| R M     r   C   |
 1| R R       R R R |
  +-----------------+
    a b c d e f g h

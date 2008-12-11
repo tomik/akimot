@@ -25,7 +25,7 @@ from aei.aei import StdioEngine, EngineController
 import tests
 
 CYCLES = 100
-TIME_PER_TEST = 0.2
+TIME_PER_TEST = 5
 
 class Test(object):
     """

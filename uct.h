@@ -8,11 +8,13 @@
 #pragma once 
 
 #include <cmath>
+#include <queue>
 
 #include "engine.h"
 #include "eval.h"
 #include "hash.h"
 
+using std::queue;
 using std::sqrt;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
@@ -75,6 +77,31 @@ class SimplePlayout
     uint          evalAfterLength_;
 
 		SimplePlayout();
+};
+
+
+
+/**
+ * Search Extensions class
+ */
+class SearchExt
+{
+  public:
+    /**
+     * Quick check for goal.
+     *
+     * Checking is unreliable ! 
+     * (looks only for direct goal score without help of tother pieces).
+     * Done by wave algorithm from the goal line for given player. 
+     *
+     * @return True if knows goal can be reached,   
+     *         false otherwise.
+     */
+    bool quickGoalCheck(const Board* board, player_t player, int stepsLimit);
+  
+  private:
+    queue<int> queue_;
+    bool flagBoard_[SQUARE_NUM];
 };
 
 
@@ -302,6 +329,7 @@ class Tree
     uint       historyTop;
     int   nodesExpandedNum_;
     int   nodesNum_;
+  
     
 };
 
@@ -386,11 +414,14 @@ class Uct:public Engine
      */
     void updateTT(Node* nodeList, const Board* board);
 
-    //Board* board_;
+    /**UCT tree*/
     Tree* tree_;
+    /**Evaluation object*/
     Eval* eval_;
     /**Transposition table.*/
     TT* tt_;              
+    /**Search extension.*/
+    SearchExt* searchExt_; 
     /**Pointer to the most visited last step of first move.*/
     Node* bestMoveNode_;  
     /**Best move string representation.*/

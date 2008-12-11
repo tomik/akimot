@@ -1061,6 +1061,69 @@ void Board::commitMove()
   preMoveSignature_ = signature_;
 }
 
+//--------------------------------------------------------------------- 
+
+bool Board::quickGoalCheck(player_t player, int stepLimit) const
+{
+  assert(IS_PLAYER(player));
+  assert(stepLimit <= STEPS_IN_MOVE);
+
+  #define EMPTY_FLAG -1
+
+  queue<int> q;
+  int flagBoard[SQUARE_NUM];
+  int dirs[3] = {SOUTH, EAST, WEST}; 
+  if (player == GOLD) 
+    dirs[0] = NORTH; 
+  int win_row[2] = {TOP_ROW, BOTTOM_ROW};
+  int index = PLAYER_TO_INDEX(player);
+
+  //TODO - memset ? 
+  for (int i = 0; i < SQUARE_NUM; i++ )
+    flagBoard[i] = EMPTY_FLAG;
+
+  //init with rabbits 
+  for (uint i = 0; i < pieceArray[index].getLen(); i++){
+    if (PIECE(board_[pieceArray[index][i]]) == PIECE_RABBIT){
+      q.push(pieceArray[index][i]);
+      flagBoard[pieceArray[index][i]] = 0;
+    }
+  }
+    
+  //wave
+  while(! q.empty()){
+    int act = q.front();
+    cerr << "act :" << act << endl;
+    q.pop();
+    //check goal
+    if (ROW(act) == win_row[index])
+      return true;
+    //unsuccessfull
+    if (flagBoard[act] >= stepLimit)
+      continue;
+    //check frozen
+    if (flagBoard[act] == 1 ) {
+      if (!hasTwoFriends(act, player) && hasStrongerEnemy(act, player, PIECE_RABBIT))
+        continue;
+    }
+    else{
+      if (!hasFriend(act, player) && hasStrongerEnemy(act, player, PIECE_RABBIT))
+        continue;
+    }
+    //add neighbours
+    for (int i = 0; i < 3; i++){
+      int neighbour = act + dirs[i];
+      if ( board_[neighbour] == EMPTY_SQUARE && flagBoard[neighbour] == EMPTY_FLAG){
+        q.push(neighbour);
+        flagBoard[neighbour] = flagBoard[act] + 1;
+      }
+    }
+  }
+
+  return false;
+  
+}
+
 //---------------------------------------------------------------------
 
 u64 Board::calcAfterStepSignature(const Step& step) const
@@ -1230,10 +1293,16 @@ bool Board::stepIsThirdRepetition( Step& step ) const
 
 //---------------------------------------------------------------------
 
-/* checks whether piece at given square has adjacent friendly pieces*/ 
 bool Board::hasFriend(square_t square) const 
 { 
-  uint owner = OWNER(board_[square]); 
+  uint owner = OWNER(board_[square]);
+  return hasFriend(square, owner);
+}
+
+//--------------------------------------------------------------------- 
+
+bool Board::hasFriend(square_t square, player_t owner) const 
+{ 
   assert( owner == GOLD || owner == SILVER );
   for(int i = 0; i < 4; i++)
     if (OWNER(board_[square + direction[i]]) == owner)
@@ -1244,8 +1313,6 @@ bool Board::hasFriend(square_t square) const
 
 //---------------------------------------------------------------------
 
-/* checks whether piece at given square has at least 2 adjacent friendly pieces
- * this function is good for determination of position signature after one step - see calcAfterStepSignature */ 
 bool Board::hasTwoFriends(square_t square, player_t player) const 
 { 
   assert( player == GOLD || player == SILVER );
@@ -1261,14 +1328,20 @@ bool Board::hasTwoFriends(square_t square, player_t player) const
 
 //---------------------------------------------------------------------
 
-/* checks whether piece at given square has adjacent stronger enemy pieces*/
 bool Board::hasStrongerEnemy(square_t square) const
 {
   uint owner = OWNER(board_[square]);
+  return hasStrongerEnemy(square, owner, PIECE(board_[square]));
+}
+
+//--------------------------------------------------------------------- 
+
+bool Board::hasStrongerEnemy(square_t square, player_t owner, piece_t piece) const
+{
   assert( owner == GOLD || owner == SILVER );
   for(int i = 0; i < 4; i++)
     if (OWNER(board_[square + direction[i]]) == OPP(owner) && 
-        PIECE(board_[square + direction[i]]) > PIECE(board_[square]))
+        PIECE(board_[square + direction[i]]) > piece)
       return true;
 
   return false;
@@ -1277,8 +1350,6 @@ bool Board::hasStrongerEnemy(square_t square) const
 
 //---------------------------------------------------------------------
 
-/*checks whether piece at given square is frozen == !combination of hasFriend and hasStrongerEnemy
- * optimize: actually code the function, not use the hasFriend,hasStrongerEnemy */
 bool Board::isFrozen(square_t square) const
 {
   return (!hasFriend(square) && hasStrongerEnemy(square)); 

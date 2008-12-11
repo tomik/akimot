@@ -10,9 +10,14 @@
 
 #pragma once
 
+#include <queue>
+
+using std::queue;
+
 #include "utils.h"
 #include "hash.h"
 
+#define STEPS_IN_MOVE 4
 #define MAX_STEPS  200
 #define MAX_PIECES  16      //max number of pieces per player 
 
@@ -37,9 +42,19 @@
 #define EAST 1
 #define WEST -1
 
+#define TOP_ROW 8
+#define BOTTOM_ROW 1
+#define LEFT_COL 1 
+#define RIGHT_COL 8
+
 #define OWNER(square) (square & OWNER_MASK) 
 #define PIECE(square) (square & PIECE_MASK) 
 #define OPP(player) ((16 - player) + 8)
+
+// what row is a square in?  1 = bottom, 8 = top
+#define ROW(square) (square/10) 
+// what column is a square in?  1 = left (a), 8 = right (h)
+#define COL(square) (square%10) 
 
 //GOLD ~ 0, SILVER ~ 1
 ////((16-player)/8)	
@@ -325,6 +340,9 @@ class Board
      */
 		void commitMove();
 
+
+    bool quickGoalCheck(player_t player, int stepLimit) const;
+
     /**
      * Repetition check.
      *
@@ -506,6 +524,14 @@ class Board
 		bool hasFriend(square_t) const;
 
     /**
+     * Has a friend test.
+     *
+     * Variant for forward tests.
+     * Color must be supplied as well.
+     */
+		inline bool hasFriend(square_t, player_t owner) const;
+
+    /**
      * Two friends test. 
      *
      * This is used for forward tests (without actually moveing pieces).
@@ -521,7 +547,17 @@ class Board
 		bool hasStrongerEnemy(square_t) const;
 
     /**
+     * Has stronger enemy test. 
+     *
+     * Variant for forward tests. 
+     * Color and piece must be supplied as well  
+     */
+		inline bool hasStrongerEnemy(square_t, player_t owner, piece_t piece) const;
+
+    /**
      * Frozen check.
+     *
+     * Checks whether piece at given square is frozen == !hasFriend and hasStrongerEnemy
      */
 		bool isFrozen(square_t) const;
 
