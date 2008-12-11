@@ -1,3 +1,5 @@
 t001.txt 1 
 t002.txt 1 
 t003.txt 0
+t004.txt 0
+t005.txt 1

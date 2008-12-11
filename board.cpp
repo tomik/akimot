@@ -153,7 +153,7 @@ void Step::setValues( stepType_t stepType, player_t player, piece_t piece, squar
 
 //---------------------------------------------------------------------
 
-player_t Step::getStepPlayer() const 
+player_t Step::getPlayer() const 
 {
   return player_;
 }
@@ -1063,28 +1063,28 @@ void Board::commitMove()
 
 //--------------------------------------------------------------------- 
 
-bool Board::quickGoalCheck(player_t player, int stepLimit) const
+bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
 {
   assert(IS_PLAYER(player));
   assert(stepLimit <= STEPS_IN_MOVE);
 
-  #define EMPTY_FLAG -1
 
   queue<int> q;
-  int flagBoard[SQUARE_NUM];
+  FlagBoard flagBoard;
   int dirs[3] = {SOUTH, EAST, WEST}; 
   if (player == GOLD) 
     dirs[0] = NORTH; 
-  int win_row[2] = {TOP_ROW, BOTTOM_ROW};
+  int winRow[2] = {TOP_ROW, BOTTOM_ROW};
   int index = PLAYER_TO_INDEX(player);
 
   //TODO - memset ? 
   for (int i = 0; i < SQUARE_NUM; i++ )
-    flagBoard[i] = EMPTY_FLAG;
+    flagBoard[i] = FLAG_BOARD_EMPTY;
 
-  //init with rabbits 
+  //init with rabbits having chance to reach the goal (distance 4 from some trap)
   for (uint i = 0; i < pieceArray[index].getLen(); i++){
-    if (PIECE(board_[pieceArray[index][i]]) == PIECE_RABBIT){
+    if (PIECE(board_[pieceArray[index][i]]) == PIECE_RABBIT && 
+        abs(ROW(pieceArray[index][i]) - winRow[index]) <= stepLimit){
       q.push(pieceArray[index][i]);
       flagBoard[pieceArray[index][i]] = 0;
     }
@@ -1093,27 +1093,32 @@ bool Board::quickGoalCheck(player_t player, int stepLimit) const
   //wave
   while(! q.empty()){
     int act = q.front();
-    cerr << "act :" << act << endl;
-    q.pop();
-    //check goal
-    if (ROW(act) == win_row[index])
-      return true;
-    //unsuccessfull
+    q.pop(); 
+    //too many steps
     if (flagBoard[act] >= stepLimit)
       continue;
-    //check frozen
+    //frozen or in the trap
     if (flagBoard[act] == 1 ) {
-      if (!hasTwoFriends(act, player) && hasStrongerEnemy(act, player, PIECE_RABBIT))
+      if (!hasTwoFriends(act, player) && 
+          (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
         continue;
     }
     else{
-      if (!hasFriend(act, player) && hasStrongerEnemy(act, player, PIECE_RABBIT))
+      if (!hasFriend(act, player) && 
+          (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
         continue;
     }
     //add neighbours
     for (int i = 0; i < 3; i++){
       int neighbour = act + dirs[i];
-      if ( board_[neighbour] == EMPTY_SQUARE && flagBoard[neighbour] == EMPTY_FLAG){
+      if ( board_[neighbour] == EMPTY_SQUARE && flagBoard[neighbour] == FLAG_BOARD_EMPTY){
+        if (ROW(neighbour) == winRow[index]){
+          if (move != NULL){
+            flagBoard[neighbour] = flagBoard[act] + 1;
+            (*move) = tracebackFlagBoard(flagBoard, neighbour, player);
+          }
+          return true;
+        }
         q.push(neighbour);
         flagBoard[neighbour] = flagBoard[act] + 1;
       }
@@ -1122,6 +1127,61 @@ bool Board::quickGoalCheck(player_t player, int stepLimit) const
 
   return false;
   
+}
+
+//--------------------------------------------------------------------- 
+
+bool Board::quickGoalCheck(Move* move) const
+{
+  return quickGoalCheck(toMove_, STEPS_IN_MOVE - stepCount_, move );
+}
+
+//---------------------------------------------------------------------
+
+Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, player_t player) const
+{
+  assert(flagBoard[win_square] <= STEPS_IN_MOVE);
+  assert(flagBoard[win_square] > 0);
+
+  Move s; 
+  Step steps[STEPS_IN_MOVE];
+  //inverse directions ... trackback
+  int inv_dirs[3] = {NORTH, EAST, WEST}; 
+  if (player == GOLD) 
+    inv_dirs[0] = SOUTH; 
+  int act = win_square;
+  bool found_neighbour;
+
+  for (int i = 0; i < flagBoard[win_square]; i++) {
+    found_neighbour = false;
+    for (int j = 0; j < 3; j++){
+      int neighbour = act + inv_dirs[j];
+      
+      //TODO REFACTOR !!!
+      if (flagBoard[neighbour] == 1 ) {
+        if (!hasTwoFriends(neighbour, player) && 
+            (hasStrongerEnemy(neighbour, player, PIECE_RABBIT) || IS_TRAP(neighbour)))
+          continue;
+      }
+      else{
+        if (!hasFriend(neighbour, player) && 
+            (hasStrongerEnemy(neighbour, player, PIECE_RABBIT) || IS_TRAP(neighbour)))
+          continue;
+      }
+
+      if (flagBoard[neighbour] == flagBoard[act] - 1) {
+        steps[i] = Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act);
+        act = neighbour;
+        found_neighbour = true;
+        break;
+      }
+    }
+    assert(found_neighbour);
+  }
+  for (int i = flagBoard[win_square] - 1; i >= 0; i--)
+    s = s + steps[i].toString();
+
+  return s;
 }
 
 //---------------------------------------------------------------------
@@ -1282,10 +1342,10 @@ bool Board::stepIsVirtualPass( Step& step ) const
 bool Board::stepIsThirdRepetition( Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
-  assert(1 - PLAYER_TO_INDEX(step.getStepPlayer()) == 
+  assert(1 - PLAYER_TO_INDEX(step.getPlayer()) == 
         PLAYER_TO_INDEX(getPlayerToMoveAfterStep(step)));
   //check whether position with opponent to move won't be a repetition
-  if ( thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getStepPlayer()))) 
+  if ( thirdRep_->isThirdRep(afterStepSignature, 1 - PLAYER_TO_INDEX(step.getPlayer()))) 
     return true;
   return false;
   

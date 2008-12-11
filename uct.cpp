@@ -96,10 +96,10 @@ Node::Node(const Step& step)
   bestCached_ = NULL;
   visits_     = FPU;
   value_      = FPU;
-
+  fixed_      = false;
   step_ = step;
-  assert(IS_PLAYER(step.getStepPlayer()));
-  nodeType_ = ( step.getStepPlayer() == GOLD ? NODE_MAX : NODE_MIN );
+  assert(IS_PLAYER(step.getPlayer()));
+  nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
 //---------------------------------------------------------------------
@@ -261,6 +261,21 @@ bool Node::isMature() const
 
 //---------------------------------------------------------------------
 
+bool Node::isFixed() const
+{
+  return fixed_; 
+}
+
+//---------------------------------------------------------------------
+
+void Node::setFixedValue(float value) 
+{
+  value_ = value;
+  fixed_ = true;
+}
+
+//---------------------------------------------------------------------
+
 bool Node::hasChildren() const
 {
   return firstChild_ != NULL;
@@ -299,6 +314,13 @@ Node* Node::getSibling() const
 Step Node::getStep() const
 {
   return step_;
+}
+
+//---------------------------------------------------------------------
+
+player_t Node::getPlayer() const
+{
+  return step_.getPlayer();
 }
 
 //---------------------------------------------------------------------
@@ -645,10 +667,22 @@ void Uct::doPlayout(const Board* board)
   do { 
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
-        stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(),steps);
+        //fixed nodes automatically return their valu
+        if (tree_->actNode()->isFixed()){
+          tree_->updateHistory(tree_->actNode()->getValue());
+          break;
+        }
+        //goalCheck => value fixation
+        if (playBoard->quickGoalCheck()){
+          tree_->actNode()->setFixedValue(WINNER_TO_VALUE(tree_->actNode()->getPlayer()));
+          tree_->updateHistory(tree_->actNode()->getValue());
+          break;
+        }
+
+        stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
 
-          stepsNum = filterTT(steps, stepsNum, playBoard); 
+        stepsNum = filterTT(steps, stepsNum, playBoard); 
         if (stepsNum > 0) {
           tree_->expandNode(tree_->actNode(), steps, stepsNum);
           updateTT(tree_->actNode()->getFirstChild(), playBoard); 
@@ -664,7 +698,7 @@ void Uct::doPlayout(const Board* board)
       SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
       playoutStatus = simplePlayout.doPlayout();
       //playoutStatus = PLAYOUT_EVAL;
-      tree_->updateHistory( decidePlayoutWinner(playBoard, playoutStatus));
+      tree_->updateHistory( decidePlayoutWinner(playBoard));
       break;
     }
 
@@ -743,10 +777,10 @@ float Uct::getWinRatio() const
 
 //--------------------------------------------------------------------- 
 
-int Uct::decidePlayoutWinner(const Board* playBoard, playoutStatus_e playoutStatus) const
+int Uct::decidePlayoutWinner(const Board* playBoard) const
 {
   if IS_PLAYER(playBoard->getWinner())
-    return playBoard->getWinner() == GOLD ? 1 : -1;
+    return WINNER_TO_VALUE(playBoard->getWinner()); 
 
   //TODO test this
   float evalGold = eval_->evaluateInPercent(playBoard);

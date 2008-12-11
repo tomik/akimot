@@ -74,6 +74,9 @@ using std::queue;
 #define STEP_PULL     3
 #define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
 
+/**empty square in the flag board*/
+#define FLAG_BOARD_EMPTY -1
+
 extern const int direction[4];
 extern const int trap[4];
 
@@ -81,7 +84,7 @@ typedef uint player_t;
 typedef int  square_t;
 typedef uint piece_t;		
 typedef uint stepType_t;
-
+typedef int FlagBoard[SQUARE_NUM];
 
 class Board;
 class Eval;
@@ -166,7 +169,7 @@ class Step
     Step(stepType_t, player_t, piece_t, square_t, square_t);
     Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
 
-    player_t getStepPlayer() const;
+    player_t getPlayer() const;
     bool isPass() const;
     bool isSingleStep() const;
     bool isPushPull() const;
@@ -234,6 +237,9 @@ class StepWithKills: public Step
     KillInfo kills[2];
 };
 
+
+//TODO UNDUMMYFI ! 
+typedef string Move;
 
 /**
  * Record action as parsed from the game record (file).
@@ -341,7 +347,34 @@ class Board
 		void commitMove();
 
 
-    bool quickGoalCheck(player_t player, int stepLimit) const;
+    /**
+     * Quick check for goal.
+     *
+     * Checking is unreliable ! 
+     * (looks only for direct goal score without help of tother pieces).
+     * Done by wave algorithm from the goal line for given player. 
+     *
+     * @return True if knows goal can be reached,   
+     *         false otherwise.
+     */
+    bool quickGoalCheck(player_t player, int stepLimit, Move* move=NULL) const;
+
+    /**
+     * Quick check for goal.
+     *
+     * Wrapper around previous function with 
+     * player = player to move in current position
+     * stepLimit = steps left for player to move in current position
+     */
+     bool quickGoalCheck(Move* move=NULL) const;
+
+     /**
+      * Traceback on flag board.
+      *
+      * After successfull goal check, this method determines the 
+      * move that scores the goal. 
+      */
+     Move tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, player_t player) const;
 
     /**
      * Repetition check.
@@ -358,7 +391,7 @@ class Board
      * @return True, if it's first move and there are no pieces 
      * for player to move, otherwise false.
      */
-    bool		  isSetupPhase() const;
+    bool  isSetupPhase() const;
 
     /**
      * Actual player getter.

@@ -187,7 +187,10 @@ class DebugTestSuite : public CxxTest::TestSuite
       board->initNewGame();
       board->initFromPosition(fn.c_str());
       cerr << board->toString();
-      TS_ASSERT_EQUALS(searchExt_->quickGoalCheck(board, GOLD, STEPS_IN_MOVE), expected);
+      string s;
+      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &s))
+        cerr << "play: " << s << " buddy ! " << endl;
+      TS_ASSERT_EQUALS(board->quickGoalCheck(GOLD, STEPS_IN_MOVE), expected);
     }
 
   }

@@ -21,11 +21,21 @@ using std::sqrt;
 #define EVAL_AFTER_LENGTH 4     //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
+#define MAX_NODE_WIN 1
+#define MIN_NODE_WIN -1
+
 #define MATURE_LEVEL 20
 #define EXPLORE_RATE 0.2
 #define FPU 0
 
+#define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 1 : -1 )
+#define WINNER_TO_VALUE(winner) (winner == GOLD ? 1 : -1 )
+
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
+
+/**
+ * GOLD is always MAX, Silver Min, no matter who is in the root. 
+ */
 enum nodeType_e {NODE_MAX, NODE_MIN};   
 
 #define PLAYER_TO_NODE_TYPE(player) (player == GOLD ? NODE_MAX : NODE_MIN)
@@ -87,16 +97,6 @@ class SimplePlayout
 class SearchExt
 {
   public:
-    /**
-     * Quick check for goal.
-     *
-     * Checking is unreliable ! 
-     * (looks only for direct goal score without help of tother pieces).
-     * Done by wave algorithm from the goal line for given player. 
-     *
-     * @return True if knows goal can be reached,   
-     *         false otherwise.
-     */
     bool quickGoalCheck(const Board* board, player_t player, int stepsLimit);
   
   private:
@@ -165,12 +165,23 @@ class Node
      */
     bool  isMature() const;
 
+    /**
+     * Fixed getter. 
+     */
+    bool isFixed() const;
+
+    /**
+     * Fixates the node and sets value.
+     */
+    void setFixedValue(float value) ;
+
     bool  hasChildren() const;
     bool  hasOneChild() const;
     Node* getFather() const;
     Node* getFirstChild() const;
     Node* getSibling() const;
     Step  getStep() const;
+    player_t getPlayer() const;
     int   getVisits() const;
     float getValue() const;
     nodeType_e getNodeType() const;
@@ -187,8 +198,14 @@ class Node
     int         visits_;
     Step        step_;
 
+    /**Node is fixed and his value is terminal. Playouts from root 
+     * end here and propagate the value of node back up the tree.
+     * For instance - searchExtension found forced goal from this node.*/
+    bool       fixed_;
+
     /** Best son cached to be used immediately for UCB descend*/
     Node*       bestCached_; 
+
     Node*       sibling_;
     Node*       firstChild_;  
     Node*       father_;
@@ -391,7 +408,7 @@ class Uct:public Engine
      *         If winner is not known ( no winning criteria reached ), position
      *         is evaluated and biased coin si flipped to estimate the winner
      */
-    int decidePlayoutWinner(const Board*, playoutStatus_e) const;
+    int decidePlayoutWinner(const Board*) const;
 
     /**
      * Filtering steps through Transposition tables.
