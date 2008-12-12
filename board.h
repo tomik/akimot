@@ -1,4 +1,3 @@
-
 /** 
  *  @file board.h
  *
@@ -11,8 +10,10 @@
 #pragma once
 
 #include <queue>
+#include <list>
 
 using std::queue;
+using std::list;
 
 #include "utils.h"
 #include "hash.h"
@@ -184,8 +185,14 @@ class Step
 
     //TODO inline
     void setValues( stepType_t, player_t, piece_t, square_t, square_t );
-    void setValues( stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t );
-    const string toString(bool resultPrint = false) const;
+    void setValues( stepType_t, player_t, piece_t, square_t, square_t, 
+                    piece_t, square_t, square_t );
+    /**
+     * Step string representation.
+     *
+     * Might be overriden in ancestors.
+     */
+    virtual string toString() const;
 
 	protected:
     stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
@@ -221,8 +228,17 @@ class Step
 class StepWithKills: public Step
 {
   public:
+    StepWithKills(Step step, const Board* board);
+
+    /**
+     * Print of step.
+     *
+     * Might override virtual method in predecessor.
+     */
+    string toString() const;
+
+  private:
     StepWithKills();
-    StepWithKills(Step step);
 
     /**
      * Fills KillInfo. 
@@ -230,16 +246,53 @@ class StepWithKills: public Step
      * Checks forward kill of the step and 
      * adds kill if neccessary.
      */
-    void addKills(Board* board);
-    const string toString() const;
+    void addKills(const Board* board);
 
-  private:
     KillInfo kills[2];
 };
 
 
-//TODO UNDUMMYFI ! 
-typedef string Move;
+typedef list<Step> StepList;
+typedef StepList::iterator StepListIter;
+
+/**
+ * Move = list of steps (up to STEP_IN_MOVE).
+ *
+ * Accepts Steps as well as StepWithKills.
+ */
+
+class Move
+{
+  public:
+    string toString();
+    string toStringWithKills(const Board* board);
+
+    /**
+     * Appends step to the move.
+     *
+     * move: A->B; step : C
+     * => move: A->B->C
+     */
+    void appendStep(Step);
+    
+    /**
+     * Prepends step to the move.
+     *
+     * move: A->B; step : C
+     * => move: C->A->B
+     */
+    void prependStep(Step);
+
+    /**
+     * Steps getter.
+     *
+     * Function returns list of steps.
+     */
+    StepList getStepList();
+    
+  private:
+    StepList stepList_;
+};
 
 /**
  * Record action as parsed from the game record (file).
@@ -302,17 +355,8 @@ class Board
      * one is unsuccessfull ) by generating all steps and selecting one in random.
      */
 		Step findStepToPlay();
-
     
-    /**
-     * Performs whole move. 
-     *
-     * There is no control whether move is legal.
-     * @param move String representation of the move.
-     */
-		void makeMove(const string& move);
-
-    /**
+   /**
      * Equality operator.
      *
      * Check signatures and moveCount.
@@ -332,12 +376,21 @@ class Board
      */
 		bool makeStepTryCommitMove(Step&);
 
-    /**
-     * Updates winner of the game.
+     /**
+     * Performs whole move. 
      *
-     * Checks winner according to reaching goal, opponent has 0 rabbits.
+     * There is no control whether move is legal.
+     * @param move String representation of the move.
      */
-    void updateWinner();
+		void makeMove(const string& move);
+
+     /**
+     * Making whole move.
+     *
+     * Retrieves the step list from move, 
+     * performs them and commits the move.
+     */
+		void makeMoveWithCommit(Move& move);
 
     /**
      * Commits the move.
@@ -346,6 +399,12 @@ class Board
      */
 		void commitMove();
 
+    /**
+     * Updates winner of the game.
+     *
+     * Checks winner according to reaching goal, opponent has 0 rabbits.
+     */
+    void updateWinner();
 
     /**
      * Quick check for goal.
@@ -506,7 +565,7 @@ class Board
      * One of the crucial methods in the boardstructure.
      * Takes given step and performs it. Updates board structure and resolves kills.
      */
-		void makeStep(Step&);
+		void makeStep(Step& step);
 
     /**
      * "Random" step generator.

@@ -166,7 +166,6 @@ class DebugTestSuite : public CxxTest::TestSuite
     thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
     thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
     TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove())), true);
-
   }
 
   /**
@@ -187,9 +186,12 @@ class DebugTestSuite : public CxxTest::TestSuite
       board->initNewGame();
       board->initFromPosition(fn.c_str());
       cerr << board->toString();
-      string s;
-      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &s))
-        cerr << "play: " << s << " buddy ! " << endl;
+      Move move;
+      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move))
+        cerr << "play: " << move.toString() << " buddy ! " << endl;
+      else
+        cerr << "Dunno how to score a goal." << endl;
+          
       TS_ASSERT_EQUALS(board->quickGoalCheck(GOLD, STEPS_IN_MOVE), expected);
     }
 

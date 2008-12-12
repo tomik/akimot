@@ -3,6 +3,7 @@
 
 === Actual ===
 [5, *] create class for Move ( list of steps )
+[5, board] makeMove method -> initstep from string & board->makestepwithcommit
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve

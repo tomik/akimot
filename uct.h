@@ -272,14 +272,22 @@ class Tree
      */
     void randomDescend();
 
-    /** 
-     * Finding the resulting move.
+    /**
+     * Finds the best move node.
      *
-     * In the end of the search, finds the best move (sequence of up to 4 steps)
-     * for player who owns the root and returns it's string representation 
-     * to be outputted (also trap falls are outputed ... e,g. RC1n RC2n RC3x RB1n)
+     * Node for the best move in the subtree under subTreeRoot. 
+     * BFS in the tree topmost level(relative to subTreeRoot) of the tree..
+     * 
      */
-    string findBestMoveRepr(Node* bestFirstNode, const Board* boardGiven);
+    Node* findBestMoveNode(Node* subTreeRoot);
+
+    /** 
+     * Move for given Node.
+     *
+     * After finding best node. This method finds appropriate move for this node in the tree.
+     * @return best move in search. 
+     */
+    Move findBestMove(Node* bestMoveNode, const Board* board);
 
     /**
      * Backpropagation of playout sample.
@@ -441,7 +449,7 @@ class Uct:public Engine
     SearchExt* searchExt_; 
     /**Pointer to the most visited last step of first move.*/
     Node* bestMoveNode_;  
-    /**Best move string representation.*/
+    /**Best move calculated from bestMoveNode_.*/
     string bestMoveRepr_;  
 
     int nodesPruned_;

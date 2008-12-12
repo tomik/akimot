@@ -24,16 +24,23 @@ from aei.aei import StdioEngine, EngineController
 
 import tests
 
-CYCLES = 100
-TIME_PER_TEST = 5
+DEFAULT_CYCLES = 100
+DEFAULT_TIME_PER_TEST = 5
+
+class TimeSettings(object):
+
+    def __init__(self, cycles=DEFAULT_CYCLES, time_per_test=DEFAULT_TIME_PER_TEST):
+        self.cycles = int(cycles)
+        self.time_per_test = float(time_per_test)
 
 class Test(object):
     """
         One test.
     """
-    def __init__(self, test_file):
+    def __init__(self, test_file, time_per_test):
         self.mod_name = test_file.split('.py')[0]
         self.mod = __import__(self.mod_name) 
+        self.time_per_test = time_per_test
 
     def do_test(self, engine):
         lines = self.mod.pos.strip('\n').split('\n')
@@ -42,7 +49,7 @@ class Test(object):
         log.debug('\n' + pos.to_long_str())
 
         engine.newgame()
-        engine.setoption("tcmove", TIME_PER_TEST)
+        engine.setoption("tcmove", self.time_per_test)
         engine.setposition(pos)
         engine.go()
 
@@ -74,16 +81,17 @@ class Suite:
     """
         Some collection of tests.
     """
-    def __init__(self, test_files, engine_cmd):
-        self.tests = [ Test(test_file) for test_file in test_files]
+    def __init__(self, test_files, engine_cmd, time_settings):
         self.engine = EngineController(StdioEngine(engine_cmd, log))
+        self.time_settings = time_settings
+        self.tests = [ Test(test_file, self.time_settings.time_per_test) for test_file in test_files]
 
     def run(self):
         print("Running the test suite...") 
         passed = {}
         i = 0
         for test in self.tests:
-            for c in xrange(CYCLES):
+            for c in xrange(self.time_settings.cycles):
                 i += 1 
                 log.debug("trial %d", i) 
                 if test.do_test(self.engine):
@@ -94,8 +102,8 @@ class Suite:
                 
         passed_num = sum(passed.values())
         for test in self.tests:
-            print ("%s passed %d/%d times." % (test, passed.get(test,0), CYCLES))
-        print("Passed %d/%d tests." % (passed_num, CYCLES * len(self.tests)))
+            print ("%s passed %d/%d times." % (test, passed.get(test,0), self.time_settings.cycles))
+        print("Passed %d/%d tests." % (passed_num, self.time_settings.cycles * len(self.tests)))
     
     def __del__(self):
         self.engine.quit()
@@ -130,6 +138,7 @@ if __name__ == '__main__':
     
     engine = config.get("global", "engine")
     filter = config.get("global","tests","*")
-    s = Suite(filter_test_files(filter, tests.get_test_files()), engine) 
+    time_settings = TimeSettings(cycles=config.get("global", "cycles", DEFAULT_CYCLES), time_per_test=config.get("global", "time_per_test", DEFAULT_TIME_PER_TEST) )
+    s = Suite(filter_test_files(filter, tests.get_test_files()), engine, time_settings) 
     s.run()
 

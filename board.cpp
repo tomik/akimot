@@ -210,18 +210,13 @@ bool Step::operator== ( const Step& other) const
 
 //---------------------------------------------------------------------
 
-const string Step::toString(bool resultPrint) const
+string Step::toString() const
 {
   stringstream ss;
   ss.str(""); 
 
-  if ( ! resultPrint)
-    ss << "(";
-
   switch (stepType_) {
     case STEP_PASS: 
-      if ( ! resultPrint ) 
-        ss << "pass";     
       break;
     case STEP_SINGLE: 
       ss << oneSteptoString(player_, piece_, from_, to_); 
@@ -242,8 +237,6 @@ const string Step::toString(bool resultPrint) const
       break;
 
   }
-  if ( ! resultPrint ) 
-    ss << ") ";
 
   return ss.str();
 }
@@ -328,19 +321,20 @@ const string KillInfo::toString() const
 
 StepWithKills::StepWithKills()
 {
+  assert(false);
 }
 
 //--------------------------------------------------------------------- 
 
-StepWithKills::StepWithKills(Step step):
+StepWithKills::StepWithKills(Step step, const Board* board):
   Step(step)
 {
-  
+  addKills(board); 
 }
 
 //--------------------------------------------------------------------- 
 
-void StepWithKills::addKills(Board* board)
+void StepWithKills::addKills(const Board* board)
 {
   switch (stepType_) {
     case STEP_SINGLE:
@@ -360,11 +354,11 @@ void StepWithKills::addKills(Board* board)
 
 //--------------------------------------------------------------------- 
 
-const string StepWithKills::toString() const
+string StepWithKills::toString() const
 {
   stringstream ss;
   stringstream ssOut;
-  ss << Step::toString(true);
+  ss << Step::toString();
 
   string firstPart, secondPart;
   ss >> firstPart; 
@@ -372,7 +366,49 @@ const string StepWithKills::toString() const
 
   ssOut << firstPart << " " << kills[0].toString() << secondPart << " " << kills[1].toString();
   return ssOut.str();
-  //return ss.str(); 
+}
+
+//---------------------------------------------------------------------
+//  section Move
+//---------------------------------------------------------------------
+
+void Move::appendStep(Step step)
+{
+  stepList_.push_back(Step(step));
+}
+
+//--------------------------------------------------------------------- 
+
+void Move::prependStep(Step step)
+{
+  stepList_.push_front(Step(step));
+}
+
+//--------------------------------------------------------------------- 
+
+StepList Move::getStepList()
+{
+  return stepList_;
+}
+
+//--------------------------------------------------------------------- 
+
+string Move::toString()
+{
+  string s;
+  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++)
+    s = s + (*it).toString();
+  return s;
+}
+
+//--------------------------------------------------------------------- 
+
+string Move::toStringWithKills(const Board* board)
+{
+  string s;
+  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++)
+    s = s + StepWithKills((*it), board).toString();
+  return s;
 }
 
 //---------------------------------------------------------------------
@@ -507,16 +543,20 @@ Step Board::findStepToPlay()
   uint playerIndex = PLAYER_TO_INDEX(toMove_);
   Step step;
 
-  assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); //it's not possible to have 0 rabbits in the beginning of move
+  //it's not possible to have 0 rabbits in the beginning of move
+  assert( rabbitsNum[toMoveIndex_] > 0 || stepCount_ > 0); 
 
-  if (pieceArray[toMoveIndex_].getLen() == 0) //no piece for player to move 
-    return Step(STEP_PASS, toMove_);          //step_pass since the player with no pieces still might win 
-                                              //if he managed to kill opponent's last rabbit before he lost his last piece
+  //no piece for player to move 
+  if (pieceArray[toMoveIndex_].getLen() == 0) {
+    //step_pass since the player with no pieces still might win 
+    //if he managed to kill opponent's last rabbit before he lost his last piece
+    return Step(STEP_PASS, toMove_);          
+  }
   //if (findRandomStep(step))
   //  return step;
 
-  /* STEP_PASS is always last move generated in generateAllSteps 
-   * it can be simply removed to get "no-pass" move */
+  // STEP_PASS is always last move generated in generateAllSteps 
+  // it can be simply removed to get "no-pass" move 
   stepArrayLen[playerIndex] = generateAllSteps(toMove_, stepArray[playerIndex]);
   uint len = stepArrayLen[playerIndex];
 
@@ -531,73 +571,8 @@ Step Board::findStepToPlay()
   uint index = rand() % len;
   assert( index >= 0 && index < len );
 
-  /*check step reasonability
-  for (int i = 0; i < 20; i++){
-    index = rand() % len;
-    step = stepArray[playerIndex][index]; 
-    
-    //avoid suicide
-    if (  IS_TRAP(step.to_) ){
-      bool suicide = true;
-      for(int i = 0; i < 4; i++)
-        if (OWNER(board_[step.to_ + direction[i]]) == step.player_ && step.to_ + direction[i] != step.from_ )
-          suicide = false;
-
-      if ( suicide )
-          continue;
-    //TODO - rabbits move forward, prefer push/pulls, ...
-    }
-  
-  }
-
-  */
-
   return( stepArray[playerIndex][index]); 
 } 
-
-//---------------------------------------------------------------------
-
-void Board::makeMove(const string& moveRaw)
-{
-  string move = trimLeft(trimRight(moveRaw));
-  if (move == "")
-    return; 
-
-  stringstream ss(move);
-
-  while (ss.good()){
-    recordAction_e recordAction;
-    string token;
-    player_t player; 
-    piece_t  piece;
-    square_t from;
-    square_t to;
-
-    ss >> token;
-
-    recordAction = parseRecordActionToken(token, player, piece, from, to);
-    Step step = Step(STEP_SINGLE, player, piece, from, to);
-
-    switch (recordAction){
-      case ACTION_PLACEMENT:
-        assert(moveCount_ == 1);
-        setSquare(from, player, piece);
-        pieceArray[PLAYER_TO_INDEX(player)].add(from);
-        if (piece == PIECE_RABBIT)
-          rabbitsNum[PLAYER_TO_INDEX(player)]++; 
-        break;
-      case ACTION_STEP:
-        assert(moveCount_ > 1);
-        makeStep(step);
-        break;
-      case ACTION_TRAP_FALL:
-        break;
-    }
-  }
-
-  commitMove();
-}
-
 
 //--------------------------------------------------------------------- 
 
@@ -880,6 +855,7 @@ void Board::makeStep(Step& step)
   }
 
 }
+
 //---------------------------------------------------------------------
 
 bool Board::findRandomStep(Step& step) const
@@ -1021,26 +997,61 @@ bool Board::makeStepTryCommitMove(Step& step)
   return false;
 }
 
-//--------------------------------------------------------------------- 
+//---------------------------------------------------------------------
 
-void Board::updateWinner()
+void Board::makeMove(const string& moveRaw)
 {
-  //assert(winner_ == EMPTY);
-  //winner might be set already ( when player to move has no move ) 
-  for (int i = 11; i <= 19; i++)
-    if (board_[i] == (SILVER | PIECE_RABBIT) )
-      winner_ = SILVER;
-  for (int i = 81; i <= 88; i++)
-    if (board_[i] == (GOLD | PIECE_RABBIT) )
-      winner_ = GOLD;
+  string move = trimLeft(trimRight(moveRaw));
+  if (move == "")
+    return; 
 
-  if (rabbitsNum[toMoveIndex_] <= 0)  //if player lost his last rabbit in his move - he loses ... 
-    winner_ = OPP(toMove_);
-  if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
-    winner_ = toMove_;
+  stringstream ss(move);
 
-  //logDebug("Commiting move %d from player %d", moveCount_, toMove_);
+  while (ss.good()){
+    recordAction_e recordAction;
+    string token;
+    player_t player; 
+    piece_t  piece;
+    square_t from;
+    square_t to;
 
+    ss >> token;
+
+    recordAction = parseRecordActionToken(token, player, piece, from, to);
+    Step step = Step(STEP_SINGLE, player, piece, from, to);
+
+    switch (recordAction){
+      case ACTION_PLACEMENT:
+        assert(moveCount_ == 1);
+        setSquare(from, player, piece);
+        pieceArray[PLAYER_TO_INDEX(player)].add(from);
+        if (piece == PIECE_RABBIT)
+          rabbitsNum[PLAYER_TO_INDEX(player)]++; 
+        break;
+      case ACTION_STEP:
+        assert(moveCount_ > 1);
+        makeStep(step);
+        break;
+      case ACTION_TRAP_FALL:
+        break;
+    }
+  }
+
+  commitMove();
+}
+
+//---------------------------------------------------------------------
+
+void Board::makeMoveWithCommit(Move& move)
+{
+  StepList stepList;
+  stepList  = move.getStepList();
+
+  assert(stepList.size() <= STEPS_IN_MOVE);
+  for (StepListIter it = stepList.begin(); it != stepList.end(); it++)
+    makeStep(*it);
+
+  commitMove();
 }
 
 //---------------------------------------------------------------------
@@ -1059,6 +1070,27 @@ void Board::commitMove()
 
   //preMoveSignature of the next move is the actual signature
   preMoveSignature_ = signature_;
+}
+
+
+//--------------------------------------------------------------------- 
+
+void Board::updateWinner()
+{
+  //assert(winner_ == EMPTY);
+  //winner might be set already ( when player to move has no move ) 
+  for (int i = 11; i <= 19; i++)
+    if (board_[i] == (SILVER | PIECE_RABBIT) )
+      winner_ = SILVER;
+  for (int i = 81; i <= 88; i++)
+    if (board_[i] == (GOLD | PIECE_RABBIT) )
+      winner_ = GOLD;
+
+  if (rabbitsNum[toMoveIndex_] <= 0)  //if player lost his last rabbit in his move - he loses ... 
+    winner_ = OPP(toMove_);
+  if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
+    winner_ = toMove_;
+  //logDebug("Commiting move %d from player %d", moveCount_, toMove_);
 }
 
 //--------------------------------------------------------------------- 
@@ -1143,8 +1175,7 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, playe
   assert(flagBoard[win_square] <= STEPS_IN_MOVE);
   assert(flagBoard[win_square] > 0);
 
-  Move s; 
-  Step steps[STEPS_IN_MOVE];
+  Move move;
   //inverse directions ... trackback
   int inv_dirs[3] = {NORTH, EAST, WEST}; 
   if (player == GOLD) 
@@ -1170,7 +1201,7 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, playe
       }
 
       if (flagBoard[neighbour] == flagBoard[act] - 1) {
-        steps[i] = Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act);
+        move.appendStep(Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act));
         act = neighbour;
         found_neighbour = true;
         break;
@@ -1178,10 +1209,8 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, playe
     }
     assert(found_neighbour);
   }
-  for (int i = flagBoard[win_square] - 1; i >= 0; i--)
-    s = s + steps[i].toString();
 
-  return s;
+  return move;
 }
 
 //---------------------------------------------------------------------
