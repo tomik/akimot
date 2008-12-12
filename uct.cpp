@@ -482,8 +482,8 @@ Move Tree::findBestMove(Node* bestMoveNode, const Board* board)
     act = act->getFather(); 
   } 
 
-  playBoard->makeMoveWithCommit(bestMove);
   /*
+  playBoard->makeMoveWithCommit(bestMove);
   if (bestMoveNode->isFixed()){
     Move fixedMove;
     playBoard->getGoalMove(&fixedMove);
@@ -650,17 +650,20 @@ void Uct::reset(const Board* board)
 void Uct::searchTree(const Board* board)
 {
   reset(board);
-  while (! checkSearchStop())
+  while (! checkSearchStop()){
     doPlayout(board);
+  }
 
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_, board);
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
+  /*
   Board playBoard(*board);
   playBoard.makeMoveWithCommit(bestMove);
   thirdRep.update(playBoard.getSignature(), PLAYER_TO_INDEX(playBoard.getPlayerToMove()) );
+  */
 
 }
 
@@ -682,7 +685,7 @@ void Uct::doPlayout(const Board* board)
   do { 
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
-        //fixed nodes automatically return their valu
+        //fixed nodes automatically return their value
         /*
         if (tree_->actNode()->isFixed()){
           tree_->updateHistory(tree_->actNode()->getValue());

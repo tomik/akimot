@@ -405,9 +405,14 @@ string Move::toString()
 
 string Move::toStringWithKills(const Board* board)
 {
+  //TODO a bit dirty ... must update board after each step ...
+  Board * playBoard = new Board(*board);
   string s;
-  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++)
-    s = s + StepWithKills((*it), board).toString();
+  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++){
+    s = s + StepWithKills((*it), playBoard).toString();
+    playBoard->makeStepTryCommitMove(*it);
+  }
+  delete playBoard;
   return s;
 }
 

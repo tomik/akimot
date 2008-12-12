@@ -2,8 +2,9 @@
 # [urgency, category] item 
 
 === Actual ===
-[5, *] create class for Move ( list of steps )
-[5, board] makeMove method -> initstep from string & board->makestepwithcommit
+[5, *] benchmark with previous versions ! 
+[5, board] refactor quickGoalCheck and backtrackFlagBoard
+[5, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
 [4,hash] position hashing - add moveIndex - now earlier move kills later move
 [4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3,eval] mapping evaluation -> win percentage is dummy -> improve
@@ -19,6 +20,7 @@
   [29.11][4,aei] add init from file 
   [29.11][5,config] refactor not to use config, but only aei 
   [10.12][5,*] smoothen headers (privatexpublic, comments)
+  [12.12][5, board] create class for Move ( list of steps )
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
