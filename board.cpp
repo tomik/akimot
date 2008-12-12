@@ -386,7 +386,16 @@ void Move::prependStep(Step step)
 
 //--------------------------------------------------------------------- 
 
-StepList Move::getStepList()
+void Move::appendStepList(StepList stepList)
+{
+  for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
+    stepList_.push_back(*it);
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+StepList Move::getStepList() const
 {
   return stepList_;
 }
@@ -396,8 +405,9 @@ StepList Move::getStepList()
 string Move::toString()
 {
   string s;
-  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++)
+  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++){
     s = s + (*it).toString();
+  }
   return s;
 }
 
@@ -1047,7 +1057,7 @@ void Board::makeMove(const string& moveRaw)
 
 //---------------------------------------------------------------------
 
-void Board::makeMoveWithCommit(Move& move)
+void Board::makeMoveNoCommit(const Move& move)
 {
   StepList stepList;
   stepList  = move.getStepList();
@@ -1056,10 +1066,17 @@ void Board::makeMoveWithCommit(Move& move)
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++)
     makeStep(*it);
 
-  commitMove();
 }
 
 //---------------------------------------------------------------------
+
+void Board::makeMove(const Move& move)
+{
+  makeMove(move);
+  commitMove();
+}
+
+//--------------------------------------------------------------------- 
 
 void Board::commitMove()
 {
@@ -1206,7 +1223,8 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, playe
       }
 
       if (flagBoard[neighbour] == flagBoard[act] - 1) {
-        move.appendStep(Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act));
+        //we go backwards => we are prepending! 
+        move.prependStep(Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act));
         act = neighbour;
         found_neighbour = true;
         break;

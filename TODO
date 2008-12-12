@@ -23,6 +23,7 @@
   [12.12][5, board] create class for Move ( list of steps )
 
 === Small Issues ===
+[3, board] what is testpiecearray doing ? 
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [1, uct]  history has a fixed size - change to dynamic + reallocation
 [3,board] refactor board loading - use fromcompactstring

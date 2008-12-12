@@ -1,6 +1,3 @@
-"""
-"""
-pos = """
 2w
  +-----------------+
 8|   r r   r   r r |
@@ -12,7 +9,4 @@ pos = """
 2| R   M    C      |
 1| R R             |
  +-----------------+
-"""
-tags = "goal, rabbit, sacrifice"
-
-win_ratio = 1
+   a b c d e f g h

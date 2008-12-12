@@ -284,11 +284,19 @@ class Move
     void prependStep(Step);
 
     /**
+     * Append steplist to the move.
+     *
+     * Takes steps from given stepList 
+     * and appends them to the move.
+     */
+    void appendStepList(StepList);
+
+    /**
      * Steps getter.
      *
      * Function returns list of steps.
      */
-    StepList getStepList();
+    StepList getStepList() const;
     
   private:
     StepList stepList_;
@@ -388,9 +396,16 @@ class Board
      * Making whole move.
      *
      * Retrieves the step list from move, 
-     * performs them and commits the move.
+     * performs them, does no commit.
      */
-		void makeMoveWithCommit(Move& move);
+		void makeMoveNoCommit(const Move& move);
+
+     /**
+     * Making whole move.
+     *
+     * Wrapper around makeMoveNoCommit with commit() added.
+     */
+		void makeMove(const Move& move);
 
     /**
      * Commits the move.
