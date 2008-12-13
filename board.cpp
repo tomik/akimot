@@ -960,8 +960,10 @@ bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) con
   int actTrapPos;
   for (int i = 0; i < 4; i++){
     actTrapPos = from + direction[i];
-    if ( IS_TRAP(actTrapPos) && board_[actTrapPos] != EMPTY_SQUARE            //it is a trap where piece is standing
-      && OWNER(board_[actTrapPos]) == OWNER(from) && ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){  //piece is ours and has < 2 friends
+    if ( IS_TRAP(actTrapPos) && 
+        board_[actTrapPos] != EMPTY_SQUARE &&          //it is a trap where piece is standing
+        OWNER(board_[actTrapPos]) == OWNER(board_[from]) && 
+        ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){   //piece has < 2 friends
         killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);                   
         return true;
     }
@@ -993,7 +995,7 @@ void Board::performKill(square_t trapPos)
 {
   int playerIndex = PLAYER_TO_INDEX(OWNER(board_[trapPos]));
 
-  if (PIECE(board_[trapPos]) == PIECE_RABBIT)              //update rabbitsNum - for gameEnd check 
+  if (PIECE(board_[trapPos]) == PIECE_RABBIT)   //update rabbitsNum - for gameEnd check 
      rabbitsNum[playerIndex]--;
   clearSquare(trapPos);
   pieceArray[playerIndex].del(trapPos);
