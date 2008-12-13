@@ -20,6 +20,7 @@ Benchmark::Benchmark(Board* board, uint playoutCount)
 	board_ = board;	
 }
 
+
 //--------------------------------------------------------------------- 
 
 void Benchmark::benchmarkEval() 
@@ -44,6 +45,28 @@ void Benchmark::benchmarkEval()
 
 //--------------------------------------------------------------------- 
 
+void Benchmark::benchmarkCopyBoard() 
+{
+  float					timeTotal;
+
+  timer.start();
+
+  int i = 0;
+  while (! timer.timeUp()){
+    i++;
+    Board *playBoard = new Board(*board_);
+    delete playBoard;
+  }
+
+  timer.stop();
+	timeTotal = timer.elapsed(); 
+  logRaw("Board copy performance: \n  %d copies\n  %3.2f seconds\n  %d cps\n", 
+            i, timeTotal, int ( float(i) / timeTotal));
+  
+}
+
+//--------------------------------------------------------------------- 
+
 void Benchmark::benchmarkPlayout() 
 {
 		
@@ -57,13 +80,13 @@ void Benchmark::benchmarkPlayout()
   int i = 0;
   while (! timer.timeUp()){
     i++;
-    //here we copy the given board
     Board *playBoard = new Board(*board_);
 
     SimplePlayout simplePlayout(playBoard, PLAYOUT_DEPTH, 0);
     playoutStatus = simplePlayout.doPlayout ();
 
 		playoutAvgLen += simplePlayout.getPlayoutLength(); 
+    delete playBoard;
   }
 
   timer.stop();
@@ -137,6 +160,7 @@ void Benchmark::benchmarkSearch() const
 void Benchmark::benchmarkAll() 
 {
   benchmarkEval();
+  benchmarkCopyBoard();
   benchmarkPlayout();
   benchmarkUct();
   benchmarkSearch();

@@ -21,9 +21,6 @@ using std::sqrt;
 #define EVAL_AFTER_LENGTH 2     //length of playout after which we evaluate
 #define UCT_MAX_DEPTH 50
 
-#define MAX_NODE_WIN 1
-#define MIN_NODE_WIN -1
-
 #define MATURE_LEVEL 20
 #define EXPLORE_RATE 0.2
 #define FPU 0

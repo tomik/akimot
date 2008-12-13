@@ -658,11 +658,12 @@ void Uct::searchTree(const Board* board)
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
-  /*
-  Board playBoard(*board);
-  playBoard.makeMove(bestMove);
-  thirdRep.update(playBoard.getSignature(), PLAYER_TO_INDEX(playBoard.getPlayerToMove()) );
-  */
+  //
+  
+  Board* playBoard = new Board(*board);
+  //TODO SEGFAULT :(
+  //  playBoard->makeMove(bestMove);
+  //  thirdRep.update(playBoard.getSignature(), PLAYER_TO_INDEX(playBoard.getPlayerToMove()) );
 
 }
 
@@ -685,6 +686,7 @@ void Uct::doPlayout(const Board* board)
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
         //fixed nodes automatically return their value
+        /*
         if (tree_->actNode()->isFixed()){
           tree_->updateHistory(tree_->actNode()->getValue());
           break;
@@ -695,6 +697,7 @@ void Uct::doPlayout(const Board* board)
           tree_->updateHistory(tree_->actNode()->getValue());
           break;
         }
+        */ 
 
         stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);

@@ -29,6 +29,7 @@ class Benchmark
 		Benchmark(Board*,uint);
 
 		void benchmarkEval(); 
+		void benchmarkCopyBoard(); 
 		void benchmarkPlayout(); 
 		void benchmarkUct(); 
 		void benchmarkSearch() const;

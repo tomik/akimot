@@ -192,7 +192,7 @@ class Step
      *
      * Might be overriden in ancestors.
      */
-    virtual string toString() const;
+    string toString() const;
 
 	protected:
     stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL

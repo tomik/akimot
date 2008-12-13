@@ -1083,8 +1083,6 @@ void Board::commitMove()
   assert(toMove_ == GOLD || toMove_ == SILVER);
   if (toMove_ == SILVER) 
     moveCount_++;
-
-
   toMove_ = OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
   assert(toMoveIndex_ == uint(PLAYER_TO_INDEX(toMove_)));
