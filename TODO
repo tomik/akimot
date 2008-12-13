@@ -2,12 +2,12 @@
 # [urgency, category] item 
 
 === Actual ===
-[5, *] benchmark with previous versions ! 
+[3, bench] add more positions to benchmark ! 
 [5, board] refactor quickGoalCheck and backtrackFlagBoard
 [5, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
-[4,hash] position hashing - add moveIndex - now earlier move kills later move
-[4,board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
-[3,eval] mapping evaluation -> win percentage is dummy -> improve
+[4, hash] position hashing - add moveIndex - now earlier move kills later move
+[4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
+[3, eval] mapping evaluation -> win percentage is dummy -> improve
 [3, board] get frozenboard back to work
 
   === Done  ===

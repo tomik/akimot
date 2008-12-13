@@ -80,11 +80,9 @@ void Benchmark::benchmarkQuickGoalCheck()
   playBoard->initFromPosition(NEGATIVE_GOAL_CHECK_PATH);
 
   int i = 0;
-  while (! timer.timeUp() && i < 1){
+  while (! timer.timeUp()){
     i++;
-    cerr << playBoard->toString();
-    bool check = playBoard->quickGoalCheck();
-    assert( ! check);
+    playBoard->quickGoalCheck();
   }
 
   delete playBoard;

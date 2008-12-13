@@ -77,6 +77,20 @@ class DebugTestSuite : public CxxTest::TestSuite
      }
 
     /**
+     * Test for distance macro defined in board.h. 
+     */
+    void testDistanceMacro(void)
+    {
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(11, 12), 1);
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(11, 21), 1);
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(21, 18), 8);
+      //diagonal trap distance
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(33, 66), 6);
+      //neighbour trap distance
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(33, 63), 3);
+    }
+
+    /**
      * Hash table insert/hasItem/load test.
      */
     void testHashTable(void)
@@ -185,14 +199,18 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(RABBITS_TEST_DIR) + s1;
       board->initNewGame();
       board->initFromPosition(fn.c_str());
-      cerr << board->toString();
+      //cerr << board->toString();
+      //cerr << "expected: " << expected << endl;
       Move move;
-      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move))
-        cerr << "play: " << move.toString() << " buddy ! " << endl;
-      else
-        cerr << "Dunno how to score a goal." << endl;
+      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move)){
+        //cerr << "play: " << move.toString() << " buddy ! " << endl;
+        TS_ASSERT_EQUALS(expected, true);
+      }
+      else{
+        //cerr << "Dunno how to score a goal." << endl;
+        TS_ASSERT_EQUALS(expected, false);
+      }
           
-      TS_ASSERT_EQUALS(board->quickGoalCheck(GOLD, STEPS_IN_MOVE), expected);
     }
 
   }

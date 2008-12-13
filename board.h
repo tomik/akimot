@@ -62,6 +62,8 @@ using std::list;
 #define PLAYER_TO_INDEX(player)	(player == GOLD ? 0 : 1 )
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
 
+#define SQUARE_DISTANCE(s1, s2) (abs(s1/10 - s2/10) + abs(s1%10 - s2%10))
+
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
 

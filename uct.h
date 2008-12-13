@@ -32,15 +32,13 @@ enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL};
 
 /**
  * GOLD is always MAX, Silver Min, no matter who is in the root. 
+ * values in the node express: -1 sure win for Silver ... 0 equal ... 1 sure win for gold 
+ * nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
+ * NODE_MIN ( ~ siler node )  where we maximize -value + uncertainty_term
  */
 enum nodeType_e {NODE_MAX, NODE_MIN};   
 
 #define PLAYER_TO_NODE_TYPE(player) (player == GOLD ? NODE_MAX : NODE_MIN)
-
-// values in the node express: -1 sure win for Silver ... 0 equal ... 1 sure win for gold 
-// nodes are either NODE_MAX ( ~ gold node )  where we maximize value + uncertainty_term and 
-// NODE_MIN ( ~ siler node )  where we maximize -value + uncertainty_term
-
 
 /**
  * Simple random playout.

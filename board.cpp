@@ -1123,7 +1123,6 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
   assert(IS_PLAYER(player));
   assert(stepLimit <= STEPS_IN_MOVE);
 
-
   queue<int> q;
   FlagBoard flagBoard;
   int dirs[3] = {SOUTH, EAST, WEST}; 
@@ -1132,50 +1131,76 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
   int winRow[2] = {TOP_ROW, BOTTOM_ROW};
   int index = PLAYER_TO_INDEX(player);
 
-  //TODO - memset ? 
-  for (int i = 0; i < SQUARE_NUM; i++ )
-    flagBoard[i] = FLAG_BOARD_EMPTY;
 
   //init with rabbits having chance to reach the goal (distance 4 from some trap)
   for (uint i = 0; i < pieceArray[index].getLen(); i++){
-    if (PIECE(board_[pieceArray[index][i]]) == PIECE_RABBIT && 
-        abs(ROW(pieceArray[index][i]) - winRow[index]) <= stepLimit){
-      q.push(pieceArray[index][i]);
-      flagBoard[pieceArray[index][i]] = 0;
-    }
-  }
-    
-  //wave
-  while(! q.empty()){
-    int act = q.front();
-    q.pop(); 
-    //too many steps
-    if (flagBoard[act] >= stepLimit)
+    if (PIECE(board_[pieceArray[index][i]]) != PIECE_RABBIT || 
+        abs(ROW(pieceArray[index][i]) - winRow[index]) > stepLimit){
       continue;
-    //frozen or in the trap
-    if (flagBoard[act] == 1 ) {
-      if (!hasTwoFriends(act, player) && 
-          (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
-        continue;
     }
-    else{
-      if (!hasFriend(act, player) && 
-          (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
-        continue;
+
+    //TODO - smaller flagboard/memset 
+    for (int k = 0; k < SQUARE_NUM; k++ ){
+      flagBoard[k] = FLAG_BOARD_EMPTY;
+    } 
+    
+    //out of board
+    uint sacrificeTrap = 0;
+    //sacrifice trap issues
+    for (int j = 0; j < 4; j++){
+      int neighbour = pieceArray[index][i] + direction[j];
+      if ( IS_TRAP(neighbour) && 
+          OWNER(board_[neighbour]) == player && 
+          ! hasTwoFriends(neighbour, player)){
+        assert(board_[neighbour] != EMPTY_SQUARE);
+        sacrificeTrap = neighbour;
+      }
     }
-    //add neighbours
-    for (int i = 0; i < 3; i++){
-      int neighbour = act + dirs[i];
-      if ( board_[neighbour] == EMPTY_SQUARE && flagBoard[neighbour] == FLAG_BOARD_EMPTY){
-        if (ROW(neighbour) == winRow[index]){
-          if (move != NULL){
-            flagBoard[neighbour] = flagBoard[act] + 1;
-            (*move) = tracebackFlagBoard(flagBoard, neighbour, player);
-          }
-          return true;
+
+    //cerr << "rabitt: " << pieceArray[index][i] << "sacrifice trap: " << sacrificeTrap << endl;
+
+    q.push(pieceArray[index][i]);
+    flagBoard[pieceArray[index][i]] = 0;
+   
+    //wave
+    while(! q.empty()){
+      int act = q.front();
+      q.pop(); 
+      //too many steps
+      if (flagBoard[act] >= stepLimit)
+        continue;
+      //too faw away to reach the goal/TODO - more elaborate check :)
+      if (abs(ROW(act) - winRow[index]) > (stepLimit - flagBoard[act]))
+        continue;
+      //frozen or in the trap
+      if (flagBoard[act] == 1  || 
+          (flagBoard[act] == 2 && SQUARE_DISTANCE(act, sacrificeTrap) == 1)) {
+        if (!hasTwoFriends(act, player) && 
+            (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
+          continue;
+      }
+      else{
+        if (!hasFriend(act, player) && 
+            (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
+          continue;
+      }
+      //add neighbours
+      for (int l = 0; l < 3; l++){
+        int neighbour = act + dirs[l];
+        if (flagBoard[neighbour] != FLAG_BOARD_EMPTY ) {
+          continue; 
         }
-        q.push(neighbour);
-        flagBoard[neighbour] = flagBoard[act] + 1;
+        if ( board_[neighbour] == EMPTY_SQUARE ){ 
+          if (ROW(neighbour) == winRow[index]){
+            if (move != NULL){
+              flagBoard[neighbour] = flagBoard[act] + 1;
+              (*move) = tracebackFlagBoard(flagBoard, neighbour, player);
+            }
+            return true;
+          }
+          q.push(neighbour);
+          flagBoard[neighbour] = flagBoard[act] + 1;
+        }
       }
     }
   }
