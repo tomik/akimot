@@ -627,7 +627,7 @@ Uct::~Uct()
   delete tt_;
 }
 
-void Uct::reset(const Board* board)
+void Uct::reset(player_t firstPlayer)
 {
   if (tt_){
     delete tt_;
@@ -639,7 +639,7 @@ void Uct::reset(const Board* board)
   nodesPruned_ = 0;
   playouts_ = 0;
 
-  tree_->reset(board->getPlayerToMove());
+  tree_->reset(firstPlayer);
 
 }
 
@@ -647,7 +647,7 @@ void Uct::reset(const Board* board)
 
 void Uct::searchTree(const Board* board)
 {
-  reset(board);
+  reset(board->getPlayerToMove());
   while (! checkSearchStop()){
     doPlayout(board);
   }
@@ -658,13 +658,9 @@ void Uct::searchTree(const Board* board)
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
-  //
-  
   Board* playBoard = new Board(*board);
-  //TODO SEGFAULT :(
-  //  playBoard->makeMove(bestMove);
-  //  thirdRep.update(playBoard.getSignature(), PLAYER_TO_INDEX(playBoard.getPlayerToMove()) );
-
+  playBoard->makeMove(bestMove);
+  thirdRep.update(playBoard->getSignature(), PLAYER_TO_INDEX(playBoard->getPlayerToMove()) );
 }
 
 //---------------------------------------------------------------------
@@ -685,19 +681,19 @@ void Uct::doPlayout(const Board* board)
   do { 
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
+
         //fixed nodes automatically return their value
-        /*
         if (tree_->actNode()->isFixed()){
           tree_->updateHistory(tree_->actNode()->getValue());
           break;
         }
+
         //goalCheck => value fixation
         if (playBoard->quickGoalCheck()){
           tree_->actNode()->setFixedValue(WINNER_TO_VALUE(tree_->actNode()->getPlayer()));
           tree_->updateHistory(tree_->actNode()->getValue());
           break;
         }
-        */ 
 
         stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);

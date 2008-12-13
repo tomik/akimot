@@ -7,6 +7,7 @@
 #include "timer.h"
 
 #define START_POS_PATH "test/startpos.txt"
+#define NEGATIVE_GOAL_CHECK_PATH "test/rabbits/b001.txt"
 #define PLAYOUT_DEPTH 1
 #define UCT_NODE_MATURE 1
 #define SEC_ONE 1
@@ -30,6 +31,7 @@ class Benchmark
 
 		void benchmarkEval(); 
 		void benchmarkCopyBoard(); 
+		void benchmarkQuickGoalCheck(); 
 		void benchmarkPlayout(); 
 		void benchmarkUct(); 
 		void benchmarkSearch() const;

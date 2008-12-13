@@ -367,7 +367,7 @@ class Uct:public Engine
     /**
      * Update before every search.
      */
-    void reset(const Board*);
+    void reset(player_t firstPlayer);
 
     /**
      * Crucial method implementing search.

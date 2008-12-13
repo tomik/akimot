@@ -1055,6 +1055,15 @@ void Board::makeMove(const string& moveRaw)
   commitMove();
 }
 
+
+//---------------------------------------------------------------------
+
+void Board::makeMove(const Move& move)
+{
+  makeMoveNoCommit(move);
+  commitMove();
+}
+
 //---------------------------------------------------------------------
 
 void Board::makeMoveNoCommit(const Move& move)
@@ -1066,14 +1075,6 @@ void Board::makeMoveNoCommit(const Move& move)
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++)
     makeStep(*it);
 
-}
-
-//---------------------------------------------------------------------
-
-void Board::makeMove(const Move& move)
-{
-  makeMove(move);
-  commitMove();
 }
 
 //--------------------------------------------------------------------- 
