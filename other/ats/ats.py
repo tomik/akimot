@@ -19,6 +19,8 @@ logging.basicConfig(
 
 log = logging.getLogger("ats")
 
+from ConfigParser import SafeConfigParser
+
 from aei import board
 from aei.aei import StdioEngine, EngineController 
 
@@ -27,8 +29,26 @@ import tests
 DEFAULT_CYCLES = 100
 DEFAULT_TIME_PER_TEST = 5
 
-class TimeSettings(object):
+class ConfigWrapper(object):
 
+    def __init__(self, config):
+        self.config = config
+
+    def __getitem__(self, key):
+        return self.config.get(DEFAULT_SECTION, key)
+
+    def __getattr__(self, attr, *args, **kwargs):
+        for section in self.config.sections():
+            try:
+                return self.config.get(section, attr)
+            except :
+                pass
+        raise AttributeError
+
+class TimeSettings(object):
+    """
+        Holds the time settings for tests.
+    """
     def __init__(self, cycles=DEFAULT_CYCLES, time_per_test=DEFAULT_TIME_PER_TEST):
         self.cycles = int(cycles)
         self.time_per_test = float(time_per_test)
@@ -38,21 +58,27 @@ class Test(object):
         One test.
     """
     def __init__(self, test_file, time_per_test):
-        self.mod_name = test_file.split('.py')[0]
-        self.mod = __import__(self.mod_name) 
         self.time_per_test = time_per_test
+        test_config = SafeConfigParser()
+        try:
+            test_config.readfp(open(test_file,"rU"))
+        except IOError:
+            log.error("Wrong test file format in %s." % test_file)
+            sys.exit(1)
+        self.test = ConfigWrapper(test_config)
+        self.test.name = test_file
+        print "Creating test %s" % self.test.name
 
     def do_test(self, engine):
-        lines = self.mod.pos.strip('\n').split('\n')
+        lines = self.test.position.strip('\n').split('\n')
         movenum, pos = board.parse_long_pos(lines)
-
-        log.debug('\n' + pos.to_long_str())
 
         engine.newgame()
         engine.setoption("tcmove", self.time_per_test)
         engine.setposition(pos)
         engine.go()
 
+        log.debug('\n' + pos.to_long_str())
         log.debug("Doing the test %s." % self) 
         while True:
             resp = engine.get_response()
@@ -68,14 +94,12 @@ class Test(object):
                 log.debug( "bestmove: %s" % resp.move)
 
 
-        if winratio >= self.mod.win_ratio:
+        if winratio >= float(self.test.win_ratio):
             return True
         return False
 
     def __str__(self):
-        return "%s" % (self.mod_name)
-        #return "Test %s: %s." % (self.mod_name ,self.mod.__doc__)
-
+        return "%s" % (self.test.name)
 
 class Suite:
     """
@@ -121,8 +145,6 @@ def filter_test_files(filter, test_files):
     return [ t for t,n in zip(test_files, test_files_nums) if d.has_key(n)]
 
 if __name__ == '__main__':
-    from ConfigParser import SafeConfigParser
-
     try:
         config_file = sys.argv[1]
     except IndexError:
