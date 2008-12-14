@@ -96,7 +96,6 @@ Node::Node(const Step& step)
   bestCached_ = NULL;
   visits_     = FPU;
   value_      = FPU;
-  fixed_      = false;
   step_ = step;
   assert(IS_PLAYER(step.getPlayer()));
   nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
@@ -261,21 +260,6 @@ bool Node::isMature() const
 
 //---------------------------------------------------------------------
 
-bool Node::isFixed() const
-{
-  return fixed_; 
-}
-
-//---------------------------------------------------------------------
-
-void Node::setFixedValue(float value) 
-{
-  value_ = value;
-  fixed_ = true;
-}
-
-//---------------------------------------------------------------------
-
 bool Node::hasChildren() const
 {
   return firstChild_ != NULL;
@@ -422,10 +406,27 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len)
   nodesExpandedNum_++;
 }
 
+//--------------------------------------------------------------------- 
+
+void Tree::expandNodeLimited(Node* node, const Move& move)
+{
+  
+  Node* newChild;
+  StepList stepList = move.getStepList();
+  for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
+    newChild = new Node(*it);
+    node->addChild(newChild);
+    node = newChild;
+   // nodesNum_++;
+   // nodesExpandedNum_++;
+  }
+}
+
 //---------------------------------------------------------------------
 
 void Tree::uctDescend()
 {
+  assert(actNode()->hasChildren());
   history[historyTop + 1]= actNode()->findUctChild();
   historyTop++;
   assert(actNode() != NULL);
@@ -435,7 +436,18 @@ void Tree::uctDescend()
 
 void Tree::randomDescend()
 {
+  assert(actNode()->hasChildren());
   history[historyTop + 1]= actNode()->findRandomChild();
+  historyTop++;
+  assert(actNode() != NULL);
+}
+
+//---------------------------------------------------------------------
+
+void Tree::firstChildDescend()
+{
+  assert(actNode()->hasChildren());
+  history[historyTop + 1]= actNode()->getFirstChild();
   historyTop++;
   assert(actNode() != NULL);
 }
@@ -463,34 +475,20 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
 
 //--------------------------------------------------------------------- 
 
-Move Tree::findBestMove(Node* bestMoveNode, const Board* board)
+Move Tree::findBestMove(Node* bestMoveNode)
 {
-  assert(bestMoveNode != NULL);
-
-  Board * playBoard = new Board (*board);
+  assert(bestMoveNode != NULL && bestMoveNode != root());
 
   Move bestMove;
   Node* act = bestMoveNode; 
 
   while (act!= NULL && act != root() && 
          act->getNodeType() == bestMoveNode->getNodeType()) {
-    assert(! (act->isFixed() && act != bestMoveNode));
     bestMove.prependStep(act->getStep());
     act = act->getFather(); 
   } 
   
-  playBoard->makeMoveNoCommit(bestMove);
-  if (bestMoveNode->isFixed()){
-    Move fixedMove;
-    if (playBoard->quickGoalCheck(&fixedMove)){
-      bestMove.appendStepList(fixedMove.getStepList());
-    }
-    else{
-      assert(false);
-    }
-  }
-
-  return bestMove; 
+  return bestMove;
 } 
 
 //---------------------------------------------------------------------
@@ -653,7 +651,7 @@ void Uct::searchTree(const Board* board)
   }
 
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
-  Move bestMove = tree_->findBestMove(bestMoveNode_, board);
+  Move bestMove = tree_->findBestMove(bestMoveNode_);
   //TODO - this doesn't work - try akimot -l -a init :(
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
@@ -682,16 +680,15 @@ void Uct::doPlayout(const Board* board)
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 
-        //fixed nodes automatically return their value
-        if (tree_->actNode()->isFixed()){
-          tree_->updateHistory(tree_->actNode()->getValue());
-          break;
-        }
-
         //goalCheck => value fixation
-        if (playBoard->quickGoalCheck()){
-          tree_->actNode()->setFixedValue(WINNER_TO_VALUE(tree_->actNode()->getPlayer()));
-          tree_->updateHistory(tree_->actNode()->getValue());
+        Move move;
+        if (playBoard->quickGoalCheck(&move)){
+          float value = WINNER_TO_VALUE(tree_->actNode()->getPlayer());
+          tree_->expandNodeLimited(tree_->actNode(), move);
+          //descend to the expanded area
+          while (tree_->actNode()->hasChildren())
+            tree_->firstChildDescend();
+          tree_->updateHistory(value);
           break;
         }
 

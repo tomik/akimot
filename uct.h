@@ -160,16 +160,6 @@ class Node
      */
     bool  isMature() const;
 
-    /**
-     * Fixed getter. 
-     */
-    bool isFixed() const;
-
-    /**
-     * Fixates the node and sets value.
-     */
-    void setFixedValue(float value) ;
-
     bool  hasChildren() const;
     bool  hasOneChild() const;
     Node* getFather() const;
@@ -192,11 +182,6 @@ class Node
     float       value_; 
     int         visits_;
     Step        step_;
-
-    /**Node is fixed and his value is terminal. Playouts from root 
-     * end here and propagate the value of node back up the tree.
-     * For instance - searchExtension found forced goal from this node.*/
-    bool       fixed_;
 
     /** Best son cached to be used immediately for UCB descend*/
     Node*       bestCached_; 
@@ -252,6 +237,14 @@ class Tree
      */
     void  expandNode(Node* node, const StepArray& stepArray, uint len);
 
+    /*
+     * Limited Node expansion.
+     *
+     * Expands node for given move. 
+     * I.E. for every step in given move, moves one level deeper.
+     */
+    void  expandNodeLimited(Node* node, const Move& move);
+
     /**
      * UCT-based descend to next level.
      *
@@ -268,6 +261,14 @@ class Tree
     void randomDescend();
 
     /**
+     * First child descend. 
+     *
+     * Always descends to first child..i 
+     */
+    void firstChildDescend();
+
+
+    /**
      * Finds the best move node.
      *
      * Node for the best move in the subtree under subTreeRoot. 
@@ -282,7 +283,7 @@ class Tree
      * After finding best node. This method finds appropriate move for this node in the tree.
      * @return best move in search. 
      */
-    Move findBestMove(Node* bestMoveNode, const Board* board);
+    Move findBestMove(Node* bestMoveNode);
 
     /**
      * Backpropagation of playout sample.
