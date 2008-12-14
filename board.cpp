@@ -1125,12 +1125,17 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
 
   queue<int> q;
   FlagBoard flagBoard;
-  int dirs[3] = {SOUTH, EAST, WEST}; 
-  if (player == GOLD) 
-    dirs[0] = NORTH; 
+  int rabbitDirection[3] = {player == GOLD ? NORTH : SOUTH, EAST, WEST}; 
   int winRow[2] = {TOP_ROW, BOTTOM_ROW};
   int index = PLAYER_TO_INDEX(player);
 
+  //bounds for flagBoard - depends on player
+  //only part of flagBoard is "interesting"
+  //conditions on rabbits should hold search in these bounds 
+  //we get like 10% speedup in quickGoalCheck by this
+  //TODO this might be still narrowed when stepLimit < 4
+  const int lower = player == GOLD ? 41 : 11;
+  const int upper = player == GOLD ? 89 : 59;
 
   //init with rabbits having chance to reach the goal (distance 4 from some trap)
   for (uint i = 0; i < pieceArray[index].getLen(); i++){
@@ -1139,8 +1144,8 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
       continue;
     }
 
-    //TODO - smaller flagboard/memset 
-    for (int k = 0; k < SQUARE_NUM; k++ ){
+    //narrower (=>quicker) than [0, SQUARE_NUM])
+    for (int k = lower; k < upper; k++ ){
       flagBoard[k] = FLAG_BOARD_EMPTY;
     } 
     
@@ -1148,28 +1153,32 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
     uint sacrificeTrap = 0;
     //sacrifice trap issues
     for (int j = 0; j < 4; j++){
-      int neighbour = pieceArray[index][i] + direction[j];
-      if ( IS_TRAP(neighbour) && 
-          OWNER(board_[neighbour]) == player && 
-          ! hasTwoFriends(neighbour, player)){
-        assert(board_[neighbour] != EMPTY_SQUARE);
-        sacrificeTrap = neighbour;
+      int ngb = pieceArray[index][i] + direction[j];
+      if ( IS_TRAP(ngb) && 
+          OWNER(board_[ngb]) == player && 
+          ! hasTwoFriends(ngb, player)){
+        assert(board_[ngb] != EMPTY_SQUARE);
+        sacrificeTrap = ngb;
       }
     }
-
-    //cerr << "rabitt: " << pieceArray[index][i] << "sacrifice trap: " << sacrificeTrap << endl;
 
     q.push(pieceArray[index][i]);
     flagBoard[pieceArray[index][i]] = 0;
    
+    bool lastValid = true;
+    int last = 0;
     //wave
     while(! q.empty()){
       int act = q.front();
       q.pop(); 
+      if (! lastValid)
+        flagBoard[last] = FLAG_BOARD_EMPTY;
+      lastValid = false;
+      last = act;
       //too many steps
-      if (flagBoard[act] >= stepLimit)
+      if (flagBoard[act] >= stepLimit) 
         continue;
-      //too faw away to reach the goal/TODO - more elaborate check :)
+      //too faw away to reach the goal/TODO - more elaborate check ? :)
       if (abs(ROW(act) - winRow[index]) > (stepLimit - flagBoard[act]))
         continue;
       //frozen or in the trap
@@ -1184,22 +1193,25 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
             (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
           continue;
       }
-      //add neighbours
+
+      lastValid = true;
+      //add neighbours 
       for (int l = 0; l < 3; l++){
-        int neighbour = act + dirs[l];
-        if (flagBoard[neighbour] != FLAG_BOARD_EMPTY ) {
+        //neighbour
+        int ngb = act + rabbitDirection[l];
+        if (flagBoard[ngb] != FLAG_BOARD_EMPTY ) {
           continue; 
         }
-        if ( board_[neighbour] == EMPTY_SQUARE ){ 
-          if (ROW(neighbour) == winRow[index]){
+        if ( board_[ngb] == EMPTY_SQUARE ){ 
+          if (ROW(ngb) == winRow[index]){
             if (move != NULL){
-              flagBoard[neighbour] = flagBoard[act] + 1;
-              (*move) = tracebackFlagBoard(flagBoard, neighbour, player);
+              flagBoard[ngb] = flagBoard[act] + 1;
+              (*move) = tracebackFlagBoard(flagBoard, ngb, player);
             }
             return true;
           }
-          q.push(neighbour);
-          flagBoard[neighbour] = flagBoard[act] + 1;
+          q.push(ngb);
+          flagBoard[ngb] = flagBoard[act] + 1;
         }
       }
     }
@@ -1218,45 +1230,31 @@ bool Board::quickGoalCheck(Move* move) const
 
 //---------------------------------------------------------------------
 
-Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, player_t player) const
+Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, 
+                                int win_square, player_t player) const
 {
   assert(flagBoard[win_square] <= STEPS_IN_MOVE);
   assert(flagBoard[win_square] > 0);
 
   Move move;
   //inverse directions ... trackback
-  int inv_dirs[3] = {NORTH, EAST, WEST}; 
-  if (player == GOLD) 
-    inv_dirs[0] = SOUTH; 
   int act = win_square;
-  bool found_neighbour;
+  bool found_nbg;
 
   for (int i = 0; i < flagBoard[win_square]; i++) {
-    found_neighbour = false;
-    for (int j = 0; j < 3; j++){
-      int neighbour = act + inv_dirs[j];
-      
-      //TODO REFACTOR !!!
-      if (flagBoard[neighbour] == 1 ) {
-        if (!hasTwoFriends(neighbour, player) && 
-            (hasStrongerEnemy(neighbour, player, PIECE_RABBIT) || IS_TRAP(neighbour)))
-          continue;
-      }
-      else{
-        if (!hasFriend(neighbour, player) && 
-            (hasStrongerEnemy(neighbour, player, PIECE_RABBIT) || IS_TRAP(neighbour)))
-          continue;
-      }
-
-      if (flagBoard[neighbour] == flagBoard[act] - 1) {
-        //we go backwards => we are prepending! 
-        move.prependStep(Step(STEP_SINGLE, player, PIECE_RABBIT, neighbour, act));
-        act = neighbour;
-        found_neighbour = true;
+    found_nbg = false;
+    for (int j = 0; j < 4; j++){
+      int nbg = act + direction[j];
+      if ( board_[nbg] != OFF_BOARD_SQUARE &&
+          flagBoard[nbg] == flagBoard[act] - 1) {
+        //going backwards => prepending! 
+        move.prependStep(Step(STEP_SINGLE, player, PIECE_RABBIT, nbg, act));
+        act = nbg;
+        found_nbg = true;
         break;
       }
     }
-    assert(found_neighbour);
+    assert(found_nbg);
   }
 
   return move;
@@ -1269,7 +1267,9 @@ u64 Board::calcAfterStepSignature(const Step& step) const
   if (step.stepType_ == STEP_PASS)
     return signature_;
 
-  assert(step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL || step.stepType_ == STEP_SINGLE );
+  assert(step.stepType_ == STEP_PUSH || 
+        step.stepType_ == STEP_PULL || 
+        step.stepType_ == STEP_SINGLE );
 
   int checkTrap[2];         //squares in whose vicinity we check the traps
   int checkTrapNum = 0;
