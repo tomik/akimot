@@ -751,6 +751,8 @@ string Uct::getStats() const
         << "  " << tree_->getNodesExpandedNum() << " nodes expanded" << endl 
         //<< "  " << tree_->getLongestVariant() << " nodes in longest path" << endl
         << "  " << nodesPruned_ << " nodes pruned" << endl 
+        << "  " << "best move: " << getBestMoveRepr() << endl 
+        << "  " << "win condidence: " << getWinRatio() << endl 
       ;
 
   return ss.str();

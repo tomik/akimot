@@ -104,7 +104,6 @@ eng.setoption("opening_book", 1)
 eng.ident['name'] += " cur"
 engines.append(eng)
 
-
 eng = EngineController(StdioEngine("akimot/akimot", bot_id="2", log = logging))
 print "Bot 2: %s Author: %s" % (eng.ident['name'], eng.ident['author'])
 if max_reserve:

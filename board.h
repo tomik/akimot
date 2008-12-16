@@ -314,6 +314,7 @@ enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL};
 
 typedef pair<player_t, piece_t>  PiecePair;
 
+typedef uint board_t[SQUARE_NUM];
 
 typedef Step  StepArray[MAX_STEPS];
 
@@ -697,7 +698,7 @@ class Board
     static u64        zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
     static ThirdRep*  thirdRep_;
 
-		uint					board_[SQUARE_NUM];					//actual pieces are stored here 
+		board_t					board_;					//actual pieces are stored here 
 		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
     PieceArray    pieceArray[2];  

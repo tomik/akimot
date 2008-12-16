@@ -28,9 +28,10 @@ int main(int argc, char *argv[])
       cout << "Couldn't read position from file.\n";
       return 1;
     } 
-    cerr << board.toString();
+    //cerr << board.toString();
     engine->doSearch(&board);
     cout << engine->getBestMove() << endl;
+    //cerr << engine->getStats();
     return 0;
   } 
 

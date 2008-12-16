@@ -23,5 +23,6 @@ class Eval
 	public:
     int evaluate(const Board*);
     float evaluateInPercent(const Board*); 
+    int evaluateBetter(const Board*); 
 }; 
 

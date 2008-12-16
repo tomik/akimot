@@ -30,6 +30,7 @@ class Benchmark
 		Benchmark(Board*,uint);
 
 		void benchmarkEval(); 
+		void benchmarkEvalBetter(); 
 		void benchmarkCopyBoard(); 
 		void benchmarkQuickGoalCheck(); 
 		void benchmarkPlayout(); 

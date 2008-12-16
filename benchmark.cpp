@@ -45,6 +45,28 @@ void Benchmark::benchmarkEval()
 
 //--------------------------------------------------------------------- 
 
+void Benchmark::benchmarkEvalBetter() 
+{
+  Eval eval; 
+  float timeTotal;
+
+  timer.start();
+
+  int i = 0;
+  while (! timer.timeUp()){
+    i++; 
+    eval.evaluateBetter(board_);
+  }
+
+  timer.stop();
+	timeTotal = timer.elapsed(); 
+
+  logRaw("Better evaluation performance: \n  %d evals\n  %3.2f seconds\n  %d eps\n", 
+            i, timeTotal, int ( float(i) / timeTotal));
+}
+
+//--------------------------------------------------------------------- 
+
 void Benchmark::benchmarkCopyBoard() 
 {
   float	timeTotal;
@@ -187,8 +209,9 @@ void Benchmark::benchmarkSearch() const
 
 void Benchmark::benchmarkAll() 
 {
-  benchmarkEval();
   benchmarkCopyBoard();
+  benchmarkEval();
+  benchmarkEvalBetter();
   benchmarkQuickGoalCheck();
   benchmarkPlayout();
   benchmarkUct();
