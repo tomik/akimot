@@ -39,7 +39,7 @@ playoutStatus_e SimplePlayout::doPlayout()
 		if ( playoutLength_ > 2 * maxPlayoutLength_ ) 
 			return PLAYOUT_TOO_LONG;
 
-    if (++moves > evalAfterLength_ && evalAfterLength_)
+    if (++moves >= evalAfterLength_ && evalAfterLength_)
       return PLAYOUT_EVAL;
 	}
 }
@@ -342,14 +342,43 @@ string Node::toString() const
 
 string Node::recToString(int depth) const
 {
+  const float print_visit_threshold_base    = 500;
+  const float print_visit_threshold_parent  = 0.05;
+
+  float minVisitCount = print_visit_threshold_base + 
+                        visits_ * print_visit_threshold_parent; 
+
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
-    ss << "-";
+    ss << "   ";
   ss << toString();
+
+  Node* best = NULL; 
+
+  typedef set<Node* > nodeTab;
+  nodeTab tab;
+  
   Node* actNode = firstChild_;
   while(actNode != NULL){
-    ss << actNode->recToString(depth + 1);
+    if ((actNode->visits_) >= minVisitCount){
+      tab.insert(actNode); 
+    }
     actNode = actNode->sibling_;
+  }
+  
+  while (true){
+    for (nodeTab::iterator it = tab.begin(); it != tab.end(); it++){
+      if(! best || ((*it)->visits_ > best->visits_)){
+          best = (*it);
+      }
+    }
+    if (best){
+        ss << best->recToString(depth + 1);
+        tab.erase(best);
+        best = NULL;
+    }else{
+      break;
+    }
   }
   return ss.str();
 }
@@ -708,7 +737,11 @@ void Uct::doPlayout(const Board* board)
       }
 
       //"random" playout
-      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, EVAL_AFTER_LENGTH);
+      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, 
+          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          EVAL_AFTER_LENGTH + 1:
+          EVAL_AFTER_LENGTH 
+          );
       playoutStatus = simplePlayout.doPlayout();
       //playoutStatus = PLAYOUT_EVAL;
       tree_->updateHistory( decidePlayoutWinner(playBoard));
@@ -722,7 +755,7 @@ void Uct::doPlayout(const Board* board)
 
     //perform the step and try commit
     if ( playBoard->makeStepTryCommitMove(step) )   {
-      //commit was successful - check whether winning criteria are not reached already
+      //commit was successful - check whether winning criteria are reached already
       if ( playBoard->getWinner() != EMPTY ) {
         tree_->updateHistory(playBoard->getWinner() == GOLD ? 1 : -1); 
         break;  //winner is known already in the uct tree -> no need to go deeper
@@ -752,6 +785,7 @@ string Uct::getStats() const
         //<< "  " << tree_->getLongestVariant() << " nodes in longest path" << endl
         << "  " << nodesPruned_ << " nodes pruned" << endl 
         << "  " << "best move: " << getBestMoveRepr() << endl 
+        << "  " << "best move visits: " << getBestMoveVisits() << endl 
         << "  " << "win condidence: " << getWinRatio() << endl 
       ;
 
@@ -760,9 +794,23 @@ string Uct::getStats() const
 
 //---------------------------------------------------------------------
 
+string Uct::getAdditionalInfo() const
+{
+  return tree_ ? tree_->toString() : "No additional info.";
+}
+
+//---------------------------------------------------------------------
+
 string Uct::getBestMoveRepr() const
 {
   return bestMoveRepr_;
+}
+
+//---------------------------------------------------------------------
+
+int Uct::getBestMoveVisits() const
+{
+  return (bestMoveNode_) ? bestMoveNode_->getVisits() : 0;
 }
 
 //---------------------------------------------------------------------

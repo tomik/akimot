@@ -3,7 +3,7 @@ import time
 
 bot_1 = "akimot"
 bot_2 = "sample1"
-matches = 100
+matches = 10
 match_dir = "matches"
 record_file = "record"
 log_file = "log"

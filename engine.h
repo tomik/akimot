@@ -159,6 +159,11 @@ class Engine
     virtual string getStats() const =0;
 
     /**
+     * Interface to get additional info ( like search tree ).
+     */
+    virtual string getAdditionalInfo() const =0;
+
+    /**
      * Interface to winr ration getter. 
      */
     virtual float getWinRatio() const =0;

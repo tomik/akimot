@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <queue>
+#include <set>
 
 #include "engine.h"
 #include "eval.h"
@@ -16,14 +17,17 @@
 
 using std::queue;
 using std::sqrt;
+using std::set;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-#define EVAL_AFTER_LENGTH 2     //length of playout after which we evaluate
+//length of playout after which we evaluate
+//must be an odd number !  
+#define EVAL_AFTER_LENGTH 3
 #define UCT_MAX_DEPTH 50
 
 #define MATURE_LEVEL 20
 #define EXPLORE_RATE 0.2
-#define FPU 0
+#define FPU 1
 
 #define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 1 : -1 )
 #define WINNER_TO_VALUE(winner) (winner == GOLD ? 1 : -1 )
@@ -52,7 +56,7 @@ class SimplePlayout
     /**
      * Constructor with board initialization.
      */
-		SimplePlayout(Board*, uint, uint);
+		SimplePlayout(Board*, uint maxPlayoutLength, uint evalAfterLength);
 
     /**
      * Performs whole playout. 
@@ -389,9 +393,19 @@ class Uct:public Engine
     string getStats() const;
 
     /**
+     * Get additional info - here it is the string repr. of search tree.
+     */
+    string getAdditionalInfo() const;
+
+    /**
      * String representation of best move.
      */
     string getBestMoveRepr() const;
+
+    /**
+     * Visits to the best move. 
+     */
+    int getBestMoveVisits() const;
 
     /**
      * Value of best move.

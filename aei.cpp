@@ -25,7 +25,8 @@
 #define STR_BEST_MOVE "bestmove"
 #define STR_QUIT "quit"
 #define STR_BYE "bye"
-#define STR_DUMP "dump"
+#define STR_BOARD_DUMP "boarddump"
+#define STR_TREE_DUMP "treedump"
 
 #define STR_INFO "info"  
 #define STR_INFO_TIME "time" 
@@ -177,7 +178,9 @@ void Aei::init()
   //makes move recommended from last search
   records_.push_back(AeiRecord(STR_MAKE_MOVE_REC, AS_MAIN, AS_SAME, AA_MAKE_MOVE_REC, AC_EXT));
   //board dump
-  records_.push_back(AeiRecord(STR_DUMP, AS_MAIN, AS_SAME, AA_DUMP, AC_EXT));
+  records_.push_back(AeiRecord(STR_BOARD_DUMP, AS_MAIN, AS_SAME, AA_BOARD_DUMP, AC_EXT));
+  //tree dump
+  records_.push_back(AeiRecord(STR_TREE_DUMP, AS_MAIN, AS_SAME, AA_TREE_DUMP, AC_EXT));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
@@ -292,8 +295,11 @@ void Aei::handleInput(const string& line)
                   board_->makeMove(engine_->getBestMove());
                   aeiLog("Making move: " + engine_->getBestMove(), AL_DEBUG);
                   break;
-    case AA_DUMP:
+    case AA_BOARD_DUMP:
                  aeiLog(board_->toString(), AL_DEBUG);
+                 break;
+    case AA_TREE_DUMP:
+                 aeiLog(engine_->getAdditionalInfo(), AL_DEBUG);
                  break;
     case AA_QUIT: 
                   quit();
