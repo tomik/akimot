@@ -51,6 +51,7 @@ using std::list;
 #define OWNER(square) (square & OWNER_MASK) 
 #define PIECE(square) (square & PIECE_MASK) 
 #define OPP(player) ((16 - player) + 8)
+//#define OPP(player) (player == GOLD ? SILVER : GOLD )
 
 // what row is a square in?  1 = bottom, 8 = top
 #define ROW(square) (square/10) 

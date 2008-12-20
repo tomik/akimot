@@ -884,6 +884,7 @@ bool Board::findRandomStep(Step& step) const
     step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
 
     assert(IS_PLAYER(board_[step.from_]));
+    assert(OWNER(board_[step.from_]) == toMove_);
 
     if (isFrozen(step.from_))
       continue;
@@ -901,7 +902,9 @@ bool Board::findRandomStep(Step& step) const
              PIECE(board_[step.oppFrom_]) <  PIECE(board_[step.from_])){
           found = true; //generate the step 
           step.stepType_ = STEP_PULL;
+          assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
           step.oppTo_ = step.from_; 
+          break;
         }
       } 
       if (! found){
@@ -918,7 +921,9 @@ bool Board::findRandomStep(Step& step) const
             step.oppTo_ = step.to_ + direction[j];    
             step.stepType_ = STEP_PUSH;
             step.oppFrom_ = step.to_; 
+            assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
             found = true;
+            break;
           }
         }
       }
@@ -928,8 +933,14 @@ bool Board::findRandomStep(Step& step) const
       step.player_ = toMove_;
       step.piece_  = PIECE(board_[step.from_]);
       assert(OWNER(board_[step.from_]) == toMove_);
+      assert(step.stepType_ == STEP_SINGLE || step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL);
 
       if (step.stepType_ != STEP_SINGLE) {
+        //push/pull not allowed 
+        if (stepCount_ > 2){
+          found = false;
+          continue;
+        }
         assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
         step.oppPiece_  = PIECE(board_[step.oppFrom_]);
       }
