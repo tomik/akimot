@@ -21,11 +21,20 @@ int Eval::evaluate(const Board* board_)
 }
 
 //--------------------------------------------------------------------- 
+#define EVAL_MAX 5000
+#define EVAL_MIN (-5000)
 
 float Eval::evaluateInPercent(const Board* board_) 
 {
   int evaluation = evaluateBetter(board_);
 
+  float p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
+  if (p < 0)
+    return 0;
+  if (p > 1)
+    return 1;
+  return p;
+    
   //TODO mapping evaluation -> win percentage is VERY DUMMY - improve
   if (evaluation > 0)
     return 1;

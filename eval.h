@@ -9,9 +9,6 @@
 #define CAT_VALUE 1500
 #define RABBIT_VALUE 1000
 
-#define EVAL_MAX 
-#define EVAL_MIN
-
 /**
  * Board evaluation class.
  * 

@@ -90,15 +90,15 @@ Node::Node()
 
 Node::Node(const Step& step)
 {
+  assert(IS_PLAYER(step.getPlayer()));
+  nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
   bestCached_ = NULL;
-  visits_     = FPU;
-  value_      = FPU;
+  visits_     = 0; //FPU;
+  value_      = 0; //nodeType_ == NODE_MAX ? FPU : - FPU;
   step_ = step;
-  assert(IS_PLAYER(step.getPlayer()));
-  nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
 //---------------------------------------------------------------------
@@ -112,13 +112,14 @@ Node* Node::findUctChild()
 
   Node* act = firstChild_;
   Node* best = firstChild_;
-  float bestUrgency = -100;       //TODO - something small !  
+  float bestUrgency = -100;   //TODO - something small !  
   float actUrgency = 0;
 
   float exploreCoeff = EXPLORE_RATE * log(visits_);
 
   while (act != NULL) {
     actUrgency = act->ucb(exploreCoeff);
+
     if ( actUrgency > bestUrgency ){
       best = act;
       bestUrgency = actUrgency;

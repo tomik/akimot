@@ -567,8 +567,9 @@ Step Board::findStepToPlay()
     //if he managed to kill opponent's last rabbit before he lost his last piece
     return Step(STEP_PASS, toMove_);          
   }
-  //if (findRandomStep(step))
-  //  return step;
+
+  if (findRandomStep(step))
+    return step;
 
   // STEP_PASS is always last move generated in generateAllSteps 
   // it can be simply removed to get "no-pass" move 
@@ -884,60 +885,56 @@ bool Board::findRandomStep(Step& step) const
 
     assert(IS_PLAYER(board_[step.from_]));
 
-    if ( ! isFrozen(step.from_)){
-      step.to_ = step.from_ + direction[rand() % 4];
-      if (stepCount_ < 3 && PIECE(board_[step.from_]) != PIECE_RABBIT){
-        step.stepType_ = (rand() % 3) + 1;
-      }
-      else 
-        step.stepType_ = STEP_SINGLE;
-
-      assert(step.stepType_ == STEP_SINGLE || step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL);
-
-      switch (step.stepType_){
-        case STEP_SINGLE:
-           if ( board_[step.to_] == EMPTY_SQUARE && 
-                (PIECE(board_[step.from_]) != PIECE_RABBIT ||   //rabbits cannot backwards
-                ((toMove_ == GOLD && step.to_ - step.from_ != SOUTH) || (toMove_ == SILVER && step.to_ - step.from_ != NORTH))))  {
-             found = true; //generate the step 
-           }
-          break;
-        case STEP_PUSH: 
-          if ( OWNER(board_[step.to_]) == OPP(OWNER(board_[step.from_])) &&
-               PIECE(board_[step.to_]) <  PIECE(board_[step.from_])){
-            assert(IS_PLAYER(board_[step.to_]));
-            step.oppTo_ = step.to_ + direction[rand() % 4];    //todo - exclude "self" direction
-            if (board_[step.oppTo_] == EMPTY_SQUARE){  //generate the step
-              step.oppFrom_ = step.to_; 
-              found = true;
-            }
-          }
-          break; 
-        case STEP_PULL: 
-          if (board_[step.to_] == EMPTY_SQUARE){  
-            step.oppFrom_ = step.from_ + direction[rand() % 4];    //todo - exclude "to" direction
-            if ( OWNER(board_[step.oppFrom_]) == OPP(OWNER(board_[step.from_])) &&
-                 PIECE(board_[step.oppFrom_]) <  PIECE(board_[step.from_])){
-              step.oppTo_ = step.from_; 
-              found = true;
-            }
-          }
-        break;
+    if (isFrozen(step.from_))
+      continue;
+   
+    step.to_ = step.from_ + direction[rand() % 4];
+    if ( board_[step.to_] == EMPTY_SQUARE ){ //single/pull
+      if (PIECE(board_[step.from_]) == PIECE_RABBIT &&   //rabbits cannot backwards
+         (step.to_ - step.from_ == (toMove_ == GOLD ? SOUTH : NORTH ))) {
+        continue;
       }
 
-      if (found){
-        step.player_ = toMove_;
-        step.piece_  = PIECE(board_[step.from_]);
-        assert(OWNER(board_[step.from_]) == toMove_);
-
-        if (step.stepType_ != STEP_SINGLE) {
-          assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
-          step.oppPiece_  = PIECE(board_[step.oppFrom_]);
+      for (int j = 0; j < 4; j++){
+        step.oppFrom_ = step.from_ + direction[j];    //todo - exclude "to" direction
+        if ( OWNER(board_[step.oppFrom_]) == OPP(OWNER(board_[step.from_])) &&
+             PIECE(board_[step.oppFrom_]) <  PIECE(board_[step.from_])){
+          found = true; //generate the step 
+          step.stepType_ = STEP_PULL;
+          step.oppTo_ = step.from_; 
         }
-
-
-        return true;
+      } 
+      if (! found){
+        step.stepType_ = STEP_SINGLE;
+        found = true;
       }
+    }else{ //push
+
+      if ( OWNER(board_[step.to_]) == OPP(OWNER(board_[step.from_])) &&
+           PIECE(board_[step.to_]) <  PIECE(board_[step.from_])){
+        assert(IS_PLAYER(board_[step.to_]));
+        for (int j = 0; j < 4; j++){
+          if (board_[step.to_ + direction[j]] == EMPTY_SQUARE){  //generate the step
+            step.oppTo_ = step.to_ + direction[j];    
+            step.stepType_ = STEP_PUSH;
+            step.oppFrom_ = step.to_; 
+            found = true;
+          }
+        }
+      }
+    }
+
+    if (found){
+      step.player_ = toMove_;
+      step.piece_  = PIECE(board_[step.from_]);
+      assert(OWNER(board_[step.from_]) == toMove_);
+
+      if (step.stepType_ != STEP_SINGLE) {
+        assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
+        step.oppPiece_  = PIECE(board_[step.oppFrom_]);
+      }
+
+      return true;
     }
   }
     return false;
