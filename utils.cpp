@@ -29,6 +29,7 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
 
 FileRead::FileRead(string fn){
   f_.open(fn.c_str(), fstream::in);
+  ignoreStart_ = "";
 }
 
 //--------------------------------------------------------------------- 
@@ -42,7 +43,9 @@ FileRead::FileRead(){
 bool FileRead::getLine(string & s){
   while (f_.good()){
     getline(f_, s);
-    if (s != "") 
+    if (s != "" && 
+        (ignoreStart_ == "" 
+        || trimLeft(s).find(ignoreStart_.c_str(), 0) != 0))
       return true;
   }
   return false;
@@ -50,23 +53,45 @@ bool FileRead::getLine(string & s){
 
 //--------------------------------------------------------------------- 
 
-bool FileRead::getLineAsPair(string & s1, string & s2){
+bool FileRead::getLineAsPair(string & s1, string & s2, const char * sep){
   string s;
   stringstream ss;
   ss.str("");
   while (f_.good()){
     getline(f_, s);
-    if (s != "") {
-      ss.str(s);
-      ss >> s1;
-      s2 = getStreamRest(ss);
-      return true;
+    if (s != "" &&
+        ( ignoreStart_ == ""
+          || trimLeft(s).find(ignoreStart_.c_str(), 0) != 0)){
+        if (sep == NULL){
+        ss.str(s);
+        ss >> s1;
+        s2 = getStreamRest(ss);
+        return true;
+      }
+      else{ //valid separator
+        string::size_type loc = s.find(sep, 0);
+        if ( loc == string::npos) { //this should not happen !!!
+          logError("Wrong format in intput: %s", s.c_str());
+          exit(1);
+        }
+        s1 = trim(s.substr(0, loc));
+        s2 = trim(s.substr(loc + 1));
+        return true;
+      }
     }
   }
   return false;
 } 
 
 //--------------------------------------------------------------------- 
+
+void FileRead::ignoreLines(const char* ignoreStart)
+{
+  ignoreStart_ = string(ignoreStart);
+}
+
+//--------------------------------------------------------------------- 
+
   
 int str2int(const string& str)
 {
@@ -102,6 +127,13 @@ string trimLeft(const string& s)
   string ret = s;
   ret.erase(0, ret.find_first_not_of(' '));
   return ret;
+}
+
+//--------------------------------------------------------------------- 
+
+string trim(const string& s)
+{
+  return trimLeft(trimRight(s));
 }
 
 //--------------------------------------------------------------------- 

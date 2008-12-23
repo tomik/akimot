@@ -11,11 +11,74 @@
 
 using std::list;
 
-#define PLAYOUTS_PER_MOVE 10000
+#define CFG_SEP "="
+#define CFG_COMMENT "#"
+#define DEFAULT_CFG "default.cfg"
+
+class Cfg;
+
+enum cfgItemType_e { IT_STRING, IT_BOOL, IT_INT, IT_FLOAT };
+
+/**
+ * Configuration item.
+ */
+class CfgItem
+{
+  public: 
+    CfgItem(const char* name, cfgItemType_e type, void* item);
+  private:
+    string name_;
+    cfgItemType_e type_;
+    void * item_;
+    bool set_;
+
+    friend class Cfg;
+};
+
+typedef list<CfgItem > CfgItemList;
+typedef CfgItemList::iterator CfgItemListIter;
+
+/**
+ * Program configuration. 
+ *
+ * Mostly influences the search/board/time management.
+ */
+class Cfg
+{
+  public: 
+    /**
+     * Binds items to variables.
+     */
+    Cfg();
+
+    /**
+     * Loads items from file.
+     */
+    void loadFromFile(string fn);
+
+    /**
+     * Checks whether every item has been set.
+     */
+    bool checkConfiguration();
+    
+    inline bool localPlayout() { return localPlayout_; }
+    inline int randomStepTries() { return randomStepTries_; }
+    inline int fpu() { return fpu_; }
+
+  private:
+    CfgItemList items_;
+
+    /**Locality in playout switch.*/
+    bool localPlayout_;
+    /**How many times random step is tried.*/
+    int  randomStepTries_;
+    /**FPU value*/
+    int fpu_;
+};
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };
   
-class Config;
+class Options;
 
 class OptionFather
 {
@@ -26,7 +89,7 @@ class OptionFather
     optionType_e  type_;
     bool parsed_;
 
-    friend class Config;
+    friend class Options;
 
   public:
     OptionFather(){};
@@ -72,22 +135,26 @@ typedef list<OptionFather*> OptionList;
 
 /**
  * Management of command line configuration. 
- *
- * After introduction of aei rather obsolete.
+ * 
+ * For cases when asi is not used.
  */
-class Config
+class Options
 {
   private:
     OptionList  options_;
 
+    /**AEI init file - for debugging.*/
     OptionString fnAeiInit_;
+    /**Position input file - for getMoveMode_.*/
     OptionString fnInput_;
+    /**Configuration file.*/
+    OptionString fnCfg_;
     OptionBool benchmarkMode_; 
     OptionBool getMoveMode_; 
-    OptionBool  localMode_;
+    OptionBool localMode_;
 
   public:
-    Config();
+    Options();
 
     bool parse(const int, const char **);
     bool parseToken(string, string);
@@ -98,9 +165,11 @@ class Config
     bool getMoveMode() { return getMoveMode_.getValue(); }
     string fnAeiInit() { return fnAeiInit_.getValue(); }
     string fnInput() { return fnInput_.getValue(); }
+    string fnCfg() { return fnCfg_.getValue(); }
 
     void printAll();
     
 };
 
-extern Config config;
+extern Cfg cfg;
+extern Options options;

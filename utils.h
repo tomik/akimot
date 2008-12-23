@@ -76,6 +76,10 @@ string trimRight(const string& str);
  */
 string trimLeft(const string& str);
 
+/**
+ * Spaces trim from both sides.
+ */
+string trim(const string& str);
 
 /**
  * Get stream rest.
@@ -104,14 +108,21 @@ class FileRead
     /**
      * Line read. 
      * 
-     * Expects line to be a pair of stuff.
+     * Expects line to be a pair of stuff, separated by sep.
+     * @param sep Separator - if not specified implicit ' ' is used.
      *
      * @return True if read was successfull,
      *         False otherwise.
      */
-    bool getLineAsPair(string & s1, string & s2);
+    bool getLineAsPair(string & s1, string & s2, const char* sep=NULL);
+
+    /**
+     * Set ignore lines flag (for comments, etc.)
+     */
+    void ignoreLines(const char * start);
 
   private: 
     FileRead();
     fstream f_;
+    string ignoreStart_;
 };
