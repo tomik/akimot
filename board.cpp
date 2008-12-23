@@ -90,8 +90,14 @@ square_t PieceArray::operator[](uint index) const
 //  section Step
 //---------------------------------------------------------------------
 
+Step::Step( )
+{
+  stepType_ = STEP_NULL;
+}
+
+//---------------------------------------------------------------------
 /* this constructor is mainly used for 
- * step_no_step or step_pass which don't use other values than stepType */
+ * STEP_NULL or step_pass which don't use other values than stepType */
 Step::Step( stepType_t stepType, player_t player )
 {
   stepType_ = stepType;
@@ -185,7 +191,7 @@ bool Step::isPushPull() const
  * i.e. returns false if pass or no_step */
 bool Step::pieceMoved() const 
 {
-  return (! (stepType_ == STEP_PASS || stepType_ == STEP_NO_STEP));
+  return (! (stepType_ == STEP_PASS || stepType_ == STEP_NULL));
 }
 
 //---------------------------------------------------------------------
@@ -193,7 +199,7 @@ bool Step::pieceMoved() const
 bool Step::operator== ( const Step& other) const
 {
   if  ( stepType_ == other.stepType_ ){ // necessary condition ! 
-    if ( stepType_ == STEP_PASS || stepType_ == STEP_NO_STEP ) 
+    if ( stepType_ == STEP_PASS || stepType_ == STEP_NULL ) 
       return true;
     if ( other.player_ == player_ && other.piece_ == piece_ && other.from_ == from_ && other.to_ == to_ ) {
       if ( stepType_ == STEP_SINGLE ) 
@@ -229,8 +235,8 @@ string Step::toString() const
       ss << oneSteptoString(player_, piece_, from_, to_ )
              << oneSteptoString(OPP(player_), oppPiece_, oppFrom_, oppTo_);
       break;
-    case STEP_NO_STEP:
-      ss << "NO_STEP";  
+    case STEP_NULL:
+      ss << "NULL";  
       break;
     default:
       assert(false);
@@ -580,7 +586,7 @@ Step Board::findStepToPlay()
 
   if (len == 0 ){ //player to move has no step to play - not even pass
     winner_ = OPP(toMove_);
-    return Step(STEP_NO_STEP,toMove_); 
+    return Step(STEP_NULL,toMove_); 
   }
 
   assert(len > 0);
@@ -623,9 +629,8 @@ void Board::init(bool newGame)
   toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
   stepCount_ = 0;
   moveCount_ = 1;
+  lastStep_  = Step();
   winner_    = EMPTY;
-  //moveCount_ = 0;
-  //stepCount_ = 0;
 
   //init pieceArray and rabbitsNum
   pieceArray[0].clear();
@@ -825,9 +830,11 @@ void Board::makeSignature()
 
 void Board::makeStep(Step& step)
 {
+  
+  lastStep_ = step;
 
   int playerIndex = PLAYER_TO_INDEX(step.player_);
-  if (step.stepType_ == STEP_NO_STEP)
+  if (step.stepType_ == STEP_NULL)
     return;
 
   if (step.stepType_ == STEP_PASS ){
@@ -878,10 +885,24 @@ bool Board::findRandomStep(Step& step) const
 {
   
   bool found = false; //once set to true, move is generated and returned 
+  
+  bool tryLocal = false;
+  if (lastStep_.player_ == toMove_ && 
+      lastStep_.stepType_ != STEP_NULL && 
+      IS_PLAYER(board_[lastStep_.to_])){
+    tryLocal = true;
+  }
 
-  for ( int i = 0; i < 10; i++){ 
+  for ( int i = 0; i < 5; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
-    step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
+
+    if (tryLocal and random01() > 0.2){
+      tryLocal = false;
+      step.from_ = lastStep_.to_;
+    } 
+    else{
+      step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
+    }
 
     assert(IS_PLAYER(board_[step.from_]));
     assert(OWNER(board_[step.from_]) == toMove_);

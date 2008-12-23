@@ -76,7 +76,7 @@ using std::list;
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
 #define STEP_PULL     3
-#define STEP_NO_STEP  4   //no step is possible ( not even pass ! - position repetition )
+#define STEP_NULL  4   //no step is possible ( not even pass ! - position repetition )
 
 /**empty square in the flag board*/
 #define FLAG_BOARD_EMPTY -1
@@ -168,7 +168,7 @@ class KillInfo
 class Step
 {
   public:
-		Step(){};
+		Step();
 		Step(stepType_t, player_t);
     Step(stepType_t, player_t, piece_t, square_t, square_t);
     Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
@@ -181,7 +181,7 @@ class Step
     /**
      * Checks whether step moves any piece. 
      *
-     * @return false if step is STEP_PASS/STEP_NO_STEP otherwise true.
+     * @return false if step is STEP_PASS/STEP_NULL otherwise true.
      */
 		bool pieceMoved() const;
 		bool operator== (const Step&) const;
@@ -582,7 +582,9 @@ class Board
      * Making the step.
      *
      * One of the crucial methods in the boardstructure.
-     * Takes given step and performs it. Updates board structure and resolves kills.
+     * @param step Step to be made (kills are resolved as well).
+     * @param update If true - board structure is updated (added
+     * steps, frozenBoard update). 
      */
 		void makeStep(Step& step);
 
@@ -711,6 +713,8 @@ class Board
     u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
     u64           preMoveSignature_;     //signature of position from when the current move started
 
+    /**Last made step.*/
+    Step lastStep_;
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
     uint  moveCount_;
 

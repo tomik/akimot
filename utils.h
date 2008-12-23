@@ -51,6 +51,11 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
   #define logDebug(...) logFunction(LL_DEBUG, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #endif 
 
+inline float random01()
+{
+  return (double)rand()/((double)(RAND_MAX) + (double)(1));
+}
+
 /**
  * String to int converter.
  */
@@ -76,7 +81,6 @@ string trimLeft(const string& str);
  * Get stream rest.
  */
 string getStreamRest(istream& is);
-
 
 /**
  * Simpler file read.

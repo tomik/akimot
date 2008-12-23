@@ -418,7 +418,7 @@ void Tree::reset(player_t firstPlayer)
     delete history[0];
   }
   historyTop = 0;
-  history[historyTop] = new Node(Step(STEP_NO_STEP, firstPlayer));
+  history[historyTop] = new Node(Step(STEP_NULL, firstPlayer));
   nodesExpandedNum_ = 0;
   nodesNum_ = 1;
 }
