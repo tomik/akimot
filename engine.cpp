@@ -16,8 +16,6 @@ TimeManager::TimeManager()
     timeControls_[i] = 0;
   noTimeLimit_ = false;
   timeControls_[TC_MOVE] = TC_MOVE_DEFAULT;
-  timeControls_[TC_MAX] = TC_MAX_DEFAULT;
-  timeControls_[TC_RESERVE] = TC_RESERVE_DEFAULT;
 }
 
 //--------------------------------------------------------------------- 

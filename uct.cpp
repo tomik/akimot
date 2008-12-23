@@ -96,8 +96,8 @@ Node::Node(const Step& step)
   sibling_    = NULL;
   father_     = NULL;  
   bestCached_ = NULL;
-  visits_     = 0; //FPU;
-  value_      = 0; //nodeType_ == NODE_MAX ? FPU : - FPU;
+  visits_     = cfg.fpu(); //FPU;
+  value_      = nodeType_ == NODE_MAX ? cfg.fpu() : -1 * cfg.fpu();
   step_ = step;
 }
 

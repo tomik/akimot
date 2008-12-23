@@ -2,9 +2,7 @@ doc
 .swp
 site_scons
 .sconsign.dblite
-func_test
-perf_test
-performance.cpp
+do_tests
 akimot
 tests.cpp
 *.o

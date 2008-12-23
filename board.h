@@ -17,6 +17,7 @@ using std::list;
 
 #include "utils.h"
 #include "hash.h"
+#include "config.h"
 
 #define STEPS_IN_MOVE 4
 #define MAX_STEPS  200

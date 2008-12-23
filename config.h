@@ -64,6 +64,10 @@ class Cfg
     inline bool localPlayout() { return localPlayout_; }
     inline int randomStepTries() { return randomStepTries_; }
     inline int fpu() { return fpu_; }
+    inline float exploreRate() { return exploreRate_; }
+    inline int playoutLen() { return playoutLen_; }
+    inline int matureLevel() { return matureLevel_; }
+    inline float tcMoveDefault() { return tcMoveDefault_; }
 
   private:
     CfgItemList items_;
@@ -74,6 +78,16 @@ class Cfg
     int  randomStepTries_;
     /**FPU value*/
     int fpu_;
+    /**Uct explore rate.*/
+    float exploreRate_;
+    /**Lenght of playout before evaluation.*/
+    int playoutLen_;
+    /**Number of traverses through node before expansion.*/
+    int matureLevel_;
+    /**Default time per move.*/
+    float tcMoveDefault_;
+    
+
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

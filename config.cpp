@@ -27,6 +27,10 @@ Cfg::Cfg()
   items_.push_back(CfgItem("local_playout", IT_BOOL, (void*)&localPlayout_));
   items_.push_back(CfgItem("random_step_tries", IT_INT, (void*)&randomStepTries_));
   items_.push_back(CfgItem("fpu", IT_INT, (void*)&fpu_));
+  items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_));
+  items_.push_back(CfgItem("playout_len", IT_INT, (void*)&playoutLen_));
+  items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_));
+  items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_));
 }
 
 //--------------------------------------------------------------------- 

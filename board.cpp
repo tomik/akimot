@@ -887,13 +887,14 @@ bool Board::findRandomStep(Step& step) const
   bool found = false; //once set to true, move is generated and returned 
   
   bool tryLocal = false;
-  if (lastStep_.player_ == toMove_ && 
+  if (cfg.localPlayout() && 
+      lastStep_.player_ == toMove_ && 
       lastStep_.stepType_ != STEP_NULL && 
       IS_PLAYER(board_[lastStep_.to_])){
     tryLocal = true;
   }
 
-  for ( int i = 0; i < 5; i++){ 
+  for ( int i = 0; i < cfg.randomStepTries(); i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
 
     if (tryLocal and random01() > 0.2){
