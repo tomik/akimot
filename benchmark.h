@@ -6,8 +6,8 @@
 #include "eval.h"
 #include "timer.h"
 
-#define START_POS_PATH "test/startpos.txt"
-#define NEGATIVE_GOAL_CHECK_PATH "test/rabbits/b001.txt"
+#define START_POS_PATH "data/startpos.txt"
+#define NEGATIVE_GOAL_CHECK_PATH "data/rabbits/b001.txt"
 #define PLAYOUT_DEPTH 10
 #define UCT_NODE_MATURE 1
 #define SEC_ONE 1

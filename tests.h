@@ -5,10 +5,10 @@
 #include "uct.h"
 
 #define TEST_DIR "./test"
-#define INIT_TEST_DIR "./test/init/"
-#define INIT_TEST_LIST "./test/init/list.txt"
-#define RABBITS_TEST_DIR "./test/rabbits/"
-#define RABBITS_TEST_LIST "./test/rabbits/list.txt"
+#define INIT_TEST_DIR "./data/init/"
+#define INIT_TEST_LIST "./data/init/list.txt"
+#define RABBITS_TEST_DIR "./data/rabbits/"
+#define RABBITS_TEST_LIST "./data/rabbits/list.txt"
 #define HASH_TABLE_INSERTS 100
 
 //mature level is defined in uct.h

@@ -431,7 +431,7 @@ class Uct:public Engine
      *         If winner is not known ( no winning criteria reached ), position
      *         is evaluated and biased coin si flipped to estimate the winner
      */
-    int decidePlayoutWinner(const Board*) const;
+    double decidePlayoutWinner(const Board*) const;
 
     /**
      * Filtering steps through Transposition tables.

@@ -831,13 +831,15 @@ float Uct::getWinRatio() const
 
 //--------------------------------------------------------------------- 
 
-int Uct::decidePlayoutWinner(const Board* playBoard) const
+double Uct::decidePlayoutWinner(const Board* playBoard) const
 {
   if IS_PLAYER(playBoard->getWinner())
     return WINNER_TO_VALUE(playBoard->getWinner()); 
 
-  //TODO test this
-  float evalGold = eval_->evaluateInPercent(playBoard);
+  double evalGold = eval_->evaluateInPercent(playBoard);
+  if (cfg.exactPlayoutValue()){
+    return 2 * (evalGold - 0.5);
+  }
   double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
     return 1;

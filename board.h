@@ -137,7 +137,7 @@ class PieceArray
 
 
 /**
- * Information about a kill in the trep. 
+ * Information about a kill in the trap. 
  *
  * Holds information on player, piece, square(trap).
  */

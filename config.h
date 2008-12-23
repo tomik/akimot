@@ -68,6 +68,7 @@ class Cfg
     inline int playoutLen() { return playoutLen_; }
     inline int matureLevel() { return matureLevel_; }
     inline float tcMoveDefault() { return tcMoveDefault_; }
+    inline bool exactPlayoutValue() { return exactPlayoutValue_; }
 
   private:
     CfgItemList items_;
@@ -86,6 +87,8 @@ class Cfg
     int matureLevel_;
     /**Default time per move.*/
     float tcMoveDefault_;
+    /**Use exact evaluation value [-1, 1] or approximation {1, -1}.*/
+    bool exactPlayoutValue_;
     
 
 };
