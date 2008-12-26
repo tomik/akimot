@@ -14,7 +14,7 @@ sub PositionUpdate{
   local($c, $t, $s, @p, @steps, $bs, $ps, $rep);
   local($pieceType,$pieceCol,$from,$to,$i,%ch);
   local($mm, $st, $push, $lastStepIsPush);
-  local(@np, $np);
+  local(@np);
 
   $m =~ s/ +/ /g;
   $m =~ s/^ +//;
@@ -95,9 +95,8 @@ sub PositionUpdate{
     @steps = Pos::getSteps($t, $st, @np);
     $bs = "";
 #`echo "*** $mm *** $st" >> /tmp/steps`;
-    `echo "steps:" >> /tmp/steps`;
     foreach $ps (@steps){
-      `echo "  $ps" >> /tmp/steps`;
+#`echo "  $ps" >> /tmp/steps`;
       ($ps, $push) = ($ps =~ m/([^\-]*)(\-)?$/);
       if ($mm =~ m/^$ps/){
         if (length($ps) > length($bs)){
@@ -121,16 +120,14 @@ sub PositionUpdate{
 
 # make sure move changes the state of the board
   @np = Pos::takeSteps($m, @p);
-  $np = join('', @np);
-  if ($np eq join('',@p)){
+  if (join('',@np) eq join('',@p)){
     return (0, "position not changed");
   }
 
 # 2008.07.01
 # make sure this move does not repeat the position 3 times, such moves are
 #   considered invalid and are ignored rather than causing a lose.
-`echo "checking repeats" >> /tmp/repc`;
-  $rep = PositionCheckRepeat($fn, $np);
+  $rep = PositionCheckRepeat($fn);
   if ($rep ne ''){
     return(0, "position repeats for the 3rd time");
   }
@@ -146,7 +143,6 @@ skipPosCheck:
 #   changed the following line:
 #  PositionAddHist($fn, join('', @np));
   PositionAddHist($fn, join('', @np) . $t);
-
   return (1);
 }
 
@@ -225,7 +221,6 @@ sub PositionCheckElimination{
 #   one move an it is causes a 3rd time repetition. In this case the player
 #   loses by immobilization. It may also be possible that a player has
 #   more than one move and all of those case a repeat; we don't check for this.
-#   The players moves will not be accepted and they would lose on time.
 sub PositionCheckOnlyMoveIsRepeat{
   my($fn) = @_;
   my($c, $t, $s, @p, @steps, $op);
@@ -304,66 +299,24 @@ sub PositionCheckStalemate{
 }
 
 sub PositionCheckRepeat{
-  local($fn, $np) = @_;
-  local($p, @p, $last, $rep, $c, $t, $nt, $s);
+  local($fn) = @_;
+  local($p, @p, $last, $rep, $c, $t, $s);
   local(*FH);
 
-  ($c,$t,$s,@p) = Pos::readBoard($fn);
-  $nt = ($t eq 'w')?'b':'w';
 #  @p = `/bin/cat ${fn}.hist`;
   open(FH, "<${fn}.hist");
   @p = <FH>;
   close FH;
-#  $last = $p[$#p];
-  $last = $np.$nt;
+  $last = $p[$#p];
   foreach $p (@p){
-    chomp $p;
     if ($p eq $last){ $rep += 1; }
   }
-  if ($rep >= 2){
+  if ($rep >= 3){
+    ($c,$t,$s,@p) = Pos::readBoard($fn);
+#    return ($t eq 'w')?'b':'w';
      return $t;
   }
   return '';
-}
-
-sub PositionWinByScore{
-  my($fn) = @_;
-  my(@p, $p, $sc);
-  local(*FH);
-
-  open(FH, "<${fn}.hist");
-  @p = <FH>;
-  close FH;
-  shift(@p);
-  @p = reverse(@p);
-  for $p (@p){
-    $sc = PositionScorePosition($p);
-    if ($sc != 0){ last; }
-  }
-  if ($sc>0){ return 'w'; }
-  return 'b';
-}
-
-sub PositionScorePosition{
-  my($b) = @_;
-  my(@b, $p, $g, $s);
-
-  @b = split('', $b);
-  foreach $p (@b){
-    if ($p eq 'R'){ $g += 1; }
-    if ($p eq 'C'){ $g += 1; }
-    if ($p eq 'D'){ $g += 1; }
-    if ($p eq 'H'){ $g += 1; }
-    if ($p eq 'M'){ $g += 1; }
-    if ($p eq 'E'){ $g += 1; }
-    if ($p eq 'r'){ $s += 1; }
-    if ($p eq 'c'){ $s += 1; }
-    if ($p eq 'd'){ $s += 1; }
-    if ($p eq 'h'){ $s += 1; }
-    if ($p eq 'm'){ $s += 1; }
-    if ($p eq 'e'){ $s += 1; }
-  }
-  return $g-$s;
 }
 
 sub PositionAddHist{

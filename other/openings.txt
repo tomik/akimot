@@ -1,0 +1,35 @@
+#
+Ra1 Hb1 Rc1 Rd1 Re1 Rf1 Hg1 Rh1 Ra2 Db2 Cc2 Ed2 Me2 Cf2 Dg2 Rh2
+#
+Ra1 Rb1 Cc1 Rd1 Re1 Cf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 Me2 Df2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Db2 Hc2 Ed2 He2 Mf2 Dg2 Rh2
+Ra1 Rb1 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Db2 Hc2 Ed2 Me2 Df2 Hg2 Rh2
+Ra1 Rb2 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Db2 Hc2 Ed2 Me2 Hf2 Dg2 Rh2
+Ra1 Rb1 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 De2 Mf2 Hg2 Rh2
+Ra1 Rb1 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 Me2 Df2 Hg2 Rh2
+Ra1 Rb1 Rc1 Cd1 Ce1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 Me2 Hf2 Dg2 Rh2
+#
+Ra1 Rb1 Rc1 Cd1 Me1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 De2 Df2 Hg2 Rh2
+Ra1 Rb1 Rc1 Cd1 Me1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 Ce2 Df2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Dd1 De1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 Me2 Cf2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Dd1 Me1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 Ce2 Df2 Hg2 Rh2
+Ra1 Rb1 Rc1 Dd1 Me1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 Ce2 Cf2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Dd1 Re1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 He2 Cf2 Mg2 Dh2
+#
+Ra1 Rb1 Rce Md1 Ce1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 De2 Df2 Hg2 Rh2
+Ra1 Rb1 Rc1 Md1 Ce1 Rf1 Rg1 Rh1 Ra2 Hb2 Dc2 Ed2 De2 Cf2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Md1 De1 Rf1 Rg1 Rh1 Ra2 Hb2 Cc2 Ed2 Ce2 Df2 Hg2 Rh2
+#
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Da2 Hb2 Ec2 Cd2 De2 Hf2 Mg2 Ch2
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Da2 Hb2 Cc2 Ed2 Me2 Cf2 Hg2 Dh2
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ea2 Hb2 Dc2 Cd2 Ce2 Df2 Hg2 Mh2
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Db2 Cc2 Ed2 Me2 Cf2 Dg2 Hh2
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ha2 Cb2 Cc2 Ed2 Me2 Df2 Dg2 Hh2
+Ra1 Rb1 Rc1 Rd1 Re1 Rf1 Rg1 Rh1 Ma2 Db2 Cc2 Ed2 He2 Cf2 Dg2 Hh2
+# = On next line signals end of file
+=

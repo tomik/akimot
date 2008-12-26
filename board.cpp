@@ -675,7 +675,7 @@ bool Board::initFromPositionStream(istream& is)
         is.ignore(1); //ignore a white space 
         c=is.get();
 
-        if (c == ' ' || c=='X' || c=='x')
+        if (c == ' ' || c=='X' || c=='x' || c == '.')
           board_[i*10+j] = (EMPTY_SQUARE); 
         else {
           try{
