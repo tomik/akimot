@@ -1,17 +1,17 @@
 [setup]
 
 comment =
-  Must not allow Re4 to the goal.
+  Must not allow Rb3 to the goal.
 
 position =  
   50w
    +-----------------+
   8| . d r . . . . . |
-  7| . . . c . . . . |
+  7| . . . . . . . . |
   6| . . X m . X . . |
   5| . . . . e . . d |
-  4| . . . . r . E r |
-  3| . R X . M X R H |
+  4| c r c . . . E r |
+  3| . r X M . X R H |
   2| . H C . . . . D |
   1| . . R . . . R . |
    +-----------------+
@@ -21,10 +21,6 @@ tags = opp, goal, rabbit
 
 [criteria]
 
-ply = 2
-
-judge = minimax 
+judge = search 
 
 condition = not goal
-
-TODO

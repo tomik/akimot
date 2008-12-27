@@ -23,3 +23,4 @@ tags = goal, rabbit
 
 win_ratio = 1
 
+judge = winratio

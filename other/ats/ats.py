@@ -86,17 +86,32 @@ class Test(object):
                 log.debug(resp.message)
                 lmsg = resp.message.split(' ')
                 if lmsg[0] == 'winratio':
-                    winratio = float(lmsg[1])
-                    break
+                  winratio = float(lmsg[1])
+                  break
             elif resp.type == "log":
                 log.debug( "log: %s" % resp.message)
             elif resp.type == "bestmove":
                 log.debug( "bestmove: %s" % resp.move)
+                bestmove = resp.move
 
-
-        if winratio >= float(self.test.win_ratio):
-            return True
-        return False
+        #judge by winratio
+        if self.test.judge == "winratio":
+            if winratio >= float(self.test.win_ratio):
+                return True
+            return False
+            
+        #judge by little search 
+        if self.test.judge == "search":
+            if self.test.condition == "not goal":
+                new_pos = pos.do_move(board.parse_move(bestmove))
+                if pos.is_goal():
+                    return True
+                for p, move in new_pos.get_moves().items():
+                    if p.is_goal():
+                        print "Opponent's goal by:", board.steps_to_str(move)
+                        return False
+                return True 
+            return False
 
     def __str__(self):
         return "%s" % (self.test.name)

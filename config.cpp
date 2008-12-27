@@ -12,8 +12,8 @@
 //  section CfgItem 
 //--------------------------------------------------------------------- 
 
-CfgItem::CfgItem(const char* name, cfgItemType_e type, void* item)
-  : name_(string(name)), type_(type), item_(item)
+CfgItem::CfgItem(const char* name, cfgItemType_e type, void* item, const char* defaultValue)
+  : name_(string(name)), type_(type), item_(item), defaultValue_(defaultValue)
 {
   set_ = false;
 }
@@ -24,14 +24,14 @@ CfgItem::CfgItem(const char* name, cfgItemType_e type, void* item)
 
 Cfg::Cfg()
 {
-  items_.push_back(CfgItem("local_playout", IT_BOOL, (void*)&localPlayout_));
-  items_.push_back(CfgItem("random_step_tries", IT_INT, (void*)&randomStepTries_));
-  items_.push_back(CfgItem("fpu", IT_INT, (void*)&fpu_));
-  items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_));
-  items_.push_back(CfgItem("playout_len", IT_INT, (void*)&playoutLen_));
-  items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_));
-  items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_));
-  items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_));
+  items_.push_back(CfgItem("local_playout", IT_BOOL, (void*)&localPlayout_,"1"));
+  items_.push_back(CfgItem("random_step_tries", IT_INT, (void*)&randomStepTries_,"5"));
+  items_.push_back(CfgItem("fpu", IT_INT, (void*)&fpu_,"0"));
+  items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_,"0.2"));
+  items_.push_back(CfgItem("playout_len", IT_INT, (void*)&playoutLen_,"3"));
+  items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_,"20"));
+  items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_,"1"));
+  items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"0"));
 }
 
 //--------------------------------------------------------------------- 

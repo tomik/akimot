@@ -22,3 +22,5 @@ tags = goal, rabbit, sacrifice
 [criteria]
 
 win_ratio = 1
+
+judge = winratio

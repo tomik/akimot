@@ -11,7 +11,7 @@ position =
   6| . . X m . X . . |
   5| . . . . e . . d |
   4| . . . . r . E r |
-  3| . R X . M X R H |
+  3| . R X M . X R H |
   2| . H C . . . . D |
   1| . . R . . . R . |
    +-----------------+
@@ -21,10 +21,6 @@ tags = opp, goal, rabbit
 
 [criteria]
 
-ply = 2
-
-judge = minimax 
+judge = search 
 
 condition = not goal
-
-TODO

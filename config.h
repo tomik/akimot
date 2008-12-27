@@ -25,12 +25,13 @@ enum cfgItemType_e { IT_STRING, IT_BOOL, IT_INT, IT_FLOAT };
 class CfgItem
 {
   public: 
-    CfgItem(const char* name, cfgItemType_e type, void* item);
+    CfgItem(const char* name, cfgItemType_e type, void* item, const char * defaultValue_);
   private:
     string name_;
     cfgItemType_e type_;
     void * item_;
     bool set_;
+    string defaultValue_;
 
     friend class Cfg;
 };

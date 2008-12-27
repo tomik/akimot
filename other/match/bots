@@ -42,12 +42,8 @@ r0xs		./bot_r0		r0 -b -xs -r [seed]
 # random bot which tries for rabbit advance moves
 r0ar		./bot_r0		r0 -b -ar -r [seed]
 
-
-
 # random bot which uses the setup file for the first move
 r0s		./bot_r0		r0 -b -r [seed] -1 setups
-
-
 
 
 ############################

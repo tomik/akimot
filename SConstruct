@@ -44,16 +44,17 @@ else:   #standard
   env = std.Clone()
   do_build = True
 
+import shutil
+
 if do_build:
   #akimot = env.Program(target = 'akimot', source = src_files_build, CPPPATH = '.')
   env.Object(src_files_build)
   akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
-  env.Install(AKIMOT_AEI_DIR, akimot)
-  env.Alias('aei', AKIMOT_AEI_DIR)
-  env.Install(AKIMOT_ATS_DIR, akimot)
-  env.Alias('ats', AKIMOT_ATS_DIR)
-  env.Install(AKIMOT_MATCH_DIR, akimot)
-  env.Alias('match', AKIMOT_MATCH_DIR)
+  alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR)]
+  for alias, dir in alias_dirs: 
+    #shutil.copy("default.cfg", dir)
+    env.Install(dir, akimot)
+    env.Alias(alias, dir)
   tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
                     CPPPATH=['.',CXX_INCLUDE_DIR])
   tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)

@@ -68,7 +68,7 @@ class _ProcCom(Thread):
 
 class StdioEngine:
     def __init__(self, cmdline, bot_id="bot", log=None):
-        proc = Popen(cmdline,
+        proc = Popen(cmdline.split(),
                 stdin = PIPE,
                 stdout = PIPE,
                 universal_newlines = True)

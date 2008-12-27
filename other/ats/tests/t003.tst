@@ -24,3 +24,4 @@ tags = goal, rabbit, sacrifice
 
 win_ratio = 1
 
+judge = winratio
