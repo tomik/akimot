@@ -70,6 +70,7 @@ class Cfg
     inline int matureLevel() { return matureLevel_; }
     inline float tcMoveDefault() { return tcMoveDefault_; }
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
+    inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
 
   private:
     CfgItemList items_;
@@ -90,8 +91,8 @@ class Cfg
     float tcMoveDefault_;
     /**Use exact evaluation value [-1, 1] or approximation {1, -1}.*/
     bool exactPlayoutValue_;
-    
-
+    /**Use knowledge in playout.*/
+    bool knowledgeInPlayout_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

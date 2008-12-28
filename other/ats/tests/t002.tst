@@ -21,6 +21,4 @@ tags = goal, rabbit
 
 [criteria]
 
-win_ratio = 1
-
-judge = winratio
+condition = score goal

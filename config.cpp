@@ -32,6 +32,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_,"20"));
   items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_,"1"));
   items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"0"));
+  items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
 }
 
 //--------------------------------------------------------------------- 

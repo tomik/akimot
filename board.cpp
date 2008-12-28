@@ -17,6 +17,7 @@ ThirdRep*  Board::thirdRep_;
 bool Board::classInit = false;
 
 const int direction[4]={NORTH,EAST,SOUTH,WEST};
+const int rabbitForward[2]={NORTH,SOUTH};
 const int trap[4]={33,36,63,66};
 
 //---------------------------------------------------------------------
@@ -574,8 +575,10 @@ Step Board::findStepToPlay()
     return Step(STEP_PASS, toMove_);          
   }
 
-  if (findRandomStep(step))
-    return step;
+  if (! cfg.knowledgeInPlayout()){
+    if (findRandomStep(step))
+      return step;
+  }
 
   // STEP_PASS is always last move generated in generateAllSteps 
   // it can be simply removed to get "no-pass" move 
@@ -587,6 +590,10 @@ Step Board::findStepToPlay()
   if (len == 0 ){ //player to move has no step to play - not even pass
     winner_ = OPP(toMove_);
     return Step(STEP_NULL,toMove_); 
+  }
+
+  if (cfg.knowledgeInPlayout()){
+    return chooseStepWithKnowledge();
   }
 
   assert(len > 0);
@@ -975,12 +982,107 @@ bool Board::findRandomStep(Step& step) const
 
 //--------------------------------------------------------------------- 
 
+Step Board::chooseStepWithKnowledge() const
+{
+  assert(stepArrayLen[toMoveIndex_] > 0);
+  int bestIndex = 0;
+  float bestEval = INT_MIN; 
+  float eval = 0;
+  //float r = random01(); 
+  for (uint i = 0; i < stepArrayLen[toMoveIndex_]; i++){
+    const Step& step = stepArray[toMoveIndex_][i];
+    eval = evaluateStep(step); 
+    if (eval > bestEval){
+      bestEval = eval;
+      bestIndex = i;
+    }
+  }
+  assert(bestIndex >= 0 && bestIndex < stepArrayLen[toMoveIndex_]);
+  return stepArray[toMoveIndex_][bestIndex];
+}
+
+//--------------------------------------------------------------------- 
+
+float Board::evaluateStep(const Step& step) const
+{
+  float eval = 0.5; 
+
+  //check self-kill
+  if (checkKillForward(step.from_, step.to_)){
+    //allow self-kills to allow rabbits move to the goal
+    //in the opponent's part of the board
+    if (step.piece_ == PIECE_RABBIT && ! IS_TRAP(step.to_) && 
+        ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == SILVER && ROW(step.from_) <= 5))){
+      eval -= 0.1;
+    }
+    else{
+      return 0.1;   
+    }
+  }
+
+  //push opp to trap is good 
+  if (step.isPushPull() && IS_TRAP(step.oppTo_)){
+    return 0.7;
+  }
+
+  //check opp-kill
+  if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
+    return 0.9;   
+  }
+
+  //rabbit movements 
+  if (step.piece_ == PIECE_RABBIT){
+    //moves in opponent's part of the board are encouraged
+    if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == SILVER && ROW(step.from_) <= 5)){
+      //empty space ahead is good 
+      bool empty = true;
+      int emptyNum = 0;
+      int row = ROW(step.from_);
+      int toEdge = toMove_ == GOLD ? 
+          TOP_ROW - row : 
+          row - BOTTOM_ROW;
+      while (emptyNum < toEdge){
+        row += toMove_ == GOLD ? +1 : -1 ;
+        if (board_[row * 10 + COL(step.from_)] != EMPTY_SQUARE){
+          empty = false;
+          assert(toEdge > emptyNum);
+          break;
+        }
+        emptyNum++;
+      } 
+      //moving forward
+      if (step.to_ - step.from_ == rabbitForward[toMoveIndex_]) {
+        if (empty){
+          return 0.9;
+        }
+        eval += emptyNum * 0.1;
+      }
+      //TODO add evaluation for moves left right
+
+    }
+    else { //move in player's part
+      eval += -0.2;
+    }
+         
+    
+  }
+
+   
+  return eval;
+}
+
+//--------------------------------------------------------------------- 
+
 bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) const
 {
 
   if ( IS_TRAP(to) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
     if ( ! hasTwoFriends(to, OWNER(board_[from])) ) { 
-      killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
+      if (killInfo != NULL){
+        killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
+      }
       return true;
     }
     else //piece was moved into the trap but hasn't died -> no kill
@@ -994,7 +1096,9 @@ bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) con
         board_[actTrapPos] != EMPTY_SQUARE &&          //it is a trap where piece is standing
         OWNER(board_[actTrapPos]) == OWNER(board_[from]) && 
         ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){   //piece has < 2 friends
-        killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);                   
+        if (killInfo != NULL){
+          killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);                   
+        }
         return true;
     }
   }
@@ -1143,7 +1247,6 @@ void Board::updateWinner()
     winner_ = OPP(toMove_);
   if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
     winner_ = toMove_;
-  //logDebug("Commiting move %d from player %d", moveCount_, toMove_);
 }
 
 //--------------------------------------------------------------------- 

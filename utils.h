@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg>
+#include <limits.h>
 
 typedef unsigned long long u64;
 

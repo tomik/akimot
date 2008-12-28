@@ -6,6 +6,7 @@ CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
 AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
 AKIMOT_ATS_DIR = paths.AKIMOT_ATS_DIR
 AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
+alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR)]
 
 AKIMOT_LIBS = ['pthread']
 
@@ -40,19 +41,21 @@ elif ARGUMENTS.get('doc'):
   bld = Builder(action = '/usr/bin/doxygen Doxy')
   doc = Environment(BUILDERS = {'Foo' : bld})
   doxy = doc.Foo(source=src_files_build)
+elif ARGUMENTS.get('cfg'): 
+  import shutil
+  for alias, dir in alias_dirs: 
+    shutil.copy("default.cfg", dir)
+    print "copying default.cfg to ", dir
 else:   #standard
   env = std.Clone()
   do_build = True
 
-import shutil
 
 if do_build:
   #akimot = env.Program(target = 'akimot', source = src_files_build, CPPPATH = '.')
   env.Object(src_files_build)
   akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
-  alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR)]
   for alias, dir in alias_dirs: 
-    #shutil.copy("default.cfg", dir)
     env.Install(dir, akimot)
     env.Alias(alias, dir)
   tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 

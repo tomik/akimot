@@ -83,6 +83,7 @@ using std::list;
 #define FLAG_BOARD_EMPTY -1
 
 extern const int direction[4];
+extern const int rabbitForward[2];
 extern const int trap[4];
 
 typedef uint player_t;
@@ -494,7 +495,7 @@ class Board
      * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
      * This function causes no board update and is used in class StepWithKills. 
      */
-    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo) const;
+    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo=NULL) const;
 
     /**
      * Calculater signature for one step forward. 
@@ -596,6 +597,21 @@ class Board
      * is verified (might try to generate the step more times).
      */
 		bool findRandomStep(Step&) const;
+
+    /**
+     * Knowledge integration into steps. 
+     *
+     * Takes generated steps(in stepArray) and finds the one with 
+     * best "knowledge background".
+     */
+    Step chooseStepWithKnowledge() const;
+
+    /**
+     * Evaluates one step.
+     *
+     * In this play game knowledge is applied.
+     */
+    float evaluateStep(const Step& step) const;
 
     /**
      * Kill checker.

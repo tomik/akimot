@@ -87,31 +87,37 @@ class Test(object):
                 lmsg = resp.message.split(' ')
                 if lmsg[0] == 'winratio':
                   winratio = float(lmsg[1])
-                  break
+                  #break
             elif resp.type == "log":
                 log.debug( "log: %s" % resp.message)
             elif resp.type == "bestmove":
                 log.debug( "bestmove: %s" % resp.move)
                 bestmove = resp.move
+                break
 
-        #judge by winratio
-        if self.test.judge == "winratio":
-            if winratio >= float(self.test.win_ratio):
+        if self.test.condition == "score goal":
+            if pos.do_move(board.parse_move(bestmove)).is_goal():
                 return True
             return False
+
+        if self.test.condition == "prevent goal":
+            new_pos = pos.do_move(board.parse_move(bestmove))
+            if pos.is_goal():
+                return True
+            for p, move in new_pos.get_moves().items():
+                if p.is_goal():
+                    print "Opponent's goal by:", board.steps_to_str(move)
+                    return False
+            return True 
+
+        raise Exception("Unknown condition.")
+
+        #judge by winratio OBSOLETE 
+        #if self.test.condition == "winratio":
+        #    if winratio >= float(self.test.win_ratio):
+        #        return True
+        #    return False
             
-        #judge by little search 
-        if self.test.judge == "search":
-            if self.test.condition == "not goal":
-                new_pos = pos.do_move(board.parse_move(bestmove))
-                if pos.is_goal():
-                    return True
-                for p, move in new_pos.get_moves().items():
-                    if p.is_goal():
-                        print "Opponent's goal by:", board.steps_to_str(move)
-                        return False
-                return True 
-            return False
 
     def __str__(self):
         return "%s" % (self.test.name)

@@ -21,6 +21,4 @@ tags = opp, goal, rabbit
 
 [criteria]
 
-judge = search 
-
-condition = not goal
+condition = prevent goal
