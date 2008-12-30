@@ -96,8 +96,8 @@ Node::Node(const Step& step)
   sibling_    = NULL;
   father_     = NULL;  
   bestCached_ = NULL;
-  visits_     = cfg.fpu(); //FPU;
-  value_      = nodeType_ == NODE_MAX ? cfg.fpu() : -1 * cfg.fpu();
+  visits_     = 0;
+  value_      = 0; 
   step_ = step;
 }
 
@@ -118,7 +118,7 @@ Node* Node::findUctChild()
   float exploreCoeff = EXPLORE_RATE * log(visits_);
 
   while (act != NULL) {
-    actUrgency = act->ucb(exploreCoeff);
+    actUrgency = visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff);
 
     if ( actUrgency > bestUrgency ){
       best = act;

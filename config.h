@@ -64,7 +64,7 @@ class Cfg
     
     inline bool localPlayout() { return localPlayout_; }
     inline int randomStepTries() { return randomStepTries_; }
-    inline int fpu() { return fpu_; }
+    inline float fpu() { return fpu_; }
     inline float exploreRate() { return exploreRate_; }
     inline int playoutLen() { return playoutLen_; }
     inline int matureLevel() { return matureLevel_; }
@@ -81,7 +81,7 @@ class Cfg
     /**How many times random step is tried.*/
     int  randomStepTries_;
     /**FPU value*/
-    int fpu_;
+    float fpu_;
     /**Uct explore rate.*/
     float exploreRate_;
     /**Lenght of playout before evaluation.*/
