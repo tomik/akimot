@@ -414,7 +414,7 @@ sub checkWin{
   }
 # Added on 2008.07.01
 # Check if opponent lost all rabbits; then check if we lost all rabbits
-  $res = PositionCheckElimination("games/$roomId/tab$tableId/position");
+  $res = PositionCheckElimination("$f");#games/$roomId/tab$tableId/position");
 #writelog("res is '$res' for $roomId $tableId", "elim");
   if ($res ne ""){
     return "$res e";

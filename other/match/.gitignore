@@ -2,5 +2,7 @@ README
 running
 bot_akimot/akimot
 bot_akimot/running
+bot_akimot/*.cfg
 matches
 *.pyo
+.gitignore

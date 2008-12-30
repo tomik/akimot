@@ -192,7 +192,7 @@ bool Step::isPushPull() const
  * i.e. returns false if pass or no_step */
 bool Step::pieceMoved() const 
 {
-  return (! (stepType_ == STEP_PASS || stepType_ == STEP_NULL));
+  return (stepType_ == STEP_SINGLE || stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
 }
 
 //---------------------------------------------------------------------
@@ -985,16 +985,28 @@ bool Board::findRandomStep(Step& step) const
 Step Board::chooseStepWithKnowledge() const
 {
   assert(stepArrayLen[toMoveIndex_] > 0);
-  int bestIndex = 0;
+  uint bestIndex = 0;
   float bestEval = INT_MIN; 
   float eval = 0;
   //float r = random01(); 
-  for (uint i = 0; i < stepArrayLen[toMoveIndex_]; i++){
+  /*for (uint i = 0; i < stepArrayLen[toMoveIndex_]; i++){
     const Step& step = stepArray[toMoveIndex_][i];
     eval = evaluateStep(step); 
     if (eval > bestEval){
       bestEval = eval;
       bestIndex = i;
+    }
+  }
+  */
+
+  for (int i = 0; i < cfg.knowledgeTournamentSize(); i++){
+    uint r = rand() % stepArrayLen[toMoveIndex_];
+    assert(r >= 0 && r < stepArrayLen[toMoveIndex_]);
+    const Step& step = stepArray[toMoveIndex_][r];
+    eval = evaluateStep(step); 
+    if (eval > bestEval){
+      bestEval = eval;
+      bestIndex = r;
     }
   }
   assert(bestIndex >= 0 && bestIndex < stepArrayLen[toMoveIndex_]);
@@ -1007,7 +1019,11 @@ float Board::evaluateStep(const Step& step) const
 {
   float eval = 0.5; 
 
+  if (! step.pieceMoved()){
+    return eval;
+  }
   //check self-kill
+  assert(IS_PLAYER(board_[step.from_]));
   if (checkKillForward(step.from_, step.to_)){
     //allow self-kills to allow rabbits move to the goal
     //in the opponent's part of the board
@@ -1017,18 +1033,20 @@ float Board::evaluateStep(const Step& step) const
       eval -= 0.1;
     }
     else{
-      return 0.1;   
+      eval -= 0.5;   
     }
   }
+  else{
 
-  //push opp to trap is good 
-  if (step.isPushPull() && IS_TRAP(step.oppTo_)){
-    return 0.7;
-  }
+    //push opp to trap is good 
+    if (step.isPushPull() && IS_TRAP(step.oppTo_)){
+      eval += 0.3;
+    }
 
-  //check opp-kill
-  if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
-    return 0.9;   
+    //check opp-kill
+    if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
+      eval += 0.5;   
+    }
   }
 
   //rabbit movements 
@@ -1065,11 +1083,15 @@ float Board::evaluateStep(const Step& step) const
     else { //move in player's part
       eval += -0.2;
     }
-         
-    
+  } //rabbits
+
+  //locality 
+  if (cfg.localPlayout() && 
+      lastStep_.stepType_ != STEP_NULL &&
+      SQUARE_DISTANCE(lastStep_.to_, step.from_) <= 1){
+    eval += 0.2;
   }
 
-   
   return eval;
 }
 
