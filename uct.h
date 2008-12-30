@@ -116,7 +116,11 @@ class Node
 {
   public:
     Node();
-    Node(const Step&);
+
+    /**
+     * Constructor with step and heuristic 
+     */
+    Node(const Step&, float heur=0);
 
     /**
      * Finds child with highest UCB1 value.
@@ -188,7 +192,10 @@ class Node
     string recToString(int) const;
 
   private:
+    /**Uct value of the node in [-1, 1].*/
     float       value_; 
+    /**Heuristic value - purely position dependent.*/
+    float       heur_;
     int         visits_;
     Step        step_;
 
@@ -241,10 +248,12 @@ class Tree
      * Node expansion.
      *
      * Creates children for every given step. 
-     * Steps are expected to be already filtered through 
-     * repetition tests, virtual pass test, transposition tables.
+     * @param steps - Given steps (already filtered through repetition tests, 
+     *                virtual pass test, transposition tables).
+     * @param len - Length of steps array.
+     * @param heurArray - Heuristics connected to the steps.
      */
-    void  expandNode(Node* node, const StepArray& stepArray, uint len);
+    void  expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs=NULL);
 
     /*
      * Limited Node expansion.

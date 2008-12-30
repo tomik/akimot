@@ -88,7 +88,7 @@ Node::Node()
 
 //---------------------------------------------------------------------
 
-Node::Node(const Step& step)
+Node::Node(const Step& step, float heur)
 {
   assert(IS_PLAYER(step.getPlayer()));
   nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
@@ -98,7 +98,10 @@ Node::Node(const Step& step)
   bestCached_ = NULL;
   visits_     = 0;
   value_      = 0; 
+  heur_ = heur;
   step_ = step;
+  
+
 }
 
 //---------------------------------------------------------------------
@@ -179,7 +182,8 @@ Node* Node::findMostExploredChild() const
 float Node::ucb(float exploreCoeff) const
 {
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
-  return (( nodeType_ == NODE_MAX ? value_ : - value_) + sqrt((exploreCoeff/visits_)));
+  return ( nodeType_ == NODE_MAX ? value_ : - value_) + 
+          sqrt((exploreCoeff/visits_)) + heur_/visits_;
 }
 
 //---------------------------------------------------------------------
@@ -425,11 +429,15 @@ void Tree::reset(player_t firstPlayer)
 
 //---------------------------------------------------------------------
 
-void Tree::expandNode(Node* node, const StepArray& steps, uint len)
+void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs)
 {
   Node* newChild;
   for (uint i = 0; i < len; i++){
-    newChild = new Node(steps[i]);
+    if (heurs)
+      newChild = new Node(steps[i], (*heurs)[i]);  
+    else
+      newChild = new Node(steps[i]);  
+
     node->addChild(newChild);
     nodesNum_++;
   }
@@ -724,10 +732,17 @@ void Uct::doPlayout(const Board* board)
 
         stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-
         stepsNum = filterTT(steps, stepsNum, playBoard); 
+
         if (stepsNum > 0) {
-          tree_->expandNode(tree_->actNode(), steps, stepsNum);
+          if (cfg.knowledgeInTree()){
+            HeurArray heurs;
+            playBoard->getHeuristics(steps, stepsNum, heurs);
+            tree_->expandNode(tree_->actNode(), steps, stepsNum, &heurs);
+          }
+          else{
+            tree_->expandNode(tree_->actNode(), steps, stepsNum);
+          }
           updateTT(tree_->actNode()->getFirstChild(), playBoard); 
         }else{
           tree_->removeNodeCascade(tree_->actNode());

@@ -319,7 +319,10 @@ typedef pair<player_t, piece_t>  PiecePair;
 
 typedef uint board_t[SQUARE_NUM];
 
+//steps
 typedef Step  StepArray[MAX_STEPS];
+//heuristics for steps (separated because used VERY LITTLE)
+typedef float  HeurArray[MAX_STEPS];
 
 /**
  * Board representation.
@@ -510,6 +513,17 @@ class Board
      * */
 		int generateAllSteps(player_t, StepArray&) const;
 
+
+    /**
+     * Knowledge for steps. 
+     *
+     * Applies knowledge to given stepArray and fills heuristic array 
+     *  heurs will have the same size as steps.
+     * @param steps - Given step array for heuristics generation.
+     * @param stepsNum - Length of steps.
+     */
+    void getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const;
+
     u64       getSignature() const;
     player_t	getWinner() const;
 
@@ -597,6 +611,9 @@ class Board
      * is verified (might try to generate the step more times).
      */
 		bool findRandomStep(Step&) const;
+
+    //TODO move these 3 methods to eval ???
+    
 
     /**
      * Knowledge integration into steps. 

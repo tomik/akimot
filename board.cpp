@@ -605,6 +605,17 @@ Step Board::findStepToPlay()
 
 //--------------------------------------------------------------------- 
 
+void Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const
+{
+  for (uint i = 0; i < stepsNum; i++){
+    heurs[i] = evaluateStep(steps[i]); 
+    //cerr << heurs[i] << " ";
+    //assert(int(heurs[i]) == heurs[i]);
+  }
+}
+
+//--------------------------------------------------------------------- 
+
 void Board::init(bool newGame)
 {
 
@@ -1017,7 +1028,7 @@ Step Board::chooseStepWithKnowledge() const
 
 float Board::evaluateStep(const Step& step) const
 {
-  float eval = 0.5; 
+  float eval = 0; 
 
   if (! step.pieceMoved()){
     return eval;
@@ -1030,22 +1041,22 @@ float Board::evaluateStep(const Step& step) const
     if (step.piece_ == PIECE_RABBIT && ! IS_TRAP(step.to_) && 
         ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
         (toMove_ == SILVER && ROW(step.from_) <= 5))){
-      eval -= 0.1;
+      eval -= 1;
     }
     else{
-      eval -= 0.5;   
+      eval -= 5;   
     }
   }
   else{
 
     //push opp to trap is good 
     if (step.isPushPull() && IS_TRAP(step.oppTo_)){
-      eval += 0.3;
+      eval += 3;
     }
 
     //check opp-kill
     if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
-      eval += 0.5;   
+      eval += 5;   
     }
   }
 
@@ -1073,15 +1084,15 @@ float Board::evaluateStep(const Step& step) const
       //moving forward
       if (step.to_ - step.from_ == rabbitForward[toMoveIndex_]) {
         if (empty){
-          return 0.9;
+          eval += 5;
         }
-        eval += emptyNum * 0.1;
+        eval += emptyNum * 1;
       }
       //TODO add evaluation for moves left right
 
     }
     else { //move in player's part
-      eval += -0.2;
+      eval += -2;
     }
   } //rabbits
 
@@ -1089,7 +1100,7 @@ float Board::evaluateStep(const Step& step) const
   if (cfg.localPlayout() && 
       lastStep_.stepType_ != STEP_NULL &&
       SQUARE_DISTANCE(lastStep_.to_, step.from_) <= 1){
-    eval += 0.2;
+    eval += 2;
   }
 
   return eval;

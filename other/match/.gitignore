@@ -6,3 +6,4 @@ bot_akimot/*.cfg
 matches
 *.pyo
 .gitignore
+t.cfg

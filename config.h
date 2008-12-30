@@ -65,6 +65,7 @@ class Cfg
     inline bool localPlayout() { return localPlayout_; }
     inline int randomStepTries() { return randomStepTries_; }
     inline float fpu() { return fpu_; }
+    inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline float exploreRate() { return exploreRate_; }
     inline int playoutLen() { return playoutLen_; }
     inline int matureLevel() { return matureLevel_; }
@@ -82,6 +83,8 @@ class Cfg
     int  randomStepTries_;
     /**FPU value*/
     float fpu_;
+    /**Use knowledge in uct tree.*/
+    bool knowledgeInTree_;
     /**Uct explore rate.*/
     float exploreRate_;
     /**Lenght of playout before evaluation.*/
