@@ -383,8 +383,11 @@ class Uct:public Engine
 
     /**
      * Update before every search.
+     *
+     * @param firstPlayer Player to move first in the position.
+     * @param initialSignature Initial signature of the board in the root.
      */
-    void reset(player_t firstPlayer);
+    void reset(player_t firstPlayer, u64 initialSignature);
 
     /**
      * Crucial method implementing search.

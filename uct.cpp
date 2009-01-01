@@ -661,7 +661,7 @@ Uct::~Uct()
   delete tt_;
 }
 
-void Uct::reset(player_t firstPlayer)
+void Uct::reset(player_t firstPlayer, u64 initialSignature)
 {
   if (tt_){
     delete tt_;
@@ -675,20 +675,24 @@ void Uct::reset(player_t firstPlayer)
 
   tree_->reset(firstPlayer);
 
+  //save root in the tt
+  tt_->insertItem(initialSignature,
+                  PLAYER_TO_INDEX(firstPlayer), 
+                  tree_->root());
+
 }
 
 //---------------------------------------------------------------------
 
 void Uct::searchTree(const Board* board)
 {
-  reset(board->getPlayerToMove());
+  reset(board->getPlayerToMove(), board->getSignature());
   while (! checkSearchStop()){
     doPlayout(board);
   }
 
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);
-  //TODO - this doesn't work - try akimot -l -a init :(
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
@@ -733,9 +737,12 @@ void Uct::doPlayout(const Board* board)
           break;
         }
 
-        stepsNum = playBoard->generateAllSteps(playBoard->getPlayerToMove(), steps);
+        stepsNum = playBoard->generateAllStepsNoPass(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
         stepsNum = filterTT(steps, stepsNum, playBoard); 
+        if (playBoard->canPass()){ //add pass if possible
+          steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
+        }
 
         if (stepsNum > 0) {
           if (cfg.knowledgeInTree()){
@@ -877,7 +884,8 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
   while (i < stepsNum){
     afterStepSignature = board->calcAfterStepSignature(steps[i]);
     if (tt_->hasItem(afterStepSignature, 
-                     PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
+                     PLAYER_TO_INDEX(board->getPlayerToMove()))){
+                     //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
       //TODO change this policy     
       //if node with same position already exists in the tree new node is not added 
       steps[i] = steps[stepsNum-- - 1];
@@ -901,7 +909,8 @@ void Uct::updateTT(Node* nodeList, const Board* board)
   while (node != NULL){
     afterStepSignature = board->calcAfterStepSignature(node->getStep());
     tt_->insertItem(afterStepSignature,
-                    PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(node->getStep())), 
+                    PLAYER_TO_INDEX(board->getPlayerToMove()), 
+                    //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(node->getStep())), 
                     node);
     node = node->getSibling();
   }

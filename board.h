@@ -511,13 +511,19 @@ class Board
     u64 calcAfterStepSignature(const Step& step) const;
 
     /**
-     * Generates all (syntatically) legal steps from the position.
+     * Step generation. 
      *
+     * Generates all (syntatically) legal steps from the position EXCEPT from Pass.
      * Doesn't check 3 - repetitions rule / virtual pass. 
-     * Pass move is always generated as a last move.
-     * */
-		int generateAllSteps(player_t, StepArray&) const;
+     */
+		int generateAllStepsNoPass(player_t, StepArray&) const;
 
+    /**
+     * Step generation. 
+     *
+     * Wrapper around previous function with added step Pass.
+     */
+		int generateAllSteps(player_t, StepArray&) const;
 
     /**
      * Knowledge for steps. 
@@ -540,6 +546,13 @@ class Board
      *              otherwise false.
      */
     bool canContinue(const Move& move) const;
+
+    /**
+     * Checks pass validity.
+     *
+     * stepsNum must be > 0 and third repetition is not allowed
+     */
+    bool canPass() const;
 
   private:
     /**
@@ -674,7 +687,7 @@ class Board
      * @return true if position after given step leads to a third repetition
      * according to thirdRep object.
      */
-    bool stepIsThirdRepetition( Step& ) const;
+    bool stepIsThirdRepetition(const Step& ) const;
 
     /**
      * Has a friend test.

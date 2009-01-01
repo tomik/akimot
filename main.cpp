@@ -9,7 +9,7 @@
 int main(int argc, char *argv[]) 
 {
 
-  srand(time(0));
+  srand((unsigned) time(NULL));
 
   options.parse(argc, (const char **) (argv));
   //options.printAll();
@@ -30,7 +30,6 @@ int main(int argc, char *argv[])
     Board board;
     Engine* engine = new Uct();
 
-    srand((unsigned) time(NULL));
 
     //initSuccess = board.initFromRecord(options.fnInput());
 

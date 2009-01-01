@@ -587,9 +587,8 @@ Step Board::findStepToPlay()
       return step;
   }
 
-  // STEP_PASS is always last move generated in generateAllSteps 
-  // it can be simply removed to get "no-pass" move 
-  stepArrayLen[playerIndex] = generateAllSteps(toMove_, stepArray[playerIndex]);
+  stepArrayLen[playerIndex] = 
+      generateAllStepsNoPass(toMove_, stepArray[playerIndex]);
   uint len = stepArrayLen[playerIndex];
 
   assert(stepArrayLen[playerIndex] < MAX_STEPS);
@@ -1039,11 +1038,12 @@ float Board::evaluateStep(const Step& step) const
   if (! step.pieceMoved()){
     return eval;
   }
+
   if (step.piece_ == PIECE_ELEPHANT ) {
-    eval += 1.5;
+    eval += 0.1;
   }
   if (step.isPushPull()){
-    eval += 1; 
+    eval += 0.1; 
   } 
   //check self-kill
   assert(IS_PLAYER(board_[step.from_]));
@@ -1486,7 +1486,7 @@ u64 Board::calcAfterStepSignature(const Step& step) const
 
 //---------------------------------------------------------------------
 
-int Board::generateAllSteps(player_t player, StepArray& stepArray) const
+int Board::generateAllStepsNoPass(player_t player, StepArray& stepArray) const
 {
   int stepsNum;
   int i,j;
@@ -1535,12 +1535,16 @@ int Board::generateAllSteps(player_t player, StepArray& stepArray) const
       }
   } //for pieces on board
 
-  //add step pass, if it's legal
-  //other methods (filterRepetitions) are relying on fact, 
-  //that stepPass is listed as a last one ! 
-  if (stepCount_ > 0 )
+  return stepsNum;
+}
+
+//--------------------------------------------------------------------- 
+
+int Board::generateAllSteps(player_t player, StepArray& stepArray) const {
+  int stepsNum = generateAllStepsNoPass(player, stepArray);
+  if (canPass()){
     stepArray[stepsNum++] = Step(STEP_PASS, player);
-  
+  }
   return stepsNum;
 }
 
@@ -1548,14 +1552,6 @@ int Board::generateAllSteps(player_t player, StepArray& stepArray) const
 
 int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const 
 {
-  // Careful - presumes that if there is a pass move 
-  // then it is not pass at stepCount == 0 and this pass move is in the very end ! 
-
-  //third time repetition check for pass move 
-  //it is presumed, that pass move is in the very end ! TODO - cancel the presumption ? 
-  if ( stepsNum > 0 && stepArray[stepsNum - 1].isPass() && 
-      stepIsThirdRepetition(stepArray[stepsNum - 1])) 
-    stepsNum--;
 
   //check virtual passes ( immediate repetetitions ) 
   //these might be checked and pruned even if the move is not over yet 
@@ -1599,7 +1595,7 @@ bool Board::stepIsVirtualPass( Step& step ) const
 
 //---------------------------------------------------------------------
 
-bool Board::stepIsThirdRepetition( Step& step ) const 
+bool Board::stepIsThirdRepetition(const Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   assert(1 - PLAYER_TO_INDEX(step.getPlayer()) == 
@@ -1744,6 +1740,13 @@ player_t Board::getWinner() const
 bool Board::canContinue(const Move& move) const
 {
   return (getStepCount() + move.getStepCount() ) < STEPS_IN_MOVE;
+}
+
+//--------------------------------------------------------------------- 
+  
+bool Board::canPass() const
+{
+  return stepCount_ > 0 && ! stepIsThirdRepetition(Step(STEP_PASS, toMove_));
 }
 
 //--------------------------------------------------------------------- 
