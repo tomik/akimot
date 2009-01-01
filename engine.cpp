@@ -91,6 +91,7 @@ void TimeManager::resetSettings()
 Engine::Engine()
 {
   timeManager_ = new TimeManager();
+  ponder_ = false;
 }
 
 //--------------------------------------------------------------------- 

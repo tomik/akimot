@@ -302,6 +302,11 @@ class Move
      * Function returns list of steps.
      */
     StepList getStepList() const;
+
+    /**
+     * Step count in move getter.
+     */
+    int getStepCount() const;
     
   private:
     StepList stepList_;
@@ -434,7 +439,7 @@ class Board
      * Quick check for goal.
      *
      * Checking is unreliable ! 
-     * (looks only for direct goal score without help of tother pieces).
+     * (looks only for direct goal score without help of other pieces).
      * Done by wave algorithm from the goal line for given player. 
      *
      * @return True if knows goal can be reached,   
@@ -526,6 +531,15 @@ class Board
 
     u64       getSignature() const;
     player_t	getWinner() const;
+
+    /**
+     * Continue check.
+     *
+     * @param move to be made from given position.
+     * @return True if after move player can still play ( <4 steps ),
+     *              otherwise false.
+     */
+    bool canContinue(const Move& move) const;
 
   private:
     /**
@@ -725,9 +739,6 @@ class Board
 		string allStepsToString() const;
 		void dumpAllSteps() const;
     void dump() const;
-
-
-		void testPieceArray();
 
     //Attributes
 

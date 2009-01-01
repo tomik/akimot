@@ -249,6 +249,7 @@ void Node::update(float sample)
 {
   visits_++;
   value_ += (sample - value_)/visits_;         
+  //invalidate cache if neccessary
   if ((nodeType_ == NODE_MAX && sample == -1) || 
       (nodeType_ == NODE_MIN && sample == 1)) {
     bestCached_ = NULL;
@@ -719,6 +720,11 @@ void Uct::doPlayout(const Board* board)
         Move move;
         if (playBoard->quickGoalCheck(&move)){
           float value = WINNER_TO_VALUE(tree_->actNode()->getPlayer());
+          //if not complete step - add pass 
+          //small workaround preventing for instance rabbits crouching along the victory line
+          if (playBoard->canContinue(move)){
+            move.appendStep(Step(STEP_PASS, playBoard->getPlayerToMove()));
+          }
           tree_->expandNodeLimited(tree_->actNode(), move);
           //descend to the expanded area
           while (tree_->actNode()->hasChildren())
@@ -838,7 +844,9 @@ float Uct::getBestMoveValue() const
 
 float Uct::getWinRatio() const
 {
-  return (bestMoveNode_) ? (bestMoveNode_->getValue() + 1 )/2 : 0.5;
+  float ratio = (bestMoveNode_) ? (bestMoveNode_->getValue() + 1 )/2 : 0.5;
+  assert(tree_->root());
+  return (tree_->root()->getNodeType() == NODE_MAX) ? ratio : 1 - ratio;
 }
 
 //--------------------------------------------------------------------- 

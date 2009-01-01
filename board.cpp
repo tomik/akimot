@@ -409,6 +409,13 @@ StepList Move::getStepList() const
 
 //--------------------------------------------------------------------- 
 
+int Move::getStepCount() const
+{
+  return stepList_.size();
+}
+
+//--------------------------------------------------------------------- 
+
 string Move::toString()
 {
   string s;
@@ -609,7 +616,6 @@ void Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heur
 {
   for (uint i = 0; i < stepsNum; i++){
     heurs[i] = evaluateStep(steps[i]); 
-    //cerr << heurs[i] << " ";
     //assert(int(heurs[i]) == heurs[i]);
   }
 }
@@ -1033,6 +1039,12 @@ float Board::evaluateStep(const Step& step) const
   if (! step.pieceMoved()){
     return eval;
   }
+  if (step.piece_ == PIECE_ELEPHANT ) {
+    eval += 1.5;
+  }
+  if (step.isPushPull()){
+    eval += 1; 
+  } 
   //check self-kill
   assert(IS_PLAYER(board_[step.from_]));
   if (checkKillForward(step.from_, step.to_)){
@@ -1444,7 +1456,7 @@ u64 Board::calcAfterStepSignature(const Step& step) const
 
   if (step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL){
     newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppFrom_];  //erase previous location
-    if ( ! IS_TRAP(step.oppTo_) || hasTwoFriends(step.oppTo_, OPP(toMove_)) ){              //if not killed in the trap
+    if ( (! IS_TRAP(step.oppTo_)) || hasTwoFriends(step.oppTo_, OPP(toMove_)) ){              //if not killed in the trap
       newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppTo_];  //add new location 
       checkTrap[checkTrapNum++] = step.oppFrom_;
     }
@@ -1458,12 +1470,16 @@ u64 Board::calcAfterStepSignature(const Step& step) const
   
   //now check only for cases when moving a piece causes another (friendly) piece die in the trap because of lack of friends
   int actTrap;
-  for (int j = 0; j < checkTrapNum; j++)
+  for (int j = 0; j < checkTrapNum; j++){
     for (int i = 0; i < 4; i++){
       actTrap = checkTrap[j] + direction[i];
-      if ( IS_TRAP(actTrap) && board_[actTrap] != EMPTY_SQUARE && ! hasTwoFriends(actTrap, OWNER(board_[actTrap])) )
+      if ( IS_TRAP(actTrap) &&                                          //there is a trap next to the position of piece
+           board_[actTrap] != EMPTY_SQUARE &&                           
+           OWNER(board_[actTrap]) == OWNER(board_[checkTrap[j]]) &&    //there is a friend in the trap 
+           ! hasTwoFriends(actTrap, OWNER(board_[actTrap])) )          //he will die on lack of friends
         newSignature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[actTrap]))][PIECE(board_[actTrap])][actTrap];      //erase 
     } 
+  }
 
   return newSignature;
 }
@@ -1725,6 +1741,13 @@ player_t Board::getWinner() const
 
 //---------------------------------------------------------------------
 
+bool Board::canContinue(const Move& move) const
+{
+  return (getStepCount() + move.getStepCount() ) < STEPS_IN_MOVE;
+}
+
+//--------------------------------------------------------------------- 
+
 /*places piece at given position and updates signature*/
 void Board::setSquare( square_t square, player_t player, piece_t piece)  
 {
@@ -1855,19 +1878,6 @@ void Board::dump() const
 void Board::dumpAllSteps() const
 {
   logRaw(allStepsToString().c_str());
-}
-
-//---------------------------------------------------------------------
-
-void Board::testPieceArray()
-{
-  for (uint playerIndex = 0; playerIndex < 2; playerIndex++){
-    cerr << endl << "player " << playerIndex << "("<< pieceArray[playerIndex].getLen()<<"):";
-    for(uint i = 0; i < pieceArray[playerIndex].getLen(); i++){
-      assert( OWNER(board_[pieceArray[playerIndex][i]] ) == INDEX_TO_PLAYER(playerIndex)); 
-      cerr << pieceArray[playerIndex][i] << " ";
-    }
-  }
 }
 
 //---------------------------------------------------------------------
