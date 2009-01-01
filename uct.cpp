@@ -115,13 +115,13 @@ Node* Node::findUctChild()
 
   Node* act = firstChild_;
   Node* best = firstChild_;
-  float bestUrgency = -100;   //TODO - something small !  
+  float bestUrgency = INT_MIN;   
   float actUrgency = 0;
 
   float exploreCoeff = EXPLORE_RATE * log(visits_);
 
   while (act != NULL) {
-    actUrgency = visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff);
+    actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
 
     if ( actUrgency > bestUrgency ){
       best = act;
@@ -433,10 +433,7 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
 {
   Node* newChild;
   for (uint i = 0; i < len; i++){
-    if (heurs)
-      newChild = new Node(steps[i], (*heurs)[i]);  
-    else
-      newChild = new Node(steps[i]);  
+    newChild = new Node(steps[i], heurs ? (*heurs)[i] : 0 );  
 
     node->addChild(newChild);
     nodesNum_++;
