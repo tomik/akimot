@@ -21,8 +21,8 @@ int Eval::evaluate(const Board* board_)
 }
 
 //--------------------------------------------------------------------- 
-#define EVAL_MAX 5000
-#define EVAL_MIN (-5000)
+#define EVAL_MAX 10000
+#define EVAL_MIN (-10000)
 
 float Eval::evaluateInPercent(const Board* board_) 
 {

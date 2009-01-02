@@ -3,11 +3,14 @@
 
 === Actual ===
 [3, bench] add more positions to benchmark ! 
-[5, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
+[2, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
 [4, hash] position hashing - add moveIndex - now earlier move kills later move
 [4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
 [3, eval] mapping evaluation -> win percentage is dummy -> improve
 [3, board] get frozenboard back to work
+[3, board] optimize step comparison
+[3, uct] change treeWideSteps from map to hashtable ! 
+[3, hash] undumiffy hash table (don't use map, but real hashtable)
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
@@ -23,7 +26,6 @@
   [14.12][5, board] refactor quickGoalCheck and backtrackFlagBoard
 
 === Small Issues ===
-[3, board] what is testpiecearray doing ? 
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [1, uct]  history has a fixed size - change to dynamic + reallocation
 [3,board] refactor board loading - use fromcompactstring
@@ -32,6 +34,7 @@
   [28.11][3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
   [29.11][3, uct] time control should be part of engine not uct 
   [29.11][3. board] makestep should be private
+  [02.01][3, board] what is testpiecearray doing ? deleted
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

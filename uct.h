@@ -15,9 +15,11 @@
 #include "eval.h"
 #include "hash.h"
 
+using std::map;
 using std::queue;
 using std::sqrt;
 using std::set;
+using std::make_pair;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 //length of playout after which we evaluate
@@ -108,6 +110,26 @@ class SearchExt
     bool flagBoard_[SQUARE_NUM];
 };
 
+/**Tree wide step.*/
+class TWstep
+{
+  public:
+    TWstep(Step, float, int);
+    Step step;
+    float value;
+    int visits;
+} ; 
+
+typedef map<Step, TWstep> TWstepsMap;
+
+class TWsteps: public TWstepsMap
+{
+  public: 
+    TWstep& operator[](const Step& step);
+  private:
+};
+
+//typedef map<Step, TWstep> TWsteps;
 
 /**
  * Node in uct tree. 
@@ -120,7 +142,7 @@ class Node
     /**
      * Constructor with step and heuristic 
      */
-    Node(const Step&, float heur=0);
+    Node(TWstep*, float heur=0);
 
     /**
      * Finds child with highest UCB1 value.
@@ -182,6 +204,7 @@ class Node
     player_t getPlayer() const;
     int   getVisits() const;
     float getValue() const;
+    void setValue(float value);
     nodeType_e getNodeType() const;
 
     string toString() const; 
@@ -197,7 +220,7 @@ class Node
     /**Heuristic value - purely position dependent.*/
     float       heur_;
     int         visits_;
-    Step        step_;
+    TWstep*     twStep_;
 
     /** Best son cached to be used immediately for UCB descend*/
     Node*       bestCached_; 
@@ -208,6 +231,11 @@ class Node
     nodeType_e  nodeType_;
 };
 
+
+/**Value visit pair.*/
+/*typedef pair<float, int> ValueVisitPair;
+typedef map<Step, ValueVisitPair> TreeWideSteps;
+*/
 
 /**
  * Uct tree. 
@@ -366,9 +394,15 @@ class Tree
   private:
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
+    /**Expanded nodes.*/
     int   nodesExpandedNum_;
+    /**Nodes in the tree.*/
     int   nodesNum_;
-  
+    /**Map of tree wide steps. 
+     *
+     * Every step with its value (average of all values in the tree) 
+     * is stored here. This is used to init new node.*/
+    TWsteps  twSteps_;
     
 };
 
@@ -478,8 +512,9 @@ class Uct:public Engine
     Node* bestMoveNode_;  
     /**Best move calculated from bestMoveNode_.*/
     string bestMoveRepr_;  
-
+    /**Number of pruned nodes in tt.*/
     int nodesPruned_;
+    /**Total number of playouts.*/
     int playouts_;
 
 };

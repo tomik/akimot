@@ -78,6 +78,33 @@ bool SearchExt::quickGoalCheck(const Board* board, player_t player, int stepsLim
 }
 
 //---------------------------------------------------------------------
+// section TWstep
+//---------------------------------------------------------------------
+
+
+TWstep::TWstep(Step s, float val, int vis) :
+step(s), value(val), visits(vis)
+{
+}
+
+//---------------------------------------------------------------------
+// section TWsteps 
+//---------------------------------------------------------------------
+
+TWstep& TWsteps::operator[](const Step& step)
+{ 
+  TWstepsMap::iterator it = TWstepsMap::find(step);
+  if (it != TWstepsMap::end()){
+    return it->second;
+  }
+
+  pair< TWstepsMap::iterator, bool> p;
+  p = insert(make_pair(step, TWstep(step, 0, 0)));
+  assert(p.second);
+  return p.first->second;
+}
+
+//---------------------------------------------------------------------
 // section Node
 //---------------------------------------------------------------------
 
@@ -88,10 +115,10 @@ Node::Node()
 
 //---------------------------------------------------------------------
 
-Node::Node(const Step& step, float heur)
+Node::Node(TWstep* twStep, float heur)
 {
-  assert(IS_PLAYER(step.getPlayer()));
-  nodeType_ = ( step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
+  assert(IS_PLAYER(twStep->step.getPlayer()));
+  nodeType_ = ( twStep->step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
@@ -99,9 +126,7 @@ Node::Node(const Step& step, float heur)
   visits_     = 0;
   value_      = 0; 
   heur_ = heur;
-  step_ = step;
-  
-
+  twStep_ = twStep;
 }
 
 //---------------------------------------------------------------------
@@ -110,8 +135,8 @@ Node* Node::findUctChild()
 {
   assert(this->firstChild_ != NULL);
   
-  if (bestCached_)
-    return bestCached_;
+  //if (bestCached_)
+  //  return bestCached_;
 
   Node* act = firstChild_;
   Node* best = firstChild_;
@@ -131,7 +156,7 @@ Node* Node::findUctChild()
   }
 
   //store best one - might be invalidated in update 
-  bestCached_ = best;
+  //bestCached_ = best;
 
   return best;
 }
@@ -225,7 +250,7 @@ void Node::removeChild(Node* child)
   assert(visits_ >= 0);
   //wins_ -= toDelete->wins_;
   
-  bestCached_ = NULL; 
+  //bestCached_ = NULL; 
   delete toDelete;
 }
 
@@ -250,10 +275,11 @@ void Node::update(float sample)
   visits_++;
   value_ += (sample - value_)/visits_;         
   //invalidate cache if neccessary
-  if ((nodeType_ == NODE_MAX && sample == -1) || 
+ /* if ((nodeType_ == NODE_MAX && sample == -1) || 
       (nodeType_ == NODE_MIN && sample == 1)) {
     bestCached_ = NULL;
   }
+  */
 
 }
 
@@ -303,14 +329,15 @@ Node* Node::getSibling() const
 
 Step Node::getStep() const
 {
-  return step_;
+  assert(twStep_);
+  return twStep_->step;
 }
 
 //---------------------------------------------------------------------
 
 player_t Node::getPlayer() const
 {
-  return step_.getPlayer();
+  return getStep().getPlayer();
 }
 
 //---------------------------------------------------------------------
@@ -329,6 +356,13 @@ float Node::getValue() const
 
 //---------------------------------------------------------------------
 
+void Node::setValue(float value) 
+{
+  value_ = value;
+}
+
+//--------------------------------------------------------------------- 
+
 nodeType_e Node::getNodeType() const
 {
   return nodeType_;
@@ -340,7 +374,9 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << step_.toString() << "(" <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << endl;
+  ss << getStep().toString() << "(" <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " -> " 
+    << (father_ != NULL ? ucb(EXPLORE_RATE * log(father_->visits_)) : 1 )
+    << endl;
   return ss.str();
 }
 
@@ -422,8 +458,9 @@ void Tree::reset(player_t firstPlayer)
     history[0]->removeChildrenRec();
     delete history[0];
   }
+  twSteps_.clear();
   historyTop = 0;
-  history[historyTop] = new Node(Step(STEP_NULL, firstPlayer));
+  history[historyTop] = new Node(&(twSteps_[Step(STEP_NULL, firstPlayer)]));
   nodesExpandedNum_ = 0;
   nodesNum_ = 1;
 }
@@ -434,8 +471,7 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
 {
   Node* newChild;
   for (uint i = 0; i < len; i++){
-    newChild = new Node(steps[i], heurs ? (*heurs)[i] : 0 );  
-
+    newChild = new Node(&(twSteps_[steps[i]]), heurs ? (*heurs)[i] : 0 );  
     node->addChild(newChild);
     nodesNum_++;
   }
@@ -450,7 +486,7 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
   Node* newChild;
   StepList stepList = move.getStepList();
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
-    newChild = new Node(*it);
+    newChild = new Node(&twSteps_[*it]);
     node->addChild(newChild);
     node = newChild;
    // nodesNum_++;
@@ -531,8 +567,18 @@ Move Tree::findBestMove(Node* bestMoveNode)
 
 void Tree::updateHistory(float sample)
 {
-  for(int i = historyTop; i >= 0; i--)
+  for(int i = historyTop; i > 0; i--){
+    //node update
     history[i]->update(sample);
+    //tree wide steps update
+    //ValueVisitPair& vv = twSteps_[history[i]->getStep()];
+    //cerr << history[i]->getStep().toString() << " " << 
+    //      vv.first << "/" << vv.second << " " << endl;
+    //assert(vv.first <= 1 && vv.first >= -1);
+    //vv.first += (sample - vv.first) / ++vv.second;
+  }
+  //root update
+  history[0]->update(sample);
   historyReset();
 } 
 
@@ -716,7 +762,15 @@ void Uct::doPlayout(const Board* board)
   
   tree_->historyReset();     //point tree's actNode to the root 
 
+  //cerr << "Playout : " << endl; 
   do { 
+   /* cerr << "   " << tree_->actNode()->toString();
+    Node* n=tree_->actNode()->getFirstChild();
+    while (n!= NULL){
+      cerr << "           " << n->toString();
+      n = n->getSibling();
+    }
+  */
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 

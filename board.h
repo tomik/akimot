@@ -187,6 +187,7 @@ class Step
      */
 		bool pieceMoved() const;
 		bool operator== (const Step&) const;
+    bool operator<(const Step&) const;
 
     //TODO inline
     void setValues( stepType_t, player_t, piece_t, square_t, square_t );

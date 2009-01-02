@@ -217,6 +217,27 @@ bool Step::operator== ( const Step& other) const
 
 //---------------------------------------------------------------------
 
+bool Step::operator< ( const Step& other) const
+{
+  //TODO optimize - add laziness ! 
+  int itemsNum = 8;
+  int items[] = {stepType_ - other.stepType_, from_ - other.from_, to_ - other.to_, 
+            piece_ - other.piece_, player_ - other.player_, 
+            oppFrom_ - other.oppFrom_, oppTo_ - other.oppTo_, 
+            oppPiece_ - other.oppPiece_};
+  for (int i = 0; i < itemsNum; i++){
+    if (items[i] < 0 ) {
+     return true;
+    }
+    if (items[i] > 0 ) {
+     return false;
+    }
+  }
+  return false; //equality
+}
+
+//---------------------------------------------------------------------
+
 string Step::toString() const
 {
   stringstream ss;
