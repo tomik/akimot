@@ -22,8 +22,6 @@ using std::set;
 using std::make_pair;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-//length of playout after which we evaluate
-//must be an odd number !  
 #define UCT_MAX_DEPTH 50
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
 
@@ -185,7 +183,14 @@ class Node
      *
      * Updates value/visits.
      */
-    void  update(float);
+    inline void  update(float);
+    
+    /**
+     * Update after playout. 
+     *
+     * Updates value/visits of twStep.
+     */
+    inline void  updateTWstep(float);
 
     /**
      * Maturity test.

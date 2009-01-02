@@ -208,7 +208,9 @@ float Node::ucb(float exploreCoeff) const
 {
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
   return ( nodeType_ == NODE_MAX ? value_ : - value_) + 
-          sqrt((exploreCoeff/visits_)) + heur_/visits_;
+         sqrt((exploreCoeff/visits_)) + heur_/visits_  
+        + (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_);
+  
 }
 
 //---------------------------------------------------------------------
@@ -272,8 +274,7 @@ void Node::removeChildrenRec()
 
 void Node::update(float sample)
 {
-  visits_++;
-  value_ += (sample - value_)/visits_;         
+  value_ += (sample - value_)/++visits_;         
   //invalidate cache if neccessary
  /* if ((nodeType_ == NODE_MAX && sample == -1) || 
       (nodeType_ == NODE_MIN && sample == 1)) {
@@ -281,6 +282,13 @@ void Node::update(float sample)
   }
   */
 
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::updateTWstep(float sample)
+{
+  twStep_->value += (sample - twStep_->value) / ++(twStep_->visits);
 }
 
 //---------------------------------------------------------------------
@@ -570,12 +578,8 @@ void Tree::updateHistory(float sample)
   for(int i = historyTop; i > 0; i--){
     //node update
     history[i]->update(sample);
-    //tree wide steps update
-    //ValueVisitPair& vv = twSteps_[history[i]->getStep()];
-    //cerr << history[i]->getStep().toString() << " " << 
-    //      vv.first << "/" << vv.second << " " << endl;
-    //assert(vv.first <= 1 && vv.first >= -1);
-    //vv.first += (sample - vv.first) / ++vv.second;
+    //tree wide step update
+    history[i]->updateTWstep(sample);
   }
   //root update
   history[0]->update(sample);

@@ -421,23 +421,24 @@ void Aei::stopSearch(bool fromThread)
 void Aei::sendSearchInfo()
 {
   aeiLog("Search finished. Suggested move: " + engine_->getBestMove(), AL_DEBUG);
-  //send info from search, when not pondering
+  stringstream ss;
+  //send statistics
+  ss.str(engine_->getStats());
+  string s;
+  while (getline(ss, s)){
+    sendInfo(STR_INFO_STATS, s);
+  }
+  //send time info/winratio
+  ss.clear();
+  ss.str("");
+  ss << engine_->timeManager()->secondsElapsed(); 
+  sendInfo(STR_INFO_TIME, ss.str());
+  ss.str(""); 
+  ss << engine_->getWinRatio();
+  sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
+   //send the answer when not pondering
   if (! engine_->getPonder()){
     send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
-    stringstream ss;
-    ss.str(engine_->getStats());
-    string s;
-    while (getline(ss, s)){
-      sendInfo(STR_INFO_STATS, s);
-    }
-    ss.clear();
-    ss.str("");
-    ss << engine_->timeManager()->secondsElapsed(); 
-    sendInfo(STR_INFO_TIME, ss.str());
-    ss.str(""); 
-    ss << engine_->getWinRatio();
-    sendInfo(STR_INFO_WIN_RATIO, ss.str()); 
-    //send the answer
   }   
 }
 
