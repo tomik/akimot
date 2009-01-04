@@ -72,7 +72,7 @@ class Cfg
     inline float tcMoveDefault() { return tcMoveDefault_; }
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
-    inline int knowledgeTournamentSize() { return knowledgeTournamentSize_; }
+    inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
 
   private:
     CfgItemList items_;
@@ -98,7 +98,7 @@ class Cfg
     /**Use knowledge in playout.*/
     bool knowledgeInPlayout_;
     /**How many steps go to step tournament in playout (must be > 0).*/
-    int knowledgeTournamentSize_;
+    uint knowledgeTournamentSize_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

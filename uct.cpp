@@ -28,10 +28,16 @@ SimplePlayout::SimplePlayout(Board* board, uint maxPlayoutLength, uint evalAfter
 playoutStatus_e SimplePlayout::doPlayout()
 {
   uint moves = 0;
+  /*if (options.localMode()){
+    cerr << "X                 PLAYOUT START                X " << endl;
+  }
+  */
 
   while (true) {  
-		playOne();
+	  //playOne();
+    board_->findMCmoveAndMake();
 		playoutLength_++;
+
 
 		if ( board_->getWinner() != EMPTY ) //somebody won
 			return PLAYOUT_OK;
@@ -51,13 +57,9 @@ void SimplePlayout::playOne()
 	Step step;
 
 	do {
-		step = board_->findStepToPlay();
-		//board_->makeStep(step);
+		step = board_->findMCstep();
 	}
-  //TODO IS this correct ? 
 	while (! board_->makeStepTryCommitMove(step));
-  //(board_->getStepCount() < 4 && step.pieceMoved()); 
-	//board_->commitMove();
 	return;
 }
 
@@ -768,13 +770,14 @@ void Uct::doPlayout(const Board* board)
 
   //cerr << "Playout : " << endl; 
   do { 
-   /* cerr << "   " << tree_->actNode()->toString();
+   /*cerr << "   " << tree_->actNode()->toString();
     Node* n=tree_->actNode()->getFirstChild();
     while (n!= NULL){
       cerr << "           " << n->toString();
       n = n->getSibling();
     }
   */
+  
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 
@@ -918,8 +921,9 @@ float Uct::getWinRatio() const
 
 double Uct::decidePlayoutWinner(const Board* playBoard) const
 {
-  if IS_PLAYER(playBoard->getWinner())
+  if IS_PLAYER(playBoard->getWinner()){
     return WINNER_TO_VALUE(playBoard->getWinner()); 
+  }
 
   double evalGold = eval_->evaluateInPercent(playBoard);
   if (cfg.exactPlayoutValue()){

@@ -84,6 +84,7 @@ using std::list;
 
 extern const int direction[4];
 extern const int rabbitForward[2];
+extern const int rabbitWinRow[2];
 extern const int trap[4];
 
 typedef uint player_t;
@@ -130,6 +131,11 @@ class PieceArray
     string toString() const;
     uint getLen() const;
     square_t operator[](uint) const;
+    
+    /**
+     * Random square in piece array.
+     */
+    square_t getRandom() const;
 
   private:
     square_t elems[MAX_PIECES];      
@@ -179,6 +185,14 @@ class Step
     bool isPass() const;
     bool isSingleStep() const;
     bool isPushPull() const;
+
+    /**
+     * Checks (pseudo)inversion to given step.
+     * 
+     * return True if steps have same type, inversed from/to oppfrom/oppto.
+     *        false otherwise.
+     */
+    bool inversed(const Step&) const;
 
     /**
      * Checks whether step moves any piece. 
@@ -377,7 +391,13 @@ class Board
      * Random step is generated either by calling findRandomStep method or ( if the former 
      * one is unsuccessfull ) by generating all steps and selecting one in random.
      */
-		Step findStepToPlay();
+		Step findMCstep();
+
+
+    /**
+     * Move generation in Monte Carlo playouts. 
+     */
+    void findMCmoveAndMake(); 
     
    /**
      * Equality operator.
@@ -397,7 +417,7 @@ class Board
      *  @param step given step 
      *  @return true if commited false otherwise
      */
-		bool makeStepTryCommitMove(Step&);
+		bool makeStepTryCommitMove(const Step&);
 
      /**
      * Performs whole move. 
@@ -527,6 +547,16 @@ class Board
 		int generateAllSteps(player_t, StepArray&) const;
 
     /**
+     * Step generation for one piece. 
+     *
+     * @param square Steps are generated for this piece.
+     * @param stepArray Steps are stored in this array.
+     * @param stepsnum Size of step array.
+     */
+    void generateStepsForPiece(
+              square_t square, StepArray& steps, uint& stepsNum) const;
+
+    /**
      * Knowledge for steps. 
      *
      * Applies knowledge to given stepArray and fills heuristic array 
@@ -554,6 +584,11 @@ class Board
      * stepsNum must be > 0 and third repetition is not allowed
      */
     bool canPass() const;
+
+    /**
+     * Last step getter.
+     */
+    Step lastStep() const;
 
   private:
     /**
@@ -630,7 +665,7 @@ class Board
      * @param update If true - board structure is updated (added
      * steps, frozenBoard update). 
      */
-		void makeStep(Step& step);
+		void makeStep(const Step& step);
 
     /**
      * "Random" step generator.
@@ -640,16 +675,16 @@ class Board
      */
 		bool findRandomStep(Step&) const;
 
-    //TODO move these 3 methods to eval ???
+    //TODO move evaluation methods to eval ???
     
-
     /**
      * Knowledge integration into steps. 
      *
-     * Takes generated steps(in stepArray) and finds the one with 
-     * best "knowledge background".
+     * @param steps Generated steps - 
+     *    some is selected from these according to "knowledge".
+     * @param stepsNum Size of steps.
      */
-    Step chooseStepWithKnowledge() const;
+    Step chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const;
 
     /**
      * Evaluates one step.
@@ -736,7 +771,6 @@ class Board
      */
 		bool isFrozen(square_t) const;
 
-		uint			getAllStepsNum(uint) const;
 		uint			getStepCount() const;
     u64       getPreMoveSignature() const;
 		
@@ -766,8 +800,8 @@ class Board
     PieceArray    pieceArray[2];  
     uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
   
-    StepArray     stepArray[2];
-    uint          stepArrayLen[2];
+    StepArray     stepArray;
+    uint          stepArrayLen;
 
     u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
     u64           preMoveSignature_;     //signature of position from when the current move started

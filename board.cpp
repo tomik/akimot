@@ -18,6 +18,7 @@ bool Board::classInit = false;
 
 const int direction[4]={NORTH,EAST,SOUTH,WEST};
 const int rabbitForward[2]={NORTH,SOUTH};
+const int rabbitWinRow[2]={8,1};
 const int trap[4]={33,36,63,66};
 
 //---------------------------------------------------------------------
@@ -85,6 +86,14 @@ square_t PieceArray::operator[](uint index) const
 {
   assert( index >= 0 && index < len );
   return elems[index];
+}
+
+//--------------------------------------------------------------------- 
+
+square_t PieceArray::getRandom() const
+{
+  assert(len);
+  return elems[rand() % len];
 }
 
 //---------------------------------------------------------------------
@@ -185,6 +194,24 @@ bool Step::isPushPull() const
 {
   return (stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
 }
+
+//---------------------------------------------------------------------
+
+bool Step::inversed(const Step& s) const 
+{
+  if (from_ == s.to_ && to_ == s.from_ && 
+      ( stepType_ == s.stepType_ == STEP_SINGLE || 
+        isPushPull() && s.isPushPull() && 
+        oppFrom_ == s.oppTo_ && oppTo_ == s.oppFrom_ )){
+    assert(stepType_ == s.stepType_ == STEP_SINGLE || 
+          (isPushPull() && s.isPushPull()));
+    assert(pieceMoved() && s.pieceMoved());
+    assert(player_ == s.player_ && piece_ == s.piece_);
+    return true;
+  }
+  return false;
+}
+
 
 //---------------------------------------------------------------------
 
@@ -588,9 +615,8 @@ bool Board::initFromPositionCompactString(const string& s)
 
 //--------------------------------------------------------------------- 
 
-Step Board::findStepToPlay() 
+Step Board::findMCstep() 
 {
-  uint playerIndex = PLAYER_TO_INDEX(toMove_);
   Step step;
 
   //it's not possible to have 0 rabbits in the beginning of move
@@ -608,11 +634,11 @@ Step Board::findStepToPlay()
       return step;
   }
 
-  stepArrayLen[playerIndex] = 
-      generateAllStepsNoPass(toMove_, stepArray[playerIndex]);
-  uint len = stepArrayLen[playerIndex];
+  stepArrayLen = 
+      generateAllStepsNoPass(toMove_, stepArray);
+  uint len = stepArrayLen;
 
-  assert(stepArrayLen[playerIndex] < MAX_STEPS);
+  assert(stepArrayLen < MAX_STEPS);
 
   if (len == 0 ){ //player to move has no step to play - not even pass
     winner_ = OPP(toMove_);
@@ -620,15 +646,68 @@ Step Board::findStepToPlay()
   }
 
   if (cfg.knowledgeInPlayout()){
-    return chooseStepWithKnowledge();
+    return chooseStepWithKnowledge(stepArray, stepArrayLen);
   }
 
   assert(len > 0);
   uint index = rand() % len;
   assert( index >= 0 && index < len );
 
-  return( stepArray[playerIndex][index]); 
+  return( stepArray[index]); 
 } 
+
+//--------------------------------------------------------------------- 
+
+void Board::findMCmoveAndMake()
+{
+  //TODO area selection 
+  
+  if (pieceArray[toMoveIndex_].getLen() == 0){
+    makeStepTryCommitMove(Step(STEP_PASS, toMove_));
+    return;
+  }
+
+  Step step;
+  PieceArray p;
+
+  for (int i = 0; i < 2; i++){
+    p.add(pieceArray[toMoveIndex_].getRandom());
+  }
+
+  do { 
+    /*if (options.localMode()){
+      cerr << toString();
+      cerr << lastStep().toString();
+    }
+    */
+
+    stepArrayLen = 1;
+    stepArray[0] = Step(STEP_PASS, toMove_);
+
+    for (uint i = 0; i < p.getLen(); i++) { 
+      if (OWNER(board_[p[i]]) == toMove_){
+        generateStepsForPiece(p[i], stepArray, stepArrayLen);
+      }
+    }
+    if (cfg.knowledgeInPlayout()){
+      step = chooseStepWithKnowledge(stepArray, stepArrayLen);
+    }
+    else{
+      step = stepArray[rand() % stepArrayLen];
+    }
+    if (! step.isPass()){
+      p.del(step.from_);
+      p.add(step.to_);
+    }
+  } while ( ! makeStepTryCommitMove(step));
+
+  /*
+  do {
+    step = findMCstep();
+  } while (! makeStepTryCommitMove(step));
+  */
+
+}
 
 //--------------------------------------------------------------------- 
 
@@ -645,8 +724,7 @@ void Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heur
 void Board::init(bool newGame)
 {
 
-  stepArrayLen[0] = 0;
-  stepArrayLen[1] = 0;
+  stepArrayLen = 0;
 
   assert(OPP(GOLD) == SILVER);
   assert(OPP(SILVER) == GOLD);
@@ -872,7 +950,7 @@ void Board::makeSignature()
 
 //---------------------------------------------------------------------
 
-void Board::makeStep(Step& step)
+void Board::makeStep(const Step& step)
 {
   
   lastStep_ = step;
@@ -1019,35 +1097,47 @@ bool Board::findRandomStep(Step& step) const
 
 //--------------------------------------------------------------------- 
 
-Step Board::chooseStepWithKnowledge() const
+Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
 {
-  assert(stepArrayLen[toMoveIndex_] > 0);
-  uint bestIndex = 0;
+  assert(stepsNum > 0);
+  uint bestIndex = stepsNum - 1;
   float bestEval = INT_MIN; 
   float eval = 0;
-  //float r = random01(); 
-  /*for (uint i = 0; i < stepArrayLen[toMoveIndex_]; i++){
-    const Step& step = stepArray[toMoveIndex_][i];
-    eval = evaluateStep(step); 
-    if (eval > bestEval){
-      bestEval = eval;
-      bestIndex = i;
-    }
-  }
-  */
+  //int r = smallRandomPrime();
+  //int index;
 
-  for (int i = 0; i < cfg.knowledgeTournamentSize(); i++){
-    uint r = rand() % stepArrayLen[toMoveIndex_];
-    assert(r >= 0 && r < stepArrayLen[toMoveIndex_]);
-    const Step& step = stepArray[toMoveIndex_][r];
-    eval = evaluateStep(step); 
-    if (eval > bestEval){
-      bestEval = eval;
-      bestIndex = r;
+  //cerr << toString();
+  if ( cfg.knowledgeTournamentSize() == 0){
+    for (uint i = 0; i < stepsNum; i++){
+      //index = ((i+1)*r) % stepsNum;
+      if (random01() >= 0.5)
+        continue;
+      const Step& step = steps[i];
+      eval = evaluateStep(step); 
+      //cerr << i << "/" << stepsNum << "/" << endl;
+      cerr << step.toString() << " " << eval << " | ";
+      if (eval > bestEval){
+        bestEval = eval;
+        bestIndex = i;
+      }
+    }
+    cerr << steps[bestIndex].toString() << endl;
+  }
+  else {
+
+    for (uint i = 0; i < (stepsNum/2 > cfg.knowledgeTournamentSize() ? cfg.knowledgeTournamentSize() : stepsNum/2); i++){
+      uint r = rand() % stepsNum;
+      assert(r >= 0 && r < stepsNum);
+      const Step& step = steps[r];
+      eval = evaluateStep(step); 
+      if (eval > bestEval){
+        bestEval = eval;
+        bestIndex = r;
+      }
     }
   }
-  assert(bestIndex >= 0 && bestIndex < stepArrayLen[toMoveIndex_]);
-  return stepArray[toMoveIndex_][bestIndex];
+  assert(bestIndex >= 0 && bestIndex < stepsNum);
+  return steps[bestIndex];
 }
 
 //--------------------------------------------------------------------- 
@@ -1056,18 +1146,38 @@ float Board::evaluateStep(const Step& step) const
 {
   float eval = 0; 
 
-  if (! step.pieceMoved()){
+  if (step.isPass()){
+    eval -= 0.5 * (STEPS_IN_MOVE - stepCount_);
+    return eval;
+  }
+
+  assert(step.pieceMoved());
+  assert(IS_PLAYER(board_[step.from_]));
+  
+  //we don't like inverse steps 
+  //TODO ... inverse step is reasonable when something dies in the trap
+  if (step.inversed(lastStep_)){
+    eval -= 5;
     return eval;
   }
 
   if (step.piece_ == PIECE_ELEPHANT ) {
     eval += 0.1;
   }
+
   if (step.isPushPull()){
-    eval += 0.1; 
+    //push opponent to the goal :( not impossible ? )
+    if (step.oppPiece_ == PIECE_RABBIT && 
+        ROW(step.oppTo_) == rabbitWinRow[PLAYER_TO_INDEX(OPP(step.player_))]){
+      eval -= 10;
+    }
+    //otherwise push/pulls are encouraged
+    else{
+      eval += 0.5; 
+    }
   } 
+  
   //check self-kill
-  assert(IS_PLAYER(board_[step.from_]));
   if (checkKillForward(step.from_, step.to_)){
     //allow self-kills to allow rabbits move to the goal
     //in the opponent's part of the board
@@ -1131,9 +1241,9 @@ float Board::evaluateStep(const Step& step) const
 
   //locality 
   if (cfg.localPlayout() && 
-      lastStep_.stepType_ != STEP_NULL &&
-      SQUARE_DISTANCE(lastStep_.to_, step.from_) <= 1){
-    eval += 2;
+      lastStep_.stepType_ != STEP_NULL){
+    int d = SQUARE_DISTANCE(lastStep_.to_, step.from_);
+    eval += d <= 3 ? (3 - d) * 0.5 : 0;
   }
 
   return eval;
@@ -1203,7 +1313,7 @@ void Board::performKill(square_t trapPos)
 
 //---------------------------------------------------------------------
 
-bool Board::makeStepTryCommitMove(Step& step) 
+bool Board::makeStepTryCommitMove(const Step& step) 
 {
   makeStep(step);
 	if (stepCount_ >= 4 || ! step.pieceMoved()) {
@@ -1507,53 +1617,17 @@ u64 Board::calcAfterStepSignature(const Step& step) const
 
 //---------------------------------------------------------------------
 
-int Board::generateAllStepsNoPass(player_t player, StepArray& stepArray) const
+int Board::generateAllStepsNoPass(player_t player, StepArray& steps) const
 {
-  int stepsNum;
-  int i,j;
+  uint stepsNum = 0;
   int square;
-  
-  stepsNum = 0;
-  for (uint index =0 ; index < pieceArray[PLAYER_TO_INDEX(player)].getLen(); index++) { //go through pieces of player 
+
+  //go through pieces of player 
+  for (uint index =0 ; 
+      index < pieceArray[PLAYER_TO_INDEX(player)].getLen(); index++) { 
     square = pieceArray[PLAYER_TO_INDEX(player)][index];
     assert(OWNER(board_[square]) == player); 
-
-    if ( isFrozen(square))  //frozen
-      continue; 
-
-    //generate push/pull moves
-    if (stepCount_ < 3) {    
-      for (i = 0; i < 4; i++) {  
-        if (OWNER(board_[square + direction[i]]) == OPP(player) 
-            && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
-          for (j=0; j<4; j++)  // pull
-            if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
-                stepArray[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
-                      square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
-            }
-          for (j=0; j<4; j++)  //push
-            if (board_[square + direction[i] + direction[j]] == EMPTY_SQUARE) { //create move
-                stepArray[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
-                      square + direction[i], PIECE(board_[square + direction[i]]),
-                      square + direction[i], square + direction[i] + direction[j]);
-          }
-        } //if weaker enemy
-      } //for
-    } 
-
-    // generate single moves
-    for (i=0; i<4; i++) // check each direction
-      if (board_[square + direction[i]] == EMPTY_SQUARE)  {
-        if (PIECE(board_[square]) == PIECE_RABBIT){ // rabbit cannot backwards
-          if (OWNER(board_[square]) == GOLD && direction[i] == SOUTH)
-            continue;
-          if (OWNER(board_[square]) == SILVER && direction[i] == NORTH)
-            continue;
-        }
-        //create move
-        stepArray[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]), 
-                                        square, square + direction[i]);
-      }
+    generateStepsForPiece(square, steps, stepsNum);
   } //for pieces on board
 
   return stepsNum;
@@ -1561,17 +1635,63 @@ int Board::generateAllStepsNoPass(player_t player, StepArray& stepArray) const
 
 //--------------------------------------------------------------------- 
 
-int Board::generateAllSteps(player_t player, StepArray& stepArray) const {
-  int stepsNum = generateAllStepsNoPass(player, stepArray);
+int Board::generateAllSteps(player_t player, StepArray& steps) const {
+  int stepsNum = generateAllStepsNoPass(player, steps);
   if (canPass()){
-    stepArray[stepsNum++] = Step(STEP_PASS, player);
+    steps[stepsNum++] = Step(STEP_PASS, player);
   }
   return stepsNum;
 }
 
+//--------------------------------------------------------------------- 
+
+void Board::generateStepsForPiece(
+        square_t square, StepArray& steps, uint& stepsNum) const { 
+
+  player_t player = OWNER(board_[square]);
+  if ( isFrozen(square))  //frozen
+    return; 
+
+  //generate push/pull moves
+  if (stepCount_ < 3) {    
+    for (int i = 0; i < 4; i++) {  
+      if (OWNER(board_[square + direction[i]]) == OPP(player) 
+          && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
+        for (int j=0; j<4; j++)  // pull
+          if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
+              steps[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
+                    square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
+          }
+        for (int j=0; j<4; j++)  //push
+          if (board_[square + direction[i] + direction[j]] == EMPTY_SQUARE) { //create move
+              steps[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
+                    square + direction[i], PIECE(board_[square + direction[i]]),
+                    square + direction[i], square + direction[i] + direction[j]);
+        }
+      } //if weaker enemy
+    } //for
+  } 
+
+  // generate single moves
+  for (int i=0; i<4; i++) // check each direction
+    if (board_[square + direction[i]] == EMPTY_SQUARE)  {
+      if (PIECE(board_[square]) == PIECE_RABBIT){ // rabbit cannot backwards
+        if (OWNER(board_[square]) == GOLD && direction[i] == SOUTH)
+          continue;
+        if (OWNER(board_[square]) == SILVER && direction[i] == NORTH)
+          continue;
+      }
+      //create move
+      steps[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]), 
+                                      square, square + direction[i]);
+    }
+
+  
+}
+
 //---------------------------------------------------------------------
 
-int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const 
+int Board::filterRepetitions(StepArray& steps, int stepsNum) const 
 {
 
   //check virtual passes ( immediate repetetitions ) 
@@ -1580,8 +1700,8 @@ int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const
   
   int i = 0;
   while (i < stepsNum) 
-    if (stepIsVirtualPass(stepArray[i]))
-      stepArray[i] = stepArray[stepsNum-- - 1];
+    if (stepIsVirtualPass(steps[i]))
+      steps[i] = steps[stepsNum-- - 1];
     else
       i++;  
 
@@ -1594,8 +1714,8 @@ int Board::filterRepetitions(StepArray& stepArray, int stepsNum) const
 
   i = 0;
   while (i < stepsNum)
-    if ((stepCount_ == 3 || stepArray[i].isPushPull()) &&  stepIsThirdRepetition(stepArray[i]))
-      stepArray[i] = stepArray[stepsNum-- - 1];
+    if ((stepCount_ == 3 || steps[i].isPushPull()) &&  stepIsThirdRepetition(steps[i]))
+      steps[i] = steps[stepsNum-- - 1];
     else
       i++;  
   
@@ -1701,14 +1821,6 @@ bool Board::isSetupPhase() const
 
 //---------------------------------------------------------------------
 
-/*returns number of all steps for given player - not index but player ! GOLD/SILVER */
-uint Board::getAllStepsNum(player_t player) const
-{
-  return stepArrayLen[PLAYER_TO_INDEX(player)];
-}
-
-//---------------------------------------------------------------------
-
 uint Board::getStepCount() const
 {
   return stepCount_;
@@ -1768,6 +1880,13 @@ bool Board::canContinue(const Move& move) const
 bool Board::canPass() const
 {
   return stepCount_ > 0 && ! stepIsThirdRepetition(Step(STEP_PASS, toMove_));
+}
+
+//--------------------------------------------------------------------- 
+
+Step Board::lastStep() const 
+{
+  return lastStep_;
 }
 
 //--------------------------------------------------------------------- 
@@ -1877,14 +1996,14 @@ string Board::allStepsToString() const
 
   for (uint playerIndex = 0; playerIndex < 2; playerIndex++) {
     if ( playerIndex ) 
-      ss << endl << "Potential moves for SILVER: " << getAllStepsNum(SILVER);
+      ss << endl << "Potential moves for SILVER: " << endl;
     else
-      ss << endl << "Potential moves for GOLD: " << getAllStepsNum(GOLD);
+      ss << endl << "Potential moves for GOLD: " << endl;
 
-    for ( uint i = 0; i < stepArrayLen[playerIndex]; i++){
-      //assert(ss.str().find(stepArray[playerIndex].getElem(i).toString()) == string::npos);  
+    /*for ( uint i = 0; i < stepArrayLen; i++){
       ss << stepArray[playerIndex][i].toString();
     }
+    */
   }
   ss << endl;
   return ss.str();
@@ -1895,13 +2014,6 @@ string Board::allStepsToString() const
 void Board::dump() const
 {
   logRaw(toString().c_str());
-}
-
-//---------------------------------------------------------------------
-
-void Board::dumpAllSteps() const
-{
-  logRaw(allStepsToString().c_str());
 }
 
 //---------------------------------------------------------------------

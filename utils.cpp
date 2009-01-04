@@ -3,6 +3,9 @@
 string logLevelStr[10] = { "debug", "warning", "error", "info"};
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
+int smallPrimes[] = {17, 23, 29, 31, 37, 41, 43, 47, 53, 59};
+const int smallPrimesNum = 10; 
+
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...)
 {
 

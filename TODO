@@ -11,6 +11,8 @@
 [3, board] optimize step comparison
 [3, uct] change treeWideSteps from map to hashtable ! 
 [3, hash] undumiffy hash table (don't use map, but real hashtable)
+[5, board] pieceArray lazy delete ! 
+[5, board] randomness too slow in choosestepwithknowledge
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
