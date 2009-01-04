@@ -5,5 +5,4 @@ bot_akimot/running
 bot_akimot/*.cfg
 matches
 *.pyo
-.gitignore
-t.cfg
+as.cfg

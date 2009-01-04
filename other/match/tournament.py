@@ -2,23 +2,17 @@ import os
 import sys
 import time
 
-bot_1 = "akimot"
-bot_2 = "sample1"
 match_dir = "matches"
 record_file = "record"
+dir_list = "list.txt"
 log_file = "log"
 
 from ConfigParser import SafeConfigParser
 
-def runTournament(config):
+def runTournament(bots, matches, comment):
 
-    try:
-        bot_1 =  config.get('global','bot_1')
-        bot_2 =  config.get('global','bot_2')
-        matches = config.getint('global','matches')
-    except:
-        print "Wrong configuration."
-        sys.exit(1)
+    bot_1 = bots[0]
+    bot_2 = bots[1]
 
     try:
         os.mkdir(match_dir)
@@ -29,12 +23,22 @@ def runTournament(config):
     dir = "%s/%s" % (match_dir, timestamp)
     os.mkdir(dir)
 
+    setup_msg = "%s x %s \n%s matches\n%s" % (bot_1, bot_2, matches, comment)
+
+    list = open("%s/%s" % (match_dir, dir_list),"a")
+    list.write("%s --- %s\n" % (timestamp, setup_msg.replace("\n"," ")))
+    list.close()
+
+    f = open("%s/%s" % (dir,"setup"),"w")
+    f.write(setup_msg)
+    f.close()
+
     bot_1_win = 0
 
     for i in xrange(matches):
         print "Match %d/%d" % (i+1, matches)
-        record = "%s/%s_%d" % (dir, record_file, i+1)
-        log = "%s/%s_%d" % (dir, log_file, i)
+        record = "%s/%s_%d" % (dir, record_file, i + 1)
+        log = "%s/%s_%d" % (dir, log_file, i + 1)
         cmdline = "./match %s %s 1>%s 2>%s" % (bot_1, bot_2, record, log)
         if os.system(cmdline) == 2:
             print "\nInterrupted ..."
@@ -45,12 +49,26 @@ def runTournament(config):
 
     print "%d/%d" % (bot_1_win, matches)
 
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print "usage: %s config" %sys.argv[0]
-        sys.exit(1)
+
+    from optparse import OptionParser
+
+    parser = OptionParser()
+    parser.add_option("--matches", "-m", help="number of matches", metavar="matches", default=100, type="int")
+    parser.add_option("--comment", "-c", help="comment :)", metavar="comment" )
+
+    (options, args) = parser.parse_args()
     
-    config = SafeConfigParser()
-    config.readfp(open(sys.argv[1],"r"))
-    runTournament(config)
+    if len(args) != 2:
+        print "usage: bot1 bot2 ..." 
+        sys.exit(1)
+
+    bot_1 = args[0]
+    bot_2 = args[1]
+
+    if options.comment is None:
+        options.comment = "%s vs. %s" % (bot_1, bot_2)
+    
+    runTournament([bot_1, bot_2], options.matches, options.comment)
     
