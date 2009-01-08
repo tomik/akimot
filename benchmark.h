@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "board.h"
+#include "engine.h"
 #include "uct.h"
 #include "eval.h"
 #include "timer.h"

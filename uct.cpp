@@ -4,6 +4,7 @@
  *  @full Uct algorithm implementation.
  */
 
+#include "engine.h"
 #include "uct.h"
 
 //---------------------------------------------------------------------
@@ -698,7 +699,7 @@ Uct::Uct()
 {
   tree_  = new Tree();
   eval_  = new Eval();
-  tt_    = NULL;
+  tt_ = NULL;
 
   searchExt_ = new SearchExt();
 
@@ -718,7 +719,8 @@ void Uct::reset(player_t firstPlayer, u64 initialSignature)
   if (tt_){
     delete tt_;
   }
-    tt_ = new TT();
+  tt_ = new TT();
+
 
   bestMoveNode_ = NULL;
   bestMoveRepr_ = "";
@@ -736,12 +738,13 @@ void Uct::reset(player_t firstPlayer, u64 initialSignature)
 
 //---------------------------------------------------------------------
 
-void Uct::searchTree(const Board* board, const Engine* engine )
+void Uct::searchTree(const Board* board, const Engine* engine)
 {
   reset(board->getPlayerToMove(), board->getSignature());
   while (! engine->checkSearchStop()){
     doPlayout(board);
   }
+
 
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);

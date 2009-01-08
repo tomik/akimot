@@ -115,6 +115,7 @@ string Engine::initialSetup(bool isGold) const
 		return "ra8 rb8 rc8 rd8 re8 rf8 rg8 rh8 ha7 db7 cc7 ed7 me7 cf7 dg7 hh7";
 }
 
+
 //---------------------------------------------------------------------
 
 void Engine::doSearch(const Board* board) 
@@ -123,12 +124,70 @@ void Engine::doSearch(const Board* board)
     bestMove_ = initialSetup(board->getPlayerToMove() == GOLD);
     return;
   }
-  
-  Board* board_copy = new Board(*board);
 
-  Uct * uct = new Uct();
+  int threadsNum = cfg.searchThreadsNum();
+
+  if (threadsNum < 0){
+    logWarning("Too little threads falling back to 1 thread.");
+    threadsNum = 1;
+  }
+  if (threadsNum > MAX_THREADS){
+    logWarning("Too many threads falling back to %d", MAX_THREADS);
+    threadsNum = MAX_THREADS;
+  }
+
+  pthread_t threads[MAX_THREADS];
+  Uct* ucts[MAX_THREADS];
+  pthread_attr_t attr;
+  int rc, t;
+  void *status;
+
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
   stopRequest_ = false;
+  timeManager_->startClock();
+
+  for(t=0; t<threadsNum; t++){
+    ucts[t] = new Uct();
+    Board* board_copy = new Board(*board);
+    SearchStartKit * s = new SearchStartKit(board_copy, this, ucts[t]);
+    rc = pthread_create(&threads[t], &attr, Engine::searchTreeWrapper,(void*) s); 
+    if (rc) {
+      stringstream ss;
+      ss << "Fatal thread error no. " << rc << " when joining.";
+      logError(ss.str().c_str());
+      exit(1);
+    } 
+  } 
+
+  for(t=0; t<threadsNum; t++){
+    rc = pthread_join(threads[t], &status); 
+    if (rc) {
+      stringstream ss;
+      ss << "Fatal thread error no. " << rc << " when joining.";
+      logWarning(ss.str().c_str());
+      pthread_detach(threads[t]);
+    }
+  }
+  Uct * uct = ucts[0];  
+
+
+  timeManager_->stopClock();
+  
+  //get stuff from the search 
+  bestMove_ = uct->getBestMoveRepr();
+  stats_ = uct->getStats(timeManager_->secondsElapsed());
+  additionalInfo_ = uct->getAdditionalInfo();
+  winRatio_ = uct->getWinRatio();
+  //Uct * uct = new Uct();
+  //Board* board_copy = new Board(*board);
+  
+  for(t=0; t<threadsNum; t++){
+    delete ucts[t];
+  }
+
+  /*stopRequest_ = false;
   timeManager_->startClock();
   uct->searchTree(board_copy, this);
   timeManager_->stopClock();
@@ -139,7 +198,9 @@ void Engine::doSearch(const Board* board)
   additionalInfo_ = uct->getAdditionalInfo();
   winRatio_ = uct->getWinRatio();
 
+
   delete(uct);
+  */
 }
 
 //---------------------------------------------------------------------
@@ -205,5 +266,27 @@ bool Engine::checkSearchStop() const
   return timeManager_->timeUp() || stopRequest_;
 }
 
+//--------------------------------------------------------------------- 
+
+void * Engine::searchTreeWrapper(void * searchStartKit) 
+{
+  SearchStartKit * s = (SearchStartKit *) searchStartKit;
+  s->uct_->searchTree(s->board_, s->engineInstance_);
+  delete s;
+  return NULL;
+}
+
+//---------------------------------------------------------------------
+//  section TimeManager
+//---------------------------------------------------------------------
+
+SearchStartKit::SearchStartKit(Board* board, Engine * engine, Uct* uct)
+{
+  board_ = board;  
+  engineInstance_ = engine;
+  uct_ = uct;
+}
+
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
+//

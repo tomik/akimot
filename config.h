@@ -73,6 +73,7 @@ class Cfg
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
     inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
+    inline int searchThreadsNum() { return searchThreadsNum_; }
 
   private:
     CfgItemList items_;
@@ -99,6 +100,8 @@ class Cfg
     bool knowledgeInPlayout_;
     /**How many steps go to step tournament in playout (must be > 0).*/
     uint knowledgeTournamentSize_;
+    /**Number of threads for search.*/
+    int searchThreadsNum_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

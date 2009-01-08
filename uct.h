@@ -11,7 +11,6 @@
 #include <queue>
 #include <set>
 
-#include "engine.h"
 #include "eval.h"
 #include "hash.h"
 
@@ -435,8 +434,9 @@ class Uct
      *
      * Runs the doPlayout loop.
      */
-    void searchTree(const Board*, const Engine*);
-//  void searchTree(const Board*, bool (Engine::* checkSearchStop) () const);
+     void searchTree(const Board*, const Engine*);
+    //void searchTree(const Board*, const Engin*, 
+     //               bool (Engine::* checkSearchStop) () const);
 
     /**
      * Does one uct-monte carlo playout. 

@@ -11,6 +11,9 @@
 #include "board.h"
 #include "uct.h"
 
+using std::vector;
+
+#define MAX_THREADS 64
 
 //how much time engine has for "clock clicking"
 #define CLOCK_CLICK_RESERVE 0.1
@@ -168,6 +171,8 @@ class Engine
 
   private: 
 
+  	static void * searchTreeWrapper(void * searchTreeInfo);		
+
     TimeManager* timeManager_;
 
     string bestMove_;
@@ -180,5 +185,16 @@ class Engine
 
     /**Flag to stop search.*/
     bool stopRequest_;
+};
+
+class SearchStartKit {
+  public:
+    SearchStartKit(Board*, Engine*, Uct*);
+  
+  private:
+    Board*  board_;
+    Engine* engineInstance_;
+    Uct*    uct_; 
+    friend class Engine;
 };
 
