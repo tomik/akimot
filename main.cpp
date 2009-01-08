@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
   if (options.getMoveMode()){
 
     Board board;
-    Engine* engine = new Uct();
+    Engine* engine = new Engine();
 
 
     //initSuccess = board.initFromRecord(options.fnInput());

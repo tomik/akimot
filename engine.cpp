@@ -92,6 +92,10 @@ Engine::Engine()
 {
   timeManager_ = new TimeManager();
   ponder_ = false;
+  bestMove_ = "";
+  additionalInfo_ = "";
+  stats_ = "";
+  winRatio_ = 0.5;
 }
 
 //--------------------------------------------------------------------- 
@@ -115,17 +119,27 @@ string Engine::initialSetup(bool isGold) const
 
 void Engine::doSearch(const Board* board) 
 { 
-  initialMove_ = "";
   if (board->isSetupPhase()){
-    initialMove_ = initialSetup(board->getPlayerToMove() == GOLD);
+    bestMove_ = initialSetup(board->getPlayerToMove() == GOLD);
     return;
   }
+  
+  Board* board_copy = new Board(*board);
+
+  Uct * uct = new Uct();
 
   stopRequest_ = false;
   timeManager_->startClock();
-  searchTree(board);
-
+  uct->searchTree(board_copy, this);
   timeManager_->stopClock();
+  
+  //get stuff from the search 
+  bestMove_ = uct->getBestMoveRepr();
+  stats_ = uct->getStats(timeManager_->secondsElapsed());
+  additionalInfo_ = uct->getAdditionalInfo();
+  winRatio_ = uct->getWinRatio();
+
+  delete(uct);
 }
 
 //---------------------------------------------------------------------
@@ -160,7 +174,28 @@ bool Engine::getPonder() const
 
 string Engine::getBestMove() const
 {
-  return (initialMove_ != "") ? initialMove_ : getBestMoveRepr();
+  return bestMove_;
+}
+
+//--------------------------------------------------------------------- 
+
+string Engine::getStats() const
+{
+  return stats_;
+}
+
+//--------------------------------------------------------------------- 
+
+string Engine::getAdditionalInfo() const
+{
+  return additionalInfo_;
+}
+
+//--------------------------------------------------------------------- 
+
+float Engine::getWinRatio() const
+{
+  return winRatio_;
 }
 
 //--------------------------------------------------------------------- 

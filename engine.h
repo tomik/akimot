@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "timer.h"
 #include "board.h"
+#include "uct.h"
 
 
 //how much time engine has for "clock clicking"
@@ -100,7 +101,7 @@ class Engine
 {
   public:
     Engine();
-    virtual ~Engine();
+    ~Engine();
 
     /**
      * Returns initial setup. 
@@ -111,11 +112,6 @@ class Engine
      * Wrapper around searching method. 
      */
   	void doSearch(const Board*);		
-
-    /**
-     * Interface to crucial method implementing search.
-     */
-    virtual void searchTree(const Board*)=0;
 
     /**
      * Requests search stop. 
@@ -145,29 +141,22 @@ class Engine
      * @return initialMove_ if it is set. 
      *         best Move from search otherwise. 
      */
-    virtual string getBestMove() const;
-
-    /**
-     * Interface to best move getter.
-     */
-    virtual string getBestMoveRepr() const =0;
+    string getBestMove() const;
 
     /**
      * Interface to get search statistics.
      */
-    virtual string getStats() const =0;
+    string getStats() const;
 
     /**
      * Interface to get additional info ( like search tree ).
      */
-    virtual string getAdditionalInfo() const =0;
+    string getAdditionalInfo() const;
 
     /**
      * Interface to winr ration getter. 
      */
-    virtual float getWinRatio() const =0;
-
-  protected:
+    float getWinRatio() const;
 
     /**
      * Check whether search should be stop.
@@ -177,13 +166,19 @@ class Engine
      */
     bool checkSearchStop() const;
 
-    TimeManager* timeManager_;
-    /**Flag to stop search.*/
-    bool stopRequest_;
-
   private: 
-    string initialMove_;
+
+    TimeManager* timeManager_;
+
+    string bestMove_;
+    string stats_;
+    string additionalInfo_;
+    float winRatio_;
+
     /**Ponder mode flag.*/
     bool ponder_;
+
+    /**Flag to stop search.*/
+    bool stopRequest_;
 };
 

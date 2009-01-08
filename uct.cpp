@@ -694,7 +694,7 @@ string Tree::pathToActToString(bool onlyLastMove )
 //  section Uct
 //---------------------------------------------------------------------
 
-Uct::Uct(): Engine()
+Uct::Uct() 
 {
   tree_  = new Tree();
   eval_  = new Eval();
@@ -736,10 +736,10 @@ void Uct::reset(player_t firstPlayer, u64 initialSignature)
 
 //---------------------------------------------------------------------
 
-void Uct::searchTree(const Board* board)
+void Uct::searchTree(const Board* board, const Engine* engine )
 {
   reset(board->getPlayerToMove(), board->getSignature());
-  while (! checkSearchStop()){
+  while (! engine->checkSearchStop()){
     doPlayout(board);
   }
 
@@ -748,6 +748,7 @@ void Uct::searchTree(const Board* board)
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
+  //TODO this should be done when the move is actually MADE ! 
   Board* playBoard = new Board(*board);
   playBoard->makeMove(bestMove);
   thirdRep.update(playBoard->getSignature(), PLAYER_TO_INDEX(playBoard->getPlayerToMove()) );
@@ -856,10 +857,8 @@ void Uct::doPlayout(const Board* board)
 
 //--------------------------------------------------------------------- 
 
-string Uct::getStats() const
+string Uct::getStats(float seconds) const
 {
-  //TODO this is only place where timemanager is used - make private in engine! 
-  float seconds = timeManager_->secondsElapsed();
   assert(seconds > 0);
   stringstream ss;
 

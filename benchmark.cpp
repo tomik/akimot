@@ -198,7 +198,7 @@ void Benchmark::benchmarkUct()
 
 void Benchmark::benchmarkSearch() const
 {
-  Engine* engine = new Uct();
+  Engine* engine = new Engine();
   Board *playBoard = new Board(*board_);
 
   engine->doSearch(playBoard);

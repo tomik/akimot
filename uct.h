@@ -39,6 +39,8 @@ using std::make_pair;
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
 
+class Engine;
+
 /**
  * GOLD is always MAX, Silver Min, no matter who is in the root. 
  * values in the node express: -1 sure win for Silver ... 0 equal ... 1 sure win for gold 
@@ -414,7 +416,7 @@ class Tree
 /**
  * Uct search. 
  */
-class Uct:public Engine
+class Uct
 {
   public:
     Uct();
@@ -433,7 +435,8 @@ class Uct:public Engine
      *
      * Runs the doPlayout loop.
      */
-    void searchTree(const Board*);
+    void searchTree(const Board*, const Engine*);
+//  void searchTree(const Board*, bool (Engine::* checkSearchStop) () const);
 
     /**
      * Does one uct-monte carlo playout. 
@@ -446,7 +449,7 @@ class Uct:public Engine
     /**
      * Get uct search statistics.
      */
-    string getStats() const;
+    string getStats(float seconds) const;
 
     /**
      * Get additional info - here it is the string repr. of search tree.
