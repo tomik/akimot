@@ -150,12 +150,11 @@ void Engine::doSearch(const Board* board)
 
   for(t=0; t<threadsNum; t++){
     ucts[t] = new Uct();
-    Board* board_copy = new Board(*board);
-    SearchStartKit * s = new SearchStartKit(board_copy, this, ucts[t]);
+    SearchStartKit * s = new SearchStartKit(board, this, ucts[t]);
     rc = pthread_create(&threads[t], &attr, Engine::searchTreeWrapper,(void*) s); 
     if (rc) {
       stringstream ss;
-      ss << "Fatal thread error no. " << rc << " when joining.";
+      ss << "Fatal thread error no. " << rc << " when creating.";
       logError(ss.str().c_str());
       exit(1);
     } 
@@ -170,37 +169,30 @@ void Engine::doSearch(const Board* board)
       pthread_detach(threads[t]);
     }
   }
-  Uct * uct = ucts[0];  
-
-
   timeManager_->stopClock();
   
+  Uct * uct = ucts[0];  
+  Tree* tree = new Tree();
+
+  EqNode * head = NULL;
+  EqNode * en; 
+  for (int i = 0; i < threadsNum; i++){
+    en = new EqNode();
+    en->node = uct[i]->getTree()->root();
+    en->next = head;
+    head = en;
+  }
+  tree->mergeTrees(head);
+
   //get stuff from the search 
   bestMove_ = uct->getBestMoveRepr();
   stats_ = uct->getStats(timeManager_->secondsElapsed());
   additionalInfo_ = uct->getAdditionalInfo();
   winRatio_ = uct->getWinRatio();
-  //Uct * uct = new Uct();
-  //Board* board_copy = new Board(*board);
   
   for(t=0; t<threadsNum; t++){
     delete ucts[t];
   }
-
-  /*stopRequest_ = false;
-  timeManager_->startClock();
-  uct->searchTree(board_copy, this);
-  timeManager_->stopClock();
-  
-  //get stuff from the search 
-  bestMove_ = uct->getBestMoveRepr();
-  stats_ = uct->getStats(timeManager_->secondsElapsed());
-  additionalInfo_ = uct->getAdditionalInfo();
-  winRatio_ = uct->getWinRatio();
-
-
-  delete(uct);
-  */
 }
 
 //---------------------------------------------------------------------
@@ -280,7 +272,7 @@ void * Engine::searchTreeWrapper(void * searchStartKit)
 //  section TimeManager
 //---------------------------------------------------------------------
 
-SearchStartKit::SearchStartKit(Board* board, Engine * engine, Uct* uct)
+SearchStartKit::SearchStartKit(const Board* board, Engine * engine, Uct* uct)
 {
   board_ = board;  
   engineInstance_ = engine;

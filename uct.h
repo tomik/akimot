@@ -205,10 +205,15 @@ class Node
     bool  hasOneChild() const;
     Node* getFather() const;
     Node* getFirstChild() const;
+    void  setFirstChild(Node *);
     Node* getSibling() const;
+    void  setSibling(Node*);
     Step  getStep() const;
+    TWstep*  getTWstep() const;
+    void  setTWstep(TWstep* twStep);
     player_t getPlayer() const;
     int   getVisits() const;
+    void  setVisits(int visits); 
     float getValue() const;
     void setValue(float value);
     nodeType_e getNodeType() const;
@@ -235,6 +240,18 @@ class Node
     Node*       firstChild_;  
     Node*       father_;
     nodeType_e  nodeType_;
+};
+
+/**Tree equivalent node.*/
+struct EqNode {
+  Node* node;
+  struct EqNode * next;
+};
+
+/**List of Tree equivalent nodes.*/
+struct EqNodeBlock {
+  EqNode * eqNode;
+  struct EqNodeBlock* next;
 };
 
 
@@ -336,6 +353,11 @@ class Tree
      * @return best move in search. 
      */
     Move findBestMove(Node* bestMoveNode);
+
+    /**
+     * Merging trees. 
+     */
+    EqNode* mergeTrees(EqNode* eqNode);
 
     /**
      * Backpropagation of playout sample.
@@ -477,6 +499,11 @@ class Uct
      * Win ratio(percentage) ~ chance of winning for player to move.
      */
     float getWinRatio() const;
+
+    /**
+     * Tree getter. 
+     */
+    Tree* getTree() const;
 
   private:
     /**

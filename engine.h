@@ -189,10 +189,10 @@ class Engine
 
 class SearchStartKit {
   public:
-    SearchStartKit(Board*, Engine*, Uct*);
+    SearchStartKit(const Board*, Engine*, Uct*);
   
   private:
-    Board*  board_;
+    const Board*  board_;
     Engine* engineInstance_;
     Uct*    uct_; 
     friend class Engine;
