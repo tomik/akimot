@@ -151,8 +151,7 @@ void Benchmark::benchmarkPlayout()
 void Benchmark::benchmarkUct() 
 {
   //tree with random player in the root
-  Tree* tree = new Tree();
-  tree->reset(INDEX_TO_PLAYER(random() % 2));
+  Tree* tree = new Tree(INDEX_TO_PLAYER(random() % 2));
   int winValue[2] = {1, -1};
   StepArray steps;
   int stepsNum;

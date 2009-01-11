@@ -204,13 +204,13 @@ class Node
     bool  hasChildren() const;
     bool  hasOneChild() const;
     Node* getFather() const;
+    void  setFather(Node*);
     Node* getFirstChild() const;
     void  setFirstChild(Node *);
     Node* getSibling() const;
     void  setSibling(Node*);
     Step  getStep() const;
     TWstep*  getTWstep() const;
-    void  setTWstep(TWstep* twStep);
     player_t getPlayer() const;
     int   getVisits() const;
     void  setVisits(int visits); 
@@ -268,11 +268,11 @@ class Tree
 
   public:
     /**
-     * Simple constructor.
+     * Constructor with predefined root.
      *
-     * Sets the root to NULL. 
+     * Sets the root to be node. Used in tree mockups.
      */
-    Tree();   
+    Tree(Node * root);   
 
     /**
      * Constructor which creates root node. 
@@ -282,18 +282,19 @@ class Tree
     Tree(player_t firstPlayer);   
 
     /**
+     * Mocking up constructor. 
+     * 
+     * Used for mocking up the tree from multiple trees
+     * after search in multiple threads.
+     */
+    Tree(Tree* trees[], int treesNum );
+
+    /**
      * Destructor.
      *
      * Recursively deletes the tree.
      */
     ~Tree();
-
-    /**
-     * Tree reset for reuse. 
-     *
-     * Old tree is dropped and new root created.
-     */
-    void reset(player_t firstPlayer);
 
     /**
      * Node expansion.
@@ -356,8 +357,11 @@ class Tree
 
     /**
      * Merging trees. 
+     *
+     * Not fixed to instance.
      */
-    EqNode* mergeTrees(EqNode* eqNode);
+    static Node* mergeTrees(EqNode* eqNode, Node* father, 
+                            int& nodesNum, int& nodesExpandedNum);
 
     /**
      * Backpropagation of playout sample.
@@ -420,6 +424,18 @@ class Tree
     string pathToActToString(bool onlyLastMove = false);
 
   private:
+    /**
+     * Simple constructor.
+     *
+     * Sets the root to NULL. 
+     */
+    Tree();   
+
+    /**
+     * Constructor wide init.
+     */
+    void init();
+
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
     /**Expanded nodes.*/
@@ -440,16 +456,18 @@ class Tree
 class Uct
 {
   public:
-    Uct();
-    ~Uct();
 
     /**
-     * Update before every search.
-     *
-     * @param firstPlayer Player to move first in the position.
-     * @param initialSignature Initial signature of the board in the root.
+     * Preffered constructor to use 
      */
-    void reset(player_t firstPlayer, u64 initialSignature);
+    Uct(const Board* board);
+
+    /**
+     * Constructor for results mockup.
+     */
+    Uct(const Board* board, Uct* ucts[],int uctsNum);
+
+    ~Uct();
 
     /**
      * Crucial method implementing search.
@@ -459,6 +477,11 @@ class Uct
      void searchTree(const Board*, const Engine*);
     //void searchTree(const Board*, const Engin*, 
      //               bool (Engine::* checkSearchStop) () const);
+
+    /**
+     * Results refinement after search.
+     */
+    void refineResults(const Board* board); 
 
     /**
      * Does one uct-monte carlo playout. 
@@ -505,7 +528,27 @@ class Uct
      */
     Tree* getTree() const;
 
+    /**
+     * Playouts_ getter.
+     */
+    int getPlayoutsNum() const;
+
+    /**
+     * nodesPruned_ getter.
+     */
+    int getNodesTTpruned() const;
+
   private:
+    /**
+     * Simple constructor.
+     */
+    Uct();
+
+    /**
+     * Constructor wide initialization.
+     */
+    void init(const Board* board);
+
     /**
      * Decide winner of the game. 
      * @return Returns 1 ( GOLD wins ) or -1 (SILVER wins). 
@@ -520,6 +563,7 @@ class Uct
      * Signature of every step in steps is counted and checked 
      * against transposition table. If found 
      * step is deleted (won't be added to the tree).
+     *
      * 
      * @return Number of steps in steps array after update.
      */

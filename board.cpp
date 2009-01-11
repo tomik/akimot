@@ -203,7 +203,7 @@ bool Step::inversed(const Step& s) const
       ( (stepType_ == s.stepType_ && stepType_ == STEP_SINGLE) || 
         (isPushPull() && s.isPushPull() && 
         oppFrom_ == s.oppTo_ && oppTo_ == s.oppFrom_ ))){
-    assert((stepType_ == s.stepType_ == STEP_SINGLE) || 
+    assert(((stepType_ == s.stepType_) == STEP_SINGLE) || 
           (isPushPull() && s.isPushPull()));
     assert(pieceMoved() && s.pieceMoved());
     assert(player_ == s.player_ && piece_ == s.piece_);

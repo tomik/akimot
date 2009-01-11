@@ -325,6 +325,13 @@ Node* Node::getFather() const
 
 //---------------------------------------------------------------------
 
+void Node::setFather(Node* father)
+{
+  father_ = father;
+}
+
+//---------------------------------------------------------------------
+
 Node* Node::getFirstChild() const
 {
   return firstChild_;
@@ -364,13 +371,6 @@ Step Node::getStep() const
 TWstep* Node::getTWstep() const 
 {
   return twStep_; 
-}
-
-//---------------------------------------------------------------------
-
-void Node::setTWstep(TWstep* twStep) 
-{
-  twStep_ = twStep; 
 }
 
 //---------------------------------------------------------------------
@@ -478,15 +478,45 @@ string Node::recToString(int depth) const
 
 Tree::Tree()
 {
-  history[0] = NULL; 
+  assert(false);
+}
+
+//--------------------------------------------------------------------- 
+
+Tree::Tree(Node* root)
+{
+  assert(root->getFather() == NULL);
+  init();
+  history[0] = root; 
+}
+
+//--------------------------------------------------------------------- 
+
+Tree::Tree(Tree* trees[], int treesNum) 
+{
+  init();
+  EqNode * head = NULL;
+  EqNode * en; 
+
+  for (int i = 0; i < treesNum; i++){
+    en = new EqNode();
+    en->node = trees[i]->root();
+    en->next = head;
+    head = en;
+  }
+
+  //tree from merged trees
+  history[0] = Tree::mergeTrees(head, NULL, nodesNum_, nodesExpandedNum_);
+
 }
 
 //--------------------------------------------------------------------- 
 
 Tree::Tree(player_t firstPlayer)
 {
-  history[0] = NULL; 
-  reset(firstPlayer);
+  init();
+  history[historyTop] = new Node(&(twSteps_[Step(STEP_NULL, firstPlayer)]));
+  nodesNum_ = 1;
 }
 
 //--------------------------------------------------------------------- 
@@ -499,17 +529,13 @@ Tree::~Tree()
 
 //--------------------------------------------------------------------- 
 
-void Tree::reset(player_t firstPlayer)
+void Tree::init()
 {
-  if (history[0] != NULL){
-    history[0]->removeChildrenRec();
-    delete history[0];
-  }
+  history[0] = NULL; 
   twSteps_.clear();
   historyTop = 0;
-  history[historyTop] = new Node(&(twSteps_[Step(STEP_NULL, firstPlayer)]));
   nodesExpandedNum_ = 0;
-  nodesNum_ = 1;
+  nodesNum_ = 0;
 }
 
 //---------------------------------------------------------------------
@@ -600,7 +626,6 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
       //"leaf" node action
       if (! act->hasChildren() || 
             (act->getFirstChild()->getNodeType() != subTreeRoot->getNodeType())){
-        //cerr << "reassining : " << act->getVisits() << " " << best->getVisits();
         best = act;
       }
       else {
@@ -636,16 +661,26 @@ Move Tree::findBestMove(Node* bestMoveNode)
 
 //---------------------------------------------------------------------
 
-Node* mergeTrees(EqNode* eqNode)
+Node* Tree::mergeTrees(EqNode* eqNode, Node* father,
+                       int& nodesNum, int& nodesExpandedNum)
 {
+  assert(eqNode != NULL);
+  if (eqNode == NULL){
+    return NULL;
+  }
+
+  //for going through the eqnode
   EqNode * en = eqNode;
-  Node * node; 
+  //blocks for children 
   EqNodeBlock * eqNodeBlocks = NULL;
+  int visits = 0;
+  float value = 0;
 
   while (en != NULL ){
-    node = en->node;
-    assert(node != NULL);
-    Node* child = node->getFirstChild();
+    assert(en->node != NULL);
+    visits += en->node->getVisits();
+    value += en->node->getValue() * en->node->getVisits();
+    Node* child = en->node->getFirstChild();
     while (child != NULL){
       EqNodeBlock* enb = eqNodeBlocks;
       while (enb != NULL){
@@ -653,6 +688,7 @@ Node* mergeTrees(EqNode* eqNode)
         if (enb->eqNode->node->getStep() == child->getStep()){
           break;
         }
+        enb = enb->next;
       }
       if (enb != NULL){
         //some nodes with such a step already exist in eqNodeBlock
@@ -664,7 +700,7 @@ Node* mergeTrees(EqNode* eqNode)
       else {
         enb = new EqNodeBlock();
         enb->next = eqNodeBlocks;
-        eqNodeBlocks = enb->next;
+        eqNodeBlocks = enb;
         enb->eqNode = new EqNode();
         enb->eqNode->next = NULL;
         enb->eqNode->node = child;
@@ -674,12 +710,18 @@ Node* mergeTrees(EqNode* eqNode)
     en = en->next;
   }
 
-  //now nodes on given level are paired
-  
-  //transfer them into tree nodes and recurse
+  //TODO bindings to foreign TWsteps are made - tree should create 
+  //it's own twsteps and make bindings to them.
+  Node * node = new Node(eqNode->node->getTWstep());
+  nodesNum++;
+  node->setFather(father);
+  node->setVisits(visits);
+  node->setValue(visits == 0 ? 0 : value/visits);
+
+  //go through nodes on given level and recurse
   EqNodeBlock* enb = eqNodeBlocks;
   Node * child = NULL;
-  Node * head = NULL;
+  Node * firstChild = NULL;
 
   while (enb != NULL) {
     //create new node
@@ -688,23 +730,20 @@ Node* mergeTrees(EqNode* eqNode)
       assert(false);
       break;
     }
-    child = mergeTrees(enb->eqNode);
-    node = new Node();
-    node->setFirstChild(child);
     assert(en != NULL);
-    node->setTWstep(enb->eqNode->node->getTWstep());
-    int visits;
-    while (en != NULL) {
-      visits += en->node->getVisits();
-      en = en->next;
-    }
-    node->setVisits(visits);
-    node->setSibling(head);
-    head = node;
+    //recurse
+    child = mergeTrees(en, node, nodesNum, nodesExpandedNum);
+    child->setSibling(firstChild);
+    firstChild = child;
     enb = enb->next;
   }
 
-  return returnNode;
+
+  node->setFirstChild(firstChild);
+  if (firstChild){
+    nodesExpandedNum++;
+  }
+  return node;
   
 }
 
@@ -831,11 +870,55 @@ string Tree::pathToActToString(bool onlyLastMove )
 
 Uct::Uct() 
 {
-  tree_  = new Tree();
-  eval_  = new Eval();
-  tt_ = NULL;
+  assert(false);
+}
 
+//--------------------------------------------------------------------- 
+
+Uct::Uct(const Board* board, Uct* ucts[], int uctsNum)
+{
+  init(board);
+  Tree** trees = new Tree*[uctsNum];
+  
+  for (int i = 0; i < uctsNum; i++){
+    trees[i] = ucts[i]->getTree();
+    playouts_ += ucts[i]->getPlayoutsNum();
+    nodesPruned_ += ucts[i]->getNodesTTpruned();
+  }
+
+  //delete tree initialized in init
+  delete tree_;
+  //tree from merged trees
+  tree_ = new Tree(trees, uctsNum);
+
+  refineResults(board);
+}
+
+//--------------------------------------------------------------------- 
+
+Uct::Uct(const Board* board)
+{
+  init(board);
+}
+
+//--------------------------------------------------------------------- 
+
+void Uct::init(const Board* board)
+{
+  eval_  = new Eval();
   searchExt_ = new SearchExt();
+  tree_  = new Tree(board->getPlayerToMove());
+  tt_ = new TT();
+
+  bestMoveNode_ = NULL;
+  bestMoveRepr_ = "";
+  nodesPruned_ = 0;
+  playouts_ = 0;
+
+  //save root in the tt
+  tt_->insertItem(board->getSignature(),
+                  PLAYER_TO_INDEX(board->getPlayerToMove()), 
+                  tree_->root());
 
 }
 
@@ -846,52 +929,35 @@ Uct::~Uct()
   delete eval_;
   delete tree_;
   delete tt_;
+  delete searchExt_;
 }
 
-void Uct::reset(player_t firstPlayer, u64 initialSignature)
-{
-  if (tt_){
-    delete tt_;
-  }
-  tt_ = new TT();
-
-
-  bestMoveNode_ = NULL;
-  bestMoveRepr_ = "";
-  nodesPruned_ = 0;
-  playouts_ = 0;
-
-  tree_->reset(firstPlayer);
-
-  //save root in the tt
-  tt_->insertItem(initialSignature,
-                  PLAYER_TO_INDEX(firstPlayer), 
-                  tree_->root());
-
-}
 
 //---------------------------------------------------------------------
 
 void Uct::searchTree(const Board* refBoard, const Engine* engine)
 {
   Board* board = new Board(*refBoard);
-  reset(board->getPlayerToMove(), board->getSignature());
   while (! engine->checkSearchStop()){
     doPlayout(board);
   }
+  delete(board);
+}
 
+//--------------------------------------------------------------------- 
 
+void Uct::refineResults(const Board* board) 
+{
+  
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);
   bestMoveRepr_ = bestMove.toStringWithKills(board);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
   //TODO this should be done when the move is actually MADE ! 
-  //Board*  = new Board(*board);
-  board->makeMove(bestMove);
-  thirdRep.update(board->getSignature(), PLAYER_TO_INDEX(board->getPlayerToMove()) );
-
-  delete(board);
+  Board* playBoard = new Board(*board);
+  playBoard->makeMove(bestMove);
+  thirdRep.update(playBoard->getSignature(), PLAYER_TO_INDEX(playBoard->getPlayerToMove()) );
 }
 
 //---------------------------------------------------------------------
@@ -1058,9 +1124,23 @@ float Uct::getWinRatio() const
 
 //--------------------------------------------------------------------- 
 
-Tree* getTree() const 
+Tree* Uct::getTree() const 
 {
   return tree_;
+}
+
+//--------------------------------------------------------------------- 
+
+int Uct::getPlayoutsNum() const 
+{
+  return playouts_;
+}
+
+//--------------------------------------------------------------------- 
+
+int Uct::getNodesTTpruned() const 
+{
+  return nodesPruned_;
 }
 
 //--------------------------------------------------------------------- 

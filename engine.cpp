@@ -149,7 +149,7 @@ void Engine::doSearch(const Board* board)
   timeManager_->startClock();
 
   for(t=0; t<threadsNum; t++){
-    ucts[t] = new Uct();
+    ucts[t] = new Uct(board);
     SearchStartKit * s = new SearchStartKit(board, this, ucts[t]);
     rc = pthread_create(&threads[t], &attr, Engine::searchTreeWrapper,(void*) s); 
     if (rc) {
@@ -169,27 +169,10 @@ void Engine::doSearch(const Board* board)
       pthread_detach(threads[t]);
     }
   }
+  
   timeManager_->stopClock();
-  
-  Uct * uct = ucts[0];  
-  Tree* tree = new Tree();
+  mockupSearchResults(board, ucts, threadsNum); 
 
-  EqNode * head = NULL;
-  EqNode * en; 
-  for (int i = 0; i < threadsNum; i++){
-    en = new EqNode();
-    en->node = uct[i]->getTree()->root();
-    en->next = head;
-    head = en;
-  }
-  tree->mergeTrees(head);
-
-  //get stuff from the search 
-  bestMove_ = uct->getBestMoveRepr();
-  stats_ = uct->getStats(timeManager_->secondsElapsed());
-  additionalInfo_ = uct->getAdditionalInfo();
-  winRatio_ = uct->getWinRatio();
-  
   for(t=0; t<threadsNum; t++){
     delete ucts[t];
   }
@@ -256,6 +239,21 @@ float Engine::getWinRatio() const
 bool Engine::checkSearchStop() const
 {
   return timeManager_->timeUp() || stopRequest_;
+}
+
+//--------------------------------------------------------------------- 
+
+void Engine::mockupSearchResults(const Board* board, Uct* ucts[], int resultsNum)
+{
+
+  Uct * uct = new Uct(board, ucts, resultsNum);
+  
+  //get stuff from the search 
+  bestMove_ = uct->getBestMoveRepr();
+  stats_ = uct->getStats(timeManager_->secondsElapsed());
+  additionalInfo_ = uct->getAdditionalInfo();
+  winRatio_ = uct->getWinRatio();
+
 }
 
 //--------------------------------------------------------------------- 

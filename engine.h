@@ -171,6 +171,11 @@ class Engine
 
   private: 
 
+    /**
+     * Takes care of mocking the results from search.
+     */
+    void mockupSearchResults(const Board* board, Uct* uct[], int resultsNum);
+
   	static void * searchTreeWrapper(void * searchTreeInfo);		
 
     TimeManager* timeManager_;
