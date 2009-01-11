@@ -200,10 +200,10 @@ bool Step::isPushPull() const
 bool Step::inversed(const Step& s) const 
 {
   if (from_ == s.to_ && to_ == s.from_ && 
-      ( stepType_ == s.stepType_ == STEP_SINGLE || 
-        isPushPull() && s.isPushPull() && 
-        oppFrom_ == s.oppTo_ && oppTo_ == s.oppFrom_ )){
-    assert(stepType_ == s.stepType_ == STEP_SINGLE || 
+      ( (stepType_ == s.stepType_ && stepType_ == STEP_SINGLE) || 
+        (isPushPull() && s.isPushPull() && 
+        oppFrom_ == s.oppTo_ && oppTo_ == s.oppFrom_ ))){
+    assert((stepType_ == s.stepType_ == STEP_SINGLE) || 
           (isPushPull() && s.isPushPull()));
     assert(pieceMoved() && s.pieceMoved());
     assert(player_ == s.player_ && piece_ == s.piece_);
@@ -1126,6 +1126,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
   else {
 
     for (uint i = 0; i < (stepsNum/2 > cfg.knowledgeTournamentSize() ? cfg.knowledgeTournamentSize() : stepsNum/2); i++){
+    //for (uint i = 0; i < cfg.knowledgeTournamentSize(); i++){
       uint r = rand() % stepsNum;
       assert(r >= 0 && r < stepsNum);
       const Step& step = steps[r];

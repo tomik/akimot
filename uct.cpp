@@ -210,9 +210,11 @@ Node* Node::findMostExploredChild() const
 float Node::ucb(float exploreCoeff) const
 {
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
-  return ( nodeType_ == NODE_MAX ? value_ : - value_) + 
-         sqrt((exploreCoeff/visits_)) + heur_/visits_  
-        + (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_); 
+  return (nodeType_ == NODE_MAX ? value_ : - value_) 
+         + sqrt((exploreCoeff/visits_)) 
+         + heur_/visits_ 
+         + (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_);
+  
 }
 
 //---------------------------------------------------------------------
@@ -576,18 +578,42 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
   Node* act = subTreeRoot; 
 
   while (true){
-    if (act->getNodeType() != subTreeRoot->getNodeType()){
-      assert(act->getFather() != NULL);
-      return act->getFather();
-    }
-    if (! act->hasChildren()){
-      return act;
+    if (! act->hasChildren() || 
+          (act->getFirstChild()->getNodeType() != subTreeRoot->getNodeType())){
+      break;
     }
     act = act->findMostExploredChild();
   }
 
-  assert(false);
-  return act;
+  //Now we have some good solution - DFS in the 
+  //first layer of the tree follows
+   
+  Node * best = act;
+  list<Node *> stack;
+  stack.clear();
+  stack.push_back(subTreeRoot);
+  while (! stack.empty()){
+    act = stack.back();
+    stack.pop_back(); 
+    assert(act != NULL);
+    if (act->getVisits() > best->getVisits()){
+      //"leaf" node action
+      if (! act->hasChildren() || 
+            (act->getFirstChild()->getNodeType() != subTreeRoot->getNodeType())){
+        //cerr << "reassining : " << act->getVisits() << " " << best->getVisits();
+        best = act;
+      }
+      else {
+        Node * child = act->getFirstChild();
+        while (child != NULL){
+          stack.push_back(child);
+          child = child->getSibling();
+        }
+      }
+    }
+  }
+  //assert(false);
+  return best;
 }
 
 //--------------------------------------------------------------------- 
