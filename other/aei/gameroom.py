@@ -669,9 +669,13 @@ def main(args):
     com_method = config.get(bot_section, "communication_method").lower()
     enginecmd = config.get(bot_section, "cmdline")
 
-    gameid_or_opponent = options['against']
-    unknowns_caught = 0
-    while True:
+    games_num = config.getint(bot_section, "games_num")
+    games_played = 0
+
+    while games_num == 0 or games_played < games_num:
+        unknowns_caught = 0
+        gameid_or_opponent = options['against']
+    #while True:
         try:
             if com_method == "2008cc":
                 engine_ctl = EngineController(SocketEngine(enginecmd, legacy_mode=True))
@@ -777,7 +781,9 @@ def main(args):
                     log.info("Leaving game")
                     remove_run_files(run_dir, "%s%s.bot" % (table.gid, table.side))
                     table.leave()
-                break
+                #break
+                games_played += 1
+                continue  #Tomas changed from break
             finally:
                 try:
                     engine_ctl.quit()

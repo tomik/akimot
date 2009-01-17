@@ -1030,7 +1030,7 @@ void Uct::doPlayout(const Board* board)
         continue;
       }
 
-      //"random" playout
+      //"random" playout TODO ... check
       SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, 
           tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
           EVAL_AFTER_LENGTH + 1:
