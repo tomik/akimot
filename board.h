@@ -416,8 +416,10 @@ class BBoard
 
 		void makeStep(Step&);
 
-    //int generateSteps(StepArray& steps);
-    //void generateStepsForPiece(uint square, StepArray& steps, uint& stepsNum) const;
+    bit64 calcMovable(bplayer_t player) const;
+    int generateSteps(StepArray& steps) const;
+    void generateStepsForPiece(bcoord_t coord, bplayer_t player, bpiece_t piece, 
+                               StepArray& steps, int& stepsNum) const;
 
     int reachability(int from, int to, int stepLimit);
     void bitsetTest();
@@ -432,16 +434,16 @@ class BBoard
     inline void			delSquare(bcoord_t, player_t);											
     inline void			delSquare(bcoord_t, player_t, piece_t);											
 
-    inline piece_t	getPiece(bcoord_t) const;
-    inline player_t	getPlayer(bcoord_t) const;
+    inline bpiece_t	getPiece(bcoord_t) const;
+    inline bplayer_t getPlayer(bcoord_t) const;
 
     bit64         bitboard_[2][7];
 
     StepArray     stepArray;
-    uint          stepArrayLen;
+    int          stepArrayLen;
   
-    uint  stepCount_;
-    uint  toMove_;
+    int  stepCount_;
+    int  toMove_;
 };
 
 

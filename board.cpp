@@ -666,97 +666,97 @@ void BBoard::makeStep(Step& step){
 
 //--------------------------------------------------------------------- 
 
-/*
-int Board::generateSteps(StepArray& stes)
+bit64 BBoard::calcMovable(bplayer_t player) const
 {
-  int tm = toMove_;                                       
-  int listCount = 0;
-  bit64   empty(~(bitboard_[0][0] | bitboard_[1][0]));    
-  //friendly not frozen
-  bit64   notFrozenSquares;          
-  //mask of friendly pieces on notFrozenSquares
-  bit64   movablePieces;                                  
-  //mask of stronger enemy pcs for movablePieces
-  bit64   stronger (bitboard_[OPP(tm)][0]);                  
-  //weaker enemy pieces all over the board 
-  bit64   weaker;                                      
-  //weaker enemy pieces in adjacent squares
-  bit64   victims;     
-  bit64   wherePush;        // where to push
-  bit64   wherePull;        // where to pull
-  bit64   whereStep;        // where to step    
-
-  //step posibilities
-  //single: (piece) fromSquare-> toSquare 
-  //push: (piece) fromSquare->victimFromSquare, (victim) victimFromSquare->victimToSquare
-  //pull: (piece) fromSquare->pullertoSquare, (victim) victimFromSquare->fromSquare
-  int fromSquare;
-  int toSquare;
-  int victimFromSquare;
-  int victimToSquare;                            
-  int pullerToSquare;
+  bit64 ngb[2]; 
+  ngb[BGOLD] = neighbors(bitboard_[BGOLD][0]);
+  ngb[BSILVER] = neighbors(bitboard_[BSILVER][0]);
+  bit64 stronger(bitboard_[BOPP(player)][0]);                  
+  bit64 movable(0); //TODO - does set to all 0 ? 
 
   for (int piece = 1; piece < 7; piece++) {
-    movablePieces = bitboard_[tm][piece];                           // get all pieces of this type
-    stronger ^= bitboard_[OPP(tm)][piece];                              // remove from consideration
-    notFrozenSquares = 
-      getNeighbours(bitboard_[tm][0]) | (~getNeighbours(stronger)); //around is friendly piece or no stroger enemy piece 
-    movablePieces &= notFrozenSquares;                              // pieces from slice on notFrozenSquares
+    movable |= bitboard_[player][piece];                           
+    stronger ^= bitboard_[BOPP(player)][piece];                              
+    movable &= ngb[player] | (~neighbors(stronger)); 
+  }
+  return movable;
+}
 
-    weaker |= bitboard_[OPP(tm)][piece-1];                            // all pieces we can we can push/pull
+int BBoard::generateSteps(StepArray& steps) const
+{
+  int stepsNum = 0;
+  bplayer_t player = toMove_;
+  bit64 movable(calcMovable(player));
+  
+  bcoord_t coord = -1;
+  while ( (coord = movable._Find_next(coord)) != BIT_LEN) { 
+    assert(getPlayer(coord) == player); 
+    generateStepsForPiece(coord, player, getPiece(coord), steps, stepsNum);
+  }
+
+  if ( stepCount_ > 1 ){
+    steps[stepsNum++] = Step(STEP_PASS, player);
+  }
+
+  return stepsNum;
+}
+   
+//--------------------------------------------------------------------- 
+
+void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t piece,
+                                  StepArray& steps, int & stepsNum) const
+{
+  
+  assert(getPlayer(from) == player);
+  assert(getPiece(from)  == piece);
+
+  bit64 empty(~(bitboard_[0][0] | bitboard_[1][0]));    
+  bit64 whereStep = empty & stepOffset_[player][piece][from];
     
-    fromSquare = movablePieces._Find_first();             // consider steps from this square next 
-    while (fromSquare != BIT_LEN) {
+  //single steps
+  bcoord_t to;
+  while ((to = whereStep._Find_next(to)) != BIT_LEN) {
+    steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
+  }
 
-      whereStep = empty & stepOffset_[tm][piece][fromSquare];
-      victims = weaker & stepOffset_[tm][piece][fromSquare];
+  //push/pull steps
+  if ( piece == BRABBIT || stepCount_ >= 3 || 
+       (stepOffset_[player][piece][from] & bitboard_[BOPP(player)][0]).none()) { 
+    return;
+  }
 
-      //generate single steps
-      toSquare = whereStep._Find_first();            // get next whereStep step  
-      while (toSquare != BIT_LEN) {
-
-        stepList[listCount++].setValues(STEP_SINGLE, tm, piece, fromSquare, toSquare);
-
-        toSquare = whereStep._Find_next(toSquare);             // get next whereStep step  
-      }
-
-      if ( piece > RABBIT && stepCount_ < 3 ) { //push/pull only possible for strong pieces and not in last step
-        //generate push/pull steps
-        victimFromSquare = victims._Find_first();                       // get next victim 
-        while (victimFromSquare != BIT_LEN) {
-          assert(piece != RABBIT );                                     // rabbits can't have victims :)
-          wherePush = empty & stepOffset_[0][piece][victimFromSquare]; 
-          wherePull = empty & stepOffset_[0][piece][fromSquare];          // optimize: out of the while cycle
-
-          pullerToSquare = wherePull._Find_first();                     // where our piece (puller) can retrieve
-          while (pullerToSquare != BIT_LEN) {
-
-            stepList[listCount++].setValues(STEP_PULL, tm, piece, fromSquare, pullerToSquare, 
-                                      getPiece(victimFromSquare), victimFromSquare, fromSquare ); 
-            pullerToSquare = wherePull._Find_next(pullerToSquare);       // where our piece (puller) can retrieve
-          }
-
-          victimToSquare = wherePush._Find_first();                       // where victim can be pushed to
-          while (victimToSquare!=BIT_LEN) {
-
-            stepList[listCount++].setValues(STEP_PUSH, tm, piece, fromSquare, victimFromSquare,
-                                      getPiece(victimFromSquare), victimFromSquare, victimToSquare  );
-            victimToSquare = wherePush._Find_next(victimToSquare);                        // where victim can be pushed to
-          }
-        victimFromSquare = victims._Find_next(victimFromSquare);          // get next victim 
-        } //while victims
-      }//if piece > rabbit and stepcount < 3 
-    fromSquare = movablePieces._Find_next(fromSquare);              // consider steps from this square next 
-    } //while movablePieces any
-  } // for piece
-
+  bit64 victims;
+  for (int i = 1; i < piece; i++){
+    victims |= bitboard_[BOPP(player)][i];
+  }
     
-  if ( stepCount_ > 1 ) //pass is added for steps 2,3,4
-    stepList[listCount++].setPass();
+  victims &= stepOffset_[player][piece][from];
+   
+  bcoord_t victimFrom = -1 ;
+  while ((victimFrom = victims._Find_next(victimFrom)) != BIT_LEN) {
 
-  return listCount;
-} 
-*/
+    //pull
+    bit64 wherePull = empty & stepOffset_[player][piece][from];          
+    bcoord_t pullerTo = -1; 
+    while ((pullerTo = wherePull._Find_next(pullerTo)) != BIT_LEN) {
+
+      steps[stepsNum++].setValues(STEP_PULL, player, piece, from, pullerTo, 
+                                getPiece(victimFrom), victimFrom, from); 
+    }
+
+    //push
+    bit64 wherePush = empty & stepOffset_[player][piece][victimFrom]; 
+    bcoord_t victimTo = -1; 
+    while ((victimTo = wherePush._Find_next(victimTo)) != BIT_LEN) {
+
+      steps[stepsNum++].setValues(STEP_PUSH, player, piece, from, victimFrom,
+                                getPiece(victimFrom), victimFrom, victimTo);
+    }
+  } 
+  
+}
+
+
 //---------------------------------------------------------------------
 
 void BBoard::bitsetTest()
@@ -837,7 +837,8 @@ string BBoard::toString() const
     ss << i + 1 <<"| ";
     for (int j = 0; j <  BSIDE_SIZE; j++) {
       coord = i * BSIDE_SIZE + j;
-      assert(getPiece(coord) + ((2 - getPlayer(coord)) * 6) <= refStr.length() );
+      assert(getPiece(coord) + ((2 - getPlayer(coord)) * 6) 
+             <= int(refStr.length()));
 			if (traps[coord] && getPlayer(coord) == BNO_PLAYER )
 				ss << "X ";
 			else
@@ -877,23 +878,24 @@ void BBoard::delSquare(bcoord_t coord, player_t player, piece_t piece)
 }
 
 
-piece_t BBoard::getPiece(bcoord_t coord) const
+bpiece_t BBoard::getPiece(bcoord_t coord) const
 {
-  if (bitboard_[BGOLD][0][coord])
-    for (int i = 1; i < 7; i++ )
-      if (bitboard_[BGOLD][i][coord])
-        return i;
-
-  if (bitboard_[BSILVER][0][coord])
-    for (int i = 1; i < 7; i++ )
-      if (bitboard_[BSILVER][i][coord])
-        return i;
+  for (player_t player = 0; player < 2; player++ ){
+    if (bitboard_[player][0][coord]){
+      for (int i = 1; i < 7; i++ ){
+        if (bitboard_[player][i][coord]){
+          return i;
+        }
+      } 
+      assert(false);
+    }
+  }
 
   return BEMPTY;
 }
 
 
-player_t BBoard::getPlayer(bcoord_t coord) const
+bplayer_t BBoard::getPlayer(bcoord_t coord) const
 {
   if (bitboard_[BGOLD][0][coord])
     return BGOLD;
