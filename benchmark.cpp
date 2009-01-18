@@ -247,11 +247,12 @@ void Benchmark::benchmarkAll()
   benchmarkCopyBoard();
   benchmarkEval();
   benchmarkEvalBetter();
-  benchmarkBitPlayout();
   benchmarkPlayout();
+  benchmarkBitPlayout();
   benchmarkQuickGoalCheck();
   benchmarkUct();
   benchmarkSearch();
+  
 }
 
 //--------------------------------------------------------------------- 

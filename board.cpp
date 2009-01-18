@@ -525,31 +525,69 @@ string Move::toStringWithKills(const Board* board)
 
 namespace bits {
 
+  const int bdirection[4]={BNORTH,BEAST,BSOUTH,BWEST};
+
   u64   stepOffset_[2][7][64]; 
   u64   zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
   u64   winRank[2] = { 0xff00000000000000ULL ,0x00000000000000ffULL};
 
-  int lixold(u64 b, int start)
-  {
-    
-    int  x = start - 1;
-    b <<= 63 - x;
+  int lix(u64& b){
 
-    if (x == -1){
-      return x;
-    } 
+    /*if (!b) {
+      return -1;
+    }
+    */
 
-    while (b)
+     static const char LogTable256[] = 
     {
-      if (b & MSB) return(x);
-      x--;
-      b <<= 1;
+     -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+    };
+
+    unsigned r;     
+    register u64 t, tt, ttt; // temporaries
+
+    if ((ttt = b >> 32)){
+      if ((tt = ttt >> 16))
+      {
+        r = (t = tt >> 8) ? 56 + LogTable256[t] : 48 + LogTable256[tt];
+      }
+      else 
+      {
+        r = (t = ttt >> 8) ? 40 + LogTable256[t] : 32 + LogTable256[ttt];
+      }
+    }else{
+      if ((tt = b >> 16))
+      {
+        r = (t = tt >> 8) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
+      }
+      else 
+      {
+        r = (t = b >> 8) ? 8 + LogTable256[t] : LogTable256[b];
+      }
     }
 
-    return(-1);
+    //TODO what happens for BIT_ON(-1) ? :(
+    b ^= BIT_ON(r);
+    return r;
+  
   }
 
-  int lix(u64& b, int last){
+  int lixslow(u64& b){
 
     if (!b) {
       return -1;
@@ -581,8 +619,8 @@ namespace bits {
 
     x =  (target & NOT_H_FILE) << 1;
     x |= (target & NOT_A_FILE) >> 1;
-    x |= (target & NOT_1_RANK) << 8;
-    x |= (target & NOT_8_RANK) >> 8;
+    x |= (target /*& NOT_1_RANK*/) << 8;
+    x |= (target /*& NOT_8_RANK*/) >> 8;
     //TODO ..... not_*_rank not neccessary ? 
 
     return(x);
@@ -773,11 +811,11 @@ void BBoard::makeStep(Step& step){
       //full traps gold now contains to-be removed pieces 
 
       if (dieHard){
-        int trap = lix(dieHard, BIT_LEN);             
-        if (trap != -1){
+        int trap = lix(dieHard);             
+        if ( trap != -1){
           delSquare(trap, player);
           //no more than one dead per player
-          assert(lix(dieHard, trap) == -1); 
+          assert(lix(dieHard) == -1); 
         }
       }
     } 
@@ -818,7 +856,7 @@ int BBoard::generateSteps(bplayer_t player, StepArray& steps) const
   u64 movable = calcMovable(player);
 
   bcoord_t coord = BIT_LEN;
-  while ( (coord = lix(movable, coord)) != -1) { 
+  while ( (coord = lix(movable)) != -1) { 
     assert(getPlayer(coord) == player); 
     generateStepsForPiece(coord, player, getPiece(coord), steps, stepsNum);
   }
@@ -842,9 +880,17 @@ void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t pie
   u64 whereStep = empty & stepOffset_[player][piece][from];
     
   //single steps
+/*
   bcoord_t to = BIT_LEN;
-  while ((to = lix(whereStep,to)) != -1) {
-    steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
+  while ((to = lix(whereStep)) != -1) {
+      steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
+  }
+*/
+  for (int i = 0; i < 4; i++) {
+    bcoord_t to = from + bdirection[i];
+    if (whereStep & BIT_ON(to)) {
+      steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
+    }
   }
 
   //push/pull steps
@@ -860,13 +906,27 @@ void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t pie
     
   victims &= stepOffset_[player][piece][from];
    
+  /*
   bcoord_t victimFrom = BIT_LEN;
-  while ((victimFrom = lix(victims, victimFrom)) != -1) {
+  while ((victimFrom = lix(victims)) != -1) {
+  */
+  for (int i = 0; i < 4; i++) {
+    bcoord_t victimFrom = from + bdirection[i];
+    if (! (victims & BIT_ON(victimFrom))) {
+      continue;
+    }
 
     //pull
     u64 wherePull = empty & stepOffset_[player][piece][from];          
+    /*
     bcoord_t pullerTo = BIT_LEN; 
-    while ((pullerTo = lix(wherePull, pullerTo)) != -1) {
+    while ((pullerTo = lix(wherePull)) != -1) {
+    */
+    for (int j = 0; j < 4; j++) {
+      bcoord_t pullerTo = from + bdirection[j];
+      if (! (wherePull & BIT_ON(pullerTo))) {
+        continue;
+      }
 
       steps[stepsNum++].setValues(STEP_PULL, player, piece, from, pullerTo, 
                                 getPiece(victimFrom), victimFrom, from); 
@@ -874,8 +934,15 @@ void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t pie
 
     //push
     u64 wherePush = empty & stepOffset_[player][piece][victimFrom]; 
+    /*
     bcoord_t victimTo = BIT_LEN; 
-    while ((victimTo = lix(wherePush, victimTo)) != -1) {
+    while ((victimTo = lix(wherePush)) != -1) {
+    */
+    for (int k = 0; k < 4; k++) {
+      bcoord_t victimTo = victimFrom + bdirection[k];
+      if (! (wherePush & BIT_ON(victimTo))) {
+        continue;
+      }
 
       steps[stepsNum++].setValues(STEP_PUSH, player, piece, from, victimFrom,
                                 getPiece(victimFrom), victimFrom, victimTo);

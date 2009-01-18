@@ -13,11 +13,13 @@ AKIMOT_LIBS = ['pthread']
 TARGET = 'akimot'
 OPT_TARGET = TARGET #'opt_akimot'
 
-common = Environment(CC='g++', CCFLAGS = '-Wall ')
+common = Environment(CC='g++', CCFLAGS = '-Wall ', LINKFLAGS = '')
 opt = common.Clone()
 opt.Append(CCFLAGS = '-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -frename-registers') #-march=native
 dbg = common.Clone()
 dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
+prof = common.Clone()
+prof.Append(CCFLAGS = '-O1 -DNEDBUG -ffast-math -g -pg', LINKFLAGS = '-pg') 
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
@@ -29,36 +31,47 @@ obj_files_build = [src_file[:src_file.rindex('.')] + '.o' for src_file in src_fi
 obj_files_test = [src_file[:src_file.rindex('.')] + '.o' for src_file in src_files_test]
 
 do_build = False
+do_prof = False
 
 if ARGUMENTS.get('opt'): 
-  env = opt.Clone()
-  do_build = True
-  TARGET = OPT_TARGET
+    env = opt.Clone()
+    do_build = True
+    TARGET = OPT_TARGET
 elif ARGUMENTS.get('dbg'):
-  env = dbg.Clone()
-  do_build = True
+    env = dbg.Clone()
+    do_build = True
+elif ARGUMENTS.get('prof'):
+    env = prof.Clone()
+    do_build = True
+elif ARGUMENTS.get('doprof'):
+    do_prof = True
+
 elif ARGUMENTS.get('doc'):
-  bld = Builder(action = '/usr/bin/doxygen Doxy')
-  doc = Environment(BUILDERS = {'Foo' : bld})
-  doxy = doc.Foo(source=src_files_build)
+    bld = Builder(action = '/usr/bin/doxygen Doxy')
+    doc = Environment(BUILDERS = {'Foo' : bld})
+    doxy = doc.Foo(source=src_files_build)
 elif ARGUMENTS.get('cfg'): 
-  import shutil
-  for alias, dir in alias_dirs: 
-    shutil.copy("default.cfg", dir)
-    print "copying default.cfg to ", dir
+    import shutil
+    for alias, dir in alias_dirs: 
+        shutil.copy("default.cfg", dir)
+        print "copying default.cfg to ", dir
 else:   #standard
   env = std.Clone()
   do_build = True
 
 
 if do_build:
-  #akimot = env.Program(target = 'akimot', source = src_files_build, CPPPATH = '.')
-  env.Object(src_files_build)
-  akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
-  for alias, dir in alias_dirs: 
-    env.Install(dir, akimot)
-    env.Alias(alias, dir)
-  tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
-                    CPPPATH=['.',CXX_INCLUDE_DIR])
-  tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)
-  #print "CCCOM is ",  env.subst('$CCCOM')
+    env.Object(src_files_build)
+    akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
+    for alias, dir in alias_dirs: 
+        env.Install(dir, akimot)
+        env.Alias(alias, dir)
+    tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
+                   CPPPATH=['.',CXX_INCLUDE_DIR])
+    tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)
+    #print "CCCOM is ",  env.subst('$CCCOM')
+
+if do_prof:
+    import os
+    os.system('./akimot -b; gprof akimot gmon.out | head -n 45');
+

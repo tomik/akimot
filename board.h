@@ -98,8 +98,8 @@ namespace bits{
 
   extern u64   winRank[2]; 
   extern u64 stepOffset_[2][7][64]; 
-  int lix(u64& v, unsigned int);
-  int lixold(u64 b, int);
+  int lixslow(u64& v);
+  int lix(u64& b);
   void buildStepOffsets();
   bool getBit(const u64& b, int n);
   //zobrist base table for signature creating 
@@ -436,7 +436,7 @@ class BBoard
     int generateSteps(bplayer_t player, StepArray& steps) const;
 
     void generateStepsForPiece(bcoord_t coord, bplayer_t player, bpiece_t piece, 
-                               StepArray& steps, int& stepsNum) const;
+                                      StepArray& steps, int& stepsNum) const;
 
     int reachability(int from, int to, int stepLimit);
 

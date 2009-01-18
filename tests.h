@@ -108,13 +108,18 @@ class DebugTestSuite : public CxxTest::TestSuite
      */
     void testBitStuff(void)
     {
-      /*
-      u64 v = u64(1);
-      bits::operator<<(cerr,v);
-      cerr << endl << lix(v, 64);      
-      bits::operator<<(cerr,v);
-      cerr << endl << lix(v, 64);      
-      */
+      
+      u64 v = u64(0);
+      assert(lix(v) == -1);
+      v = u64(1);
+      assert(lix(v) == 0);
+      v = u64(17);
+      assert(lix(v) == 4 && lix(v) == 0 && lix(v) == -1);
+      v = u64(0xff00000000000000ULL);
+      assert(lixslow(v) == 63); 
+      v = u64(0xff00000000000000ULL);
+      assert(lix(v) == 63); 
+
     }
 
 
