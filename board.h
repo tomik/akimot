@@ -10,10 +10,14 @@
 #pragma once
 
 #include <queue>
+#include <stack>
 #include <list>
+#include <bitset>
 
 using std::queue;
+using std::stack;
 using std::list;
+using std::bitset;
 
 #include "utils.h"
 #include "hash.h"
@@ -69,9 +73,21 @@ using std::list;
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
 
+#define SQUARE_TO_INDEX_64(square) (8*(ROW(square)-1) + (COL(square)-1))
+#define INDEX_64_TO_SQUARE(index) ((10 * (index/8 + 1)) + ((index % 8) + 1 ))
+
 #define PLAYER_NUM    2
 #define PIECE_NUM     7
 #define SQUARE_NUM    100
+
+typedef unsigned long l64;
+
+#define BIT_LEN 64
+#define BSQUARE_NUM 64
+#define BSIDE_SIZE 8
+typedef bitset<BIT_LEN> bit64;
+
+ostream& operator<<(ostream& o, const bit64& bs);
 
 #define STEP_PASS     0
 #define STEP_SINGLE   1
@@ -92,6 +108,8 @@ typedef int  square_t;
 typedef uint piece_t;		
 typedef uint stepType_t;
 typedef int FlagBoard[SQUARE_NUM];
+
+
 
 class Board;
 class Eval;
@@ -226,6 +244,7 @@ class Step
     square_t      oppTo_;
 
     friend class  Board;
+    friend class  BBoard;
   
   private: 
     /**
@@ -237,7 +256,6 @@ class Step
     void dump(); 
   
 };
-
 
 /**
  * Step with kills. 
@@ -343,6 +361,89 @@ typedef uint board_t[SQUARE_NUM];
 typedef Step  StepArray[MAX_STEPS];
 //heuristics for steps (separated because used VERY LITTLE)
 typedef float  HeurArray[MAX_STEPS];
+
+//*******************************************BITBOARD stuff
+#define BGOLD        0
+#define BSILVER      1
+#define BNO_PLAYER   2
+
+#define BEMPTY       0
+#define BRABBIT      1
+#define BCAT         2
+#define BDOG         3
+#define BHORSE       4
+#define BCAMEL       5
+#define BELEPHANT    6
+
+#define BOPP(player) (1 - player)				 //opponent
+#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
+
+
+typedef int bplayer_t;
+typedef int bpiece_t;
+typedef int bcoord_t;
+
+namespace bits { 
+  const bit64			 one(string("0000000000000000000000000000000000000000000000000000000000000001"));
+  const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
+  const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
+  const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
+  const bit64 not8rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
+  const bit64 traps		(string("0000000000000000001001000000000000000000001001000000000000000000"));
+  const bit64 trapsNeighbours
+											(string("0000000000100100010110100010010000100100010110100010010000000000"));
+	//const bit64	winRank[2] = 
+	//						 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
+	//						   bit64(string("111111110000000000000000000000000000000000000000000000000000000")) };
+
+  extern bit64					stepOffset_[2][7][64]; //cannot be const - is build by buildStepOffset
+
+ // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
+ 
+
+  /*Bitmap of legal steps for a given piece and a given player on a given square.*/
+	void buildStepOffsets();
+	bit64 neighbors(bit64);
+};
+
+class BBoard
+{
+
+  public:
+    BBoard(const board_t& board);
+
+		uint			getStepCount();
+
+		void makeStep(Step&);
+
+    //int generateSteps(StepArray& steps);
+    //void generateStepsForPiece(uint square, StepArray& steps, uint& stepsNum) const;
+
+    int reachability(int from, int to, int stepLimit);
+    void bitsetTest();
+    //bit64 getAllPiecesBitset(player_t player) const;
+
+		string toString() const;
+
+  private: 
+    BBoard(){};
+
+    inline void			setSquare(bcoord_t, player_t, piece_t);
+    inline void			delSquare(bcoord_t, player_t);											
+    inline void			delSquare(bcoord_t, player_t, piece_t);											
+
+    inline piece_t	getPiece(bcoord_t) const;
+    inline player_t	getPlayer(bcoord_t) const;
+
+    bit64         bitboard_[2][7];
+
+    StepArray     stepArray;
+    uint          stepArrayLen;
+  
+    uint  stepCount_;
+    uint  toMove_;
+};
+
 
 /**
  * Board representation.
@@ -455,6 +556,9 @@ class Board
      * Checks winner according to reaching goal, opponent has 0 rabbits.
      */
     void updateWinner();
+
+
+    bool goalCheck(player_t player, int stepLimit);
 
     /**
      * Quick check for goal.
