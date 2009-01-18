@@ -85,14 +85,34 @@ using std::bitset;
 #define PIECE_NUM     7
 #define SQUARE_NUM    100
 
-typedef unsigned long l64;
+typedef unsigned long long u64;
+
+namespace bits{
+  #define NOT_A_FILE  0xfefefefefefefefeULL
+  #define NOT_H_FILE  0x7f7f7f7f7f7f7f7fULL
+  #define NOT_1_RANK  0x00ffffffffffffffULL
+  #define NOT_8_RANK  0xffffffffffffff00ULL
+  #define MSB         0x8000000000000000ULL
+  #define TRAPS       0x0000240000240000ULL
+  #define FPARITY     0x5555555555555555ULL
+
+  extern u64   winRank[2]; 
+  extern u64 stepOffset_[2][7][64]; 
+  int lix(u64& v, unsigned int);
+  int lixold(u64 b, int);
+  void buildStepOffsets();
+  bool getBit(const u64& b, int n);
+  //zobrist base table for signature creating 
+  extern u64 zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+  ostream& printBits(ostream& o, const u64& b);
+  u64 neighbors(u64);
+}
+using namespace bits;
 
 #define BIT_LEN 64
 #define BSQUARE_NUM 64
 #define BSIDE_SIZE 8
-typedef bitset<BIT_LEN> bit64;
 
-ostream& operator<<(ostream& o, const bit64& bs);
 
 #define STEP_PASS     0
 #define STEP_SINGLE   1
@@ -208,6 +228,8 @@ class Step
     bool isPass() const;
     bool isSingleStep() const;
     bool isPushPull() const;
+
+    Step toOld() const;
 
     /**
      * Checks (pseudo)inversion to given step.
@@ -388,29 +410,6 @@ typedef int bplayer_t;
 typedef int bpiece_t;
 typedef int bcoord_t;
 
-namespace bits { 
-  const bit64			 one(string("0000000000000000000000000000000000000000000000000000000000000001"));
-  const bit64 notAfile(string("1111111011111110111111101111111011111110111111101111111011111110"));
-  const bit64 notHfile(string("0111111101111111011111110111111101111111011111110111111101111111"));
-  const bit64 not1rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
-  const bit64 not8rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
-  const bit64 traps		(string("0000000000000000001001000000000000000000001001000000000000000000"));
-  const bit64 trapsNeighbours
-											(string("0000000000100100010110100010010000100100010110100010010000000000"));
-	const bit64	winRank[2] = 
-							 {bit64(string("111111110000000000000000000000000000000000000000000000000000000")),
-							 bit64(string("0000000000000000000000000000000000000000000000000000000011111111"))};
-
-  extern bit64					stepOffset_[2][7][64]; //cannot be const - is build by buildStepOffset
-
- // bit64  zobrist[2][7][64];         /* table of 64 bit psuedo random numbers */
- 
-
-  /*Bitmap of legal steps for a given piece and a given player on a given square.*/
-	void buildStepOffsets();
-	bit64 neighbors(bit64);
-};
-
 class BBoard
 {
 
@@ -434,22 +433,45 @@ class BBoard
   
     void updateWinner();
 
-    bit64 calcMovable(bplayer_t player) const;
-
     int generateSteps(bplayer_t player, StepArray& steps) const;
 
     void generateStepsForPiece(bcoord_t coord, bplayer_t player, bpiece_t piece, 
                                StepArray& steps, int& stepsNum) const;
 
     int reachability(int from, int to, int stepLimit);
-    void bitsetTest();
-    //bit64 getAllPiecesBitset(player_t player) const;
 
+    /**
+     * String representation.
+     */
 		string toString() const;
-    player_t getWinner() const;
+
+    /**
+     * Signature getter.
+     */
+    u64 getSignature() const;
+
+    /**
+     * Winner getter. 
+     */
+    bplayer_t getWinner() const;
+
+    /**
+     * There is a winner. 
+     */
+    bplayer_t gameOver() const; 
+
+    /**
+     * Actual player getter.
+     */
+    bplayer_t getPlayerToMove() const;
 
   private: 
     BBoard(){};
+
+    /**
+     * Calculates not frozen mask.
+     */
+    u64 calcMovable(bplayer_t player) const;
 
     inline void			setSquare(bcoord_t, player_t, piece_t);
     inline void			delSquare(bcoord_t, player_t);											
@@ -458,7 +480,7 @@ class BBoard
     inline bpiece_t	getPiece(bcoord_t) const;
     inline bplayer_t getPlayer(bcoord_t) const;
 
-    bit64         bitboard_[2][7];
+    u64         bitboard_[2][7];
 
     StepArray     stepArray;
     int          stepArrayLen;
@@ -466,6 +488,7 @@ class BBoard
     int  stepCount_;
     bplayer_t  toMove_;
     bplayer_t  winner_;
+    u64 signature_;
 };
 
 
@@ -698,6 +721,11 @@ class Board
     player_t	getWinner() const;
 
     /**
+     * There is a winner. 
+     */
+    player_t gameOver() const; 
+
+    /**
      * Continue check.
      *
      * @param move to be made from given position.
@@ -921,7 +949,6 @@ class Board
     //Attributes
 
     static bool       classInit;
-    static u64        zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     //zobrist base table for signature creating 
     static ThirdRep*  thirdRep_;
 
 		board_t					board_;					//actual pieces are stored here 

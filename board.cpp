@@ -8,7 +8,7 @@
 #include "board.h"
 
 // zobrist base table for signature creating 
-u64  Board::zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+//u64  Board::zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
 
 //thirdRepetition class
 ThirdRep*  Board::thirdRep_;
@@ -22,10 +22,10 @@ const int rabbitWinRow[2]={8,1};
 const int trap[4]={33,36,63,66};
 
 /*
-extern const bit64 not_h_file(string("0111111101111111011111110111111101111111011111110111111101111111"));
-extern const bit64 not_a_file(string("1111111011111110111111101111111011111110111111101111111011111110"));
-extern const bit64 not_1_rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
-extern const bit64 not_8_rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
+extern const u64 not_h_file(string("0111111101111111011111110111111101111111011111110111111101111111"));
+extern const u64 not_a_file(string("1111111011111110111111101111111011111110111111101111111011111110"));
+extern const u64 not_1_rank(string("0000000011111111111111111111111111111111111111111111111111111111"));
+extern const u64 not_8_rank(string("1111111111111111111111111111111111111111111111111111111100000000"));
 */
 
 
@@ -202,6 +202,20 @@ bool Step::isSingleStep() const
 bool Step::isPushPull() const
 {
   return (stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
+}
+
+
+//---------------------------------------------------------------------
+
+Step Step::toOld() const
+{
+  Step s = (*this);
+  s.from_ = INDEX_64_TO_SQUARE(s.from_);
+  s.to_ = INDEX_64_TO_SQUARE(s.to_);
+  s.oppTo_ = INDEX_64_TO_SQUARE(s.oppTo_);
+  s.oppFrom_ = INDEX_64_TO_SQUARE(s.oppFrom_);
+  s.player_ = s.player_ == BGOLD ? GOLD : SILVER;
+  return s;
 }
 
 //---------------------------------------------------------------------
@@ -509,23 +523,75 @@ string Move::toStringWithKills(const Board* board)
 //  section BBoard
 //---------------------------------------------------------------------
 
+namespace bits {
 
-namespace bits{
+  u64   stepOffset_[2][7][64]; 
+  u64   zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+  u64   winRank[2] = { 0xff00000000000000ULL ,0x00000000000000ffULL};
 
-  bit64 neighbors( bit64 target )
+  int lixold(u64 b, int start)
   {
-    bit64 x;
+    
+    int  x = start - 1;
+    b <<= 63 - x;
 
-    x =  (target & notHfile) << 1;
-    x |= (target & notAfile) >> 1;
-    x |= (target & not1rank) << 8;
-    x |= (target & not8rank) >> 8;
+    if (x == -1){
+      return x;
+    } 
+
+    while (b)
+    {
+      if (b & MSB) return(x);
+      x--;
+      b <<= 1;
+    }
+
+    return(-1);
+  }
+
+  int lix(u64& b, int last){
+
+    if (!b) {
+      return -1;
+    }
+
+    u64 v = b; 
+    const u64 lix_mask[] = 
+        {0x2ULL, 0xCULL, 0xF0ULL, 0xFF00ULL, 0xFFFF0000ULL, 0xFFFFFFFF00000000ULL};
+    const unsigned int mask_ones[] = {1, 2, 4, 8, 16, 32};
+    int i;
+
+    register unsigned int r = 0; 
+    for (i = 5; i >= 0; i--) 
+    {
+        if (v & lix_mask[i])
+        {
+          v >>= mask_ones[i];
+          r |= mask_ones[i];
+        } 
+    }
+
+    b ^= BIT_ON(r);
+    return r;
+  }
+
+  u64 neighbors( u64 target )
+  {
+    u64 x;
+
+    x =  (target & NOT_H_FILE) << 1;
+    x |= (target & NOT_A_FILE) >> 1;
+    x |= (target & NOT_1_RANK) << 8;
+    x |= (target & NOT_8_RANK) >> 8;
     //TODO ..... not_*_rank not neccessary ? 
 
     return(x);
   }
 
-  bit64         stepOffset_[2][7][64]; 
+  bool getBit(const u64& b, int n){
+    return b & BIT_ON(n); 
+  }
+
 
   void buildStepOffsets()
   {
@@ -534,19 +600,16 @@ namespace bits{
     bcoord_t  square;
 
     // do rabbits as a special case
-    // --
     for (player = 0; player < 2; player++)
       for (square = 0; square < BIT_LEN; square++) {
-        bit64  ts;
-        assert( ts.none() );
-
+        u64  ts = 0ULL;
         
-        ts |= ((one << square) & notHfile) << 1;  // east
-        ts |= ((one << square) & notAfile) >> 1;  // west
+        ts |= ((BIT_ON(square)) & NOT_H_FILE) << 1;  // east
+        ts |= ((BIT_ON(square)) & NOT_A_FILE) >> 1;  // west
         if (player == 0)    
-          ts |= ((one << square) & not8rank) >> 8;  // north
+          ts |= ((BIT_ON(square)) & NOT_1_RANK) << 8;  // north
         else
-          ts |= ((one << square) & not1rank) << 8;  // south
+          ts |= ((BIT_ON(square)) & NOT_8_RANK) >> 8;  // south
 
         stepOffset_[player][BRABBIT][square] = ts;    
       }
@@ -555,38 +618,22 @@ namespace bits{
     for (player = 0; player < 2; player++)
       for (piece = 2; piece < 7; piece++)
         for (square = 0; square < BIT_LEN; square++) {
-          bit64  ts;
-          assert( ts.none());
-
-          ts |= ((one << square) & notHfile) << 1;  // east
-          ts |= ((one << square) & notAfile) >> 1;  // west
-          ts |= ((one << square) & not1rank) << 8;  // south
-          ts |= ((one << square) & not8rank) >> 8;  // north
-
+          u64  ts = neighbors(BIT_ON(square));
           stepOffset_[player][piece][square] = ts;
         }
    }
 
-}
 
-using namespace bits;
-
-ostream& operator<<(ostream& o, const bit64& bs){ 
-  for (int i = 7; i >= 0; i--){
-    for (int j = 0; j < 8; j++){
-      o << bs[i*8 + j] << " ";
+  ostream& printBits(ostream& o, const u64& b){ 
+    for (int i = 7; i >= 0; i--){
+      for (int j = 0; j < 8; j++){
+        o << getBit(b, i*8 + j) << " ";
+      }
+      o << endl;
     }
-    o << endl;
+    return o; 
   }
-  return o; 
 }
-
-/*
-void Board::undoStepSimple(UndoStep undoStep) {
-  undoStep.add(); 
-  undoStep.remove(); 
-}
-*/
 
 //--------------------------------------------------------------------- 
 
@@ -594,13 +641,14 @@ BBoard::BBoard(const Board& b)
 {
   /* clear board */
   for (int i=0; i<7; i++) {
-    bitboard_[0][i].reset();
-    bitboard_[1][i].reset();
+    bitboard_[0][i] = 0;;
+    bitboard_[1][i] = 0;
   }
 
   stepCount_ = b.stepCount_;
   toMove_ = b.toMoveIndex_;
   winner_ = BNO_PLAYER;
+  signature_ = 0;
 
   const board_t & board = b.board_;
 
@@ -610,7 +658,7 @@ BBoard::BBoard(const Board& b)
     }
     bcoord_t bcoord = SQUARE_TO_INDEX_64(square);
     bplayer_t bplayer = OWNER(board[square]) == GOLD ? BGOLD : BSILVER; 
-    bpiece_t bpiece;
+    bpiece_t bpiece = 0;
     
     switch PIECE(board[square]){
       case PIECE_ELEPHANT : bpiece = BELEPHANT;  break;
@@ -627,7 +675,6 @@ BBoard::BBoard(const Board& b)
 
   buildStepOffsets();
 
-  //cerr << toString();
 }
 
 //--------------------------------------------------------------------- 
@@ -637,15 +684,15 @@ Step BBoard::findMCstep()
   Step step;
 
   //it's not possible to have 0 rabbits in the beginning of move
-  assert( bitboard_[toMove_][1].any() || stepCount_ > 0); 
+  assert( bitboard_[toMove_][1] || stepCount_ > 0); 
 
   //no piece for player to move 
-  if (bitboard_[toMove_][0].none()) {
+  if (! bitboard_[toMove_][0]) {
     //step_pass since the player with no pieces still might win 
     //if he managed to kill opponent's last rabbit before he lost his last piece
     return Step(STEP_PASS, toMove_);          
   }
-
+  
   int len = generateSteps(toMove_, stepArray);
   assert(len < MAX_STEPS);
 
@@ -704,39 +751,37 @@ void BBoard::makeStep(Step& step){
       return;
     }
 
-    //update board
-    delSquare(step.from_, step.player_, step.piece_);
-    setSquare(step.to_, step.player_, step.piece_);
-    stepCount_++;
-
     //handle push/pull steps
     if (step.isPushPull()) {  
       assert( stepCount_ < 3 ); 
       delSquare(step.oppFrom_, BOPP(step.player_), step.oppPiece_);
       setSquare(step.oppTo_, BOPP(step.player_), step.oppPiece_);
-      stepCount_ += 2;
+      stepCount_++;
     }
 
-    bit64 fullTraps;
-    bit64 dieHard; 
+    //update board
+    delSquare(step.from_, step.player_, step.piece_);
+    setSquare(step.to_, step.player_, step.piece_);
+    stepCount_++;
+
+    u64 fullTraps;
+    u64 dieHard; 
     //traps stuff 
     for (int player = 0; player < 2; player++){
-      fullTraps = (traps & bitboard_[player][0]);
+      fullTraps = (TRAPS & bitboard_[player][0]);
       dieHard = fullTraps ^ (fullTraps & neighbors(bitboard_[player][0]));
       //full traps gold now contains to-be removed pieces 
 
-      if (dieHard.any()){
-        int trap = dieHard._Find_first();             
-        if (trap != BIT_LEN){
+      if (dieHard){
+        int trap = lix(dieHard, BIT_LEN);             
+        if (trap != -1){
           delSquare(trap, player);
           //no more than one dead per player
-          assert(dieHard._Find_next(trap) == BIT_LEN); 
+          assert(lix(dieHard, trap) == -1); 
         }
       }
     } 
 
-    //cerr << toString();
-    //cerr << step.toString() << endl;
 }
 
 //--------------------------------------------------------------------- 
@@ -744,22 +789,22 @@ void BBoard::makeStep(Step& step){
 void BBoard::updateWinner()
 {
   //check goal
-  if ( (bitboard_[toMove_][1] & winRank[toMove_]).any()) {
+  if (bitboard_[toMove_][1] & winRank[toMove_]) {
     winner_ = toMove_;
     return;
   }
   //check self goal
-  if ((bitboard_[BOPP(toMove_)][1] & winRank[BOPP(toMove_)]).any()){
+  if (bitboard_[BOPP(toMove_)][1] & winRank[BOPP(toMove_)]){
     winner_ = BOPP(toMove_);
     return;
   }
   //opp has no rabbit 
-  if ((bitboard_[BOPP(toMove_)][1]).none()){
+  if (! bitboard_[BOPP(toMove_)][1]){
     winner_ = toMove_;
     return;
   }
   //player has no rabbit 
-  if ((bitboard_[toMove_][1]).none()){
+  if (! bitboard_[toMove_][1]){
     winner_ = BOPP(toMove_);
     return;
   }
@@ -767,34 +812,18 @@ void BBoard::updateWinner()
 
 //--------------------------------------------------------------------- 
 
-bit64 BBoard::calcMovable(bplayer_t player) const
-{
-  bit64 ngb[2]; 
-  ngb[0] = neighbors(bitboard_[0][0]);
-  ngb[1] = neighbors(bitboard_[1][0]);
-  bit64 stronger(bitboard_[BOPP(player)][0]);                  
-  bit64 movable(0); //TODO - does set to all 0 ? 
-  
-  for (int piece = 1; piece < 7; piece++) {
-    movable |= bitboard_[player][piece];                           
-    stronger ^= bitboard_[BOPP(player)][piece];                              
-    movable &= ngb[player] | (~neighbors(stronger)); 
-  }
-  return movable;
-}
-
 int BBoard::generateSteps(bplayer_t player, StepArray& steps) const
 {
   int stepsNum = 0;
-  bit64 movable(calcMovable(player));
+  u64 movable = calcMovable(player);
 
-  bcoord_t coord = -1;
-  while ( (coord = movable._Find_next(coord)) != BIT_LEN) { 
+  bcoord_t coord = BIT_LEN;
+  while ( (coord = lix(movable, coord)) != -1) { 
     assert(getPlayer(coord) == player); 
     generateStepsForPiece(coord, player, getPiece(coord), steps, stepsNum);
   }
 
-  if ( stepCount_ > 1 ){
+  if ( stepCount_ >= 1 ){
     steps[stepsNum++] = Step(STEP_PASS, player);
   }
 
@@ -806,67 +835,52 @@ int BBoard::generateSteps(bplayer_t player, StepArray& steps) const
 void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t piece,
                                   StepArray& steps, int & stepsNum) const
 {
-  
   assert(getPlayer(from) == player);
   assert(getPiece(from)  == piece);
 
-  bit64 empty(~(bitboard_[0][0] | bitboard_[1][0]));    
-  bit64 whereStep = empty & stepOffset_[player][piece][from];
+  u64 empty = ~(bitboard_[0][0] | bitboard_[1][0]);
+  u64 whereStep = empty & stepOffset_[player][piece][from];
     
   //single steps
-  bcoord_t to = -1;
-  while ((to = whereStep._Find_next(to)) != BIT_LEN) {
+  bcoord_t to = BIT_LEN;
+  while ((to = lix(whereStep,to)) != -1) {
     steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
   }
 
   //push/pull steps
   if ( piece == BRABBIT || stepCount_ >= 3 || 
-       (stepOffset_[player][piece][from] & bitboard_[BOPP(player)][0]).none()) { 
+       ! (stepOffset_[player][piece][from] & bitboard_[BOPP(player)][0])) { 
     return;
   }
 
-  bit64 victims;
+  u64 victims = 0ULL;
   for (int i = 1; i < piece; i++){
     victims |= bitboard_[BOPP(player)][i];
   }
     
   victims &= stepOffset_[player][piece][from];
    
-  bcoord_t victimFrom = -1 ;
-  while ((victimFrom = victims._Find_next(victimFrom)) != BIT_LEN) {
+  bcoord_t victimFrom = BIT_LEN;
+  while ((victimFrom = lix(victims, victimFrom)) != -1) {
 
     //pull
-    bit64 wherePull = empty & stepOffset_[player][piece][from];          
-    bcoord_t pullerTo = -1; 
-    while ((pullerTo = wherePull._Find_next(pullerTo)) != BIT_LEN) {
+    u64 wherePull = empty & stepOffset_[player][piece][from];          
+    bcoord_t pullerTo = BIT_LEN; 
+    while ((pullerTo = lix(wherePull, pullerTo)) != -1) {
 
       steps[stepsNum++].setValues(STEP_PULL, player, piece, from, pullerTo, 
                                 getPiece(victimFrom), victimFrom, from); 
     }
 
     //push
-    bit64 wherePush = empty & stepOffset_[player][piece][victimFrom]; 
-    bcoord_t victimTo = -1; 
-    while ((victimTo = wherePush._Find_next(victimTo)) != BIT_LEN) {
+    u64 wherePush = empty & stepOffset_[player][piece][victimFrom]; 
+    bcoord_t victimTo = BIT_LEN; 
+    while ((victimTo = lix(wherePush, victimTo)) != -1) {
 
       steps[stepsNum++].setValues(STEP_PUSH, player, piece, from, victimFrom,
                                 getPiece(victimFrom), victimFrom, victimTo);
     }
   } 
-  
-}
-
-
-//---------------------------------------------------------------------
-
-void BBoard::bitsetTest()
-{
-
-  cerr << notHfile << endl;
-  cerr << notAfile << endl;
-  cerr << not1rank << endl;
-  cerr << not8rank << endl;
-
 }
 
 //---------------------------------------------------------------------
@@ -878,14 +892,15 @@ int BBoard::reachability(int from, int to, int stepLimit)
   //StepStack ss;
  
   //go through pieces (closer first)
-  //bit64 bsPieces = getAllPiecesBitset(toMove_);
-  bit64 bsPieces; 
-  bit64 c;
+  //u64 bsPieces = getAllPiecesBitset(toMove_);
+  /*
+  u64 bsPieces; 
+  u64 c;
   c.reset();
   c.set(SQUARE_TO_INDEX_64(from));
 
-  bit64 clear(c);
-  bit64 iFarAway;
+  u64 clear(c);
+  u64 iFarAway;
 
   assert(getPlayer(from) == toMove_);
 
@@ -910,6 +925,7 @@ int BBoard::reachability(int from, int to, int stepLimit)
     c ^= clear;
     clear |= c;
   }
+  */
   return 0;
 
 }
@@ -922,6 +938,7 @@ string BBoard::toString() const
 	stringstream ss;
 
   ss << endl;
+  ss << "Signature " << signature_ << endl;
   ss << "Move ";
 
   if (toMove_ == BGOLD) 
@@ -941,7 +958,7 @@ string BBoard::toString() const
       coord = i * BSIDE_SIZE + j;
       assert(getPiece(coord) + ((2 - getPlayer(coord)) * 6) 
              <= int(refStr.length()));
-			if (traps[coord] && getPlayer(coord) == BNO_PLAYER )
+			if (getBit(TRAPS, coord) && getPlayer(coord) == BNO_PLAYER )
 				ss << "X ";
 			else
 				ss << refStr[getPiece(coord) + ((2 - getPlayer(coord)) * 6)] << " ";
@@ -957,44 +974,93 @@ string BBoard::toString() const
 
 //--------------------------------------------------------------------- 
 
-player_t BBoard::getWinner() const 
+u64 BBoard::getSignature() const 
+{
+  return signature_;
+}
+
+//--------------------------------------------------------------------- 
+
+bplayer_t BBoard::getWinner() const 
 {
   return winner_;
 }
 
 //--------------------------------------------------------------------- 
 
+bplayer_t BBoard::gameOver() const 
+{
+  return winner_ != BNO_PLAYER;
+}
+
+//--------------------------------------------------------------------- 
+
+bplayer_t BBoard::getPlayerToMove() const
+{
+  return toMove_;
+}
+
+//--------------------------------------------------------------------- 
+
+u64 BBoard::calcMovable(bplayer_t player) const
+{
+  u64 ngb[2]; 
+  ngb[0] = neighbors(bitboard_[0][0]);
+  ngb[1] = neighbors(bitboard_[1][0]);
+  u64 stronger = bitboard_[BOPP(player)][0];
+  u64 movable = 0ULL; 
+  
+  for (int piece = 1; piece < 7; piece++) {
+    movable |= bitboard_[player][piece];                           
+    stronger ^= bitboard_[BOPP(player)][piece];                              
+    movable &= ngb[player] | (~neighbors(stronger)); 
+  }
+  return movable;
+}
+
+//--------------------------------------------------------------------- 
 
 void BBoard::setSquare(bcoord_t coord, player_t player, piece_t piece) 
 {
- assert(player == BGOLD || player == BSILVER);
- assert(piece >= BRABBIT && piece <= BELEPHANT );
- assert(coord >= 0 && coord < BIT_LEN );
- 
- bitboard_[player][piece].set(coord);
- bitboard_[player][0].set(coord);
+  assert(player == BGOLD || player == BSILVER);
+  assert(piece >= BRABBIT && piece <= BELEPHANT );
+  assert(coord >= 0 && coord < BIT_LEN );
+
+  bitboard_[player][piece] |= BIT_ON(coord);
+  bitboard_[player][0] |= BIT_ON(coord);
+
+  signature_ ^= zobrist[player][piece][INDEX_64_TO_SQUARE(coord)]; 
 }
 
 void BBoard::delSquare(bcoord_t coord, player_t player)
 {
-  for (int i = 0; i < 7; i++ ){
-    bitboard_[player][i].reset(coord);
+  assert(getBit(bitboard_[player][0], coord));
+  bitboard_[player][0] ^= BIT_ON(coord);
+  for (int i = 1; i < 7; i++ ){
+    if (getBit(bitboard_[player][i], coord)){
+      bitboard_[player][i] ^= BIT_ON(coord);
+      signature_ ^=  zobrist[player][i][INDEX_64_TO_SQUARE(coord)]; 
+      return;
+    }
   }
 }
 
 void BBoard::delSquare(bcoord_t coord, player_t player, piece_t piece) 
 {
-  bitboard_[player][0].reset(coord);
-  bitboard_[player][piece].reset(coord);
+  assert(getBit(bitboard_[player][0],coord));
+  assert(getBit(bitboard_[player][piece],coord));
+  bitboard_[player][0] ^= BIT_ON(coord);
+  bitboard_[player][piece] ^= BIT_ON(coord);
+  signature_ ^=  zobrist[player][piece][INDEX_64_TO_SQUARE(coord)]; 
 }
 
 
 bpiece_t BBoard::getPiece(bcoord_t coord) const
 {
   for (player_t player = 0; player < 2; player++ ){
-    if (bitboard_[player][0][coord]){
+    if (getBit(bitboard_[player][0], coord)){
       for (int i = 1; i < 7; i++ ){
-        if (bitboard_[player][i][coord]){
+        if (getBit(bitboard_[player][i],coord)){
           return i;
         }
       } 
@@ -1008,10 +1074,10 @@ bpiece_t BBoard::getPiece(bcoord_t coord) const
 
 bplayer_t BBoard::getPlayer(bcoord_t coord) const
 {
-  if (bitboard_[BGOLD][0][coord])
+  if (getBit(bitboard_[BGOLD][0], coord))
     return BGOLD;
 
-  if (bitboard_[BSILVER][0][coord])
+  if (getBit(bitboard_[BSILVER][0], coord))
     return BSILVER;
 
   return BNO_PLAYER;
@@ -2432,6 +2498,13 @@ player_t Board::getWinner() const
   return winner_;
 }
 
+//--------------------------------------------------------------------- 
+
+player_t Board::gameOver() const
+{
+  return IS_PLAYER(winner_);
+}
+
 //---------------------------------------------------------------------
 
 bool Board::canContinue(const Move& move) const
@@ -2495,7 +2568,7 @@ string Board::toString() const
 
   //ss << "board at: " << this << endl; //pointer debug
   //#ifdef DEBUG_1
-    ss << "Signature " << signature_ << endl;
+  ss << "Signature " << signature_ << endl;
   //#endif
 
   ss << "Move " << (toMove_ == GOLD ? "g" : "s") << moveCount_ ;

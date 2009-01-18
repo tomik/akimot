@@ -5,6 +5,7 @@
 #include "uct.h"
 
 #define TEST_DIR "./test"
+#define START_POS "./data/startpos.txt"
 #define INIT_TEST_DIR "./data/init/"
 #define INIT_TEST_LIST "./data/init/list.txt"
 #define RABBITS_TEST_DIR "./data/rabbits/"
@@ -23,6 +24,99 @@ class FileRead;
 class DebugTestSuite : public CxxTest::TestSuite 
 {
   public:
+
+    void setUp() { srand((unsigned) time(NULL));}
+
+    /*
+     * Tests consistency of normal board with bitboard.
+     */ 
+    void testBitboardConsistency(void)
+    {
+
+        StepArray s; 
+        uint slen;
+        StepArray bs; 
+        uint bslen;
+        bool c;
+        bool bc;
+        Step step;
+        Step bstep;
+        bool w;
+        bool bw;
+      
+        for (int k = 0; k < 100; k++){
+          Board * b = new Board(); 
+          assert(b->initFromPosition(START_POS));
+          BBoard * bb = new BBoard(*b);
+
+          do { 
+
+            do {
+              slen = b->generateAllSteps(b->getPlayerToMove(), s);
+              bslen = bb->generateSteps(bb->getPlayerToMove(), bs);
+              /*
+              for (int i = 0; i < slen; i++){
+                cerr << s[i].toString() << " ";
+              }
+                cerr << endl;
+              for (int i = 0; i < bslen; i++){
+                cerr << bs[i].toString() << " ";
+              }
+                cerr << endl;
+              */
+                
+              assert(slen == bslen); 
+              if (slen == 0)
+                break;
+              int index = rand() % slen;
+              int bindex = 0; 
+              for (int i = 0; i < slen; i++){
+                bool found = false;
+                for (int j = 0; j < bslen; j++){
+                  if (s[i] == bs[j].toOld()){
+                    found = true;
+                    if (i == index)
+                      bindex = j;
+                    break;
+                  } 
+                }
+              }
+              c = b->makeStepTryCommitMove(s[index]);
+              bc = bb->makeStepTryCommit(bs[bindex]);
+              //cerr << b->toString() << bb->toString() << " ======================== " << endl;
+              assert(b->getSignature() == bb->getSignature());
+              assert(c == bc); 
+            }
+            while (! c || slen == 0);
+            if (slen == 0)
+              break;
+
+            w = b->gameOver();
+            bw = bb->gameOver();
+            assert(w == bw);
+          
+          } while (! w);
+          delete b;
+          delete bb;
+        }
+ 
+    } 
+
+
+    /**
+     * Bit stuff. 
+     */
+    void testBitStuff(void)
+    {
+      /*
+      u64 v = u64(1);
+      bits::operator<<(cerr,v);
+      cerr << endl << lix(v, 64);      
+      bits::operator<<(cerr,v);
+      cerr << endl << lix(v, 64);      
+      */
+    }
+
 
     /**
      * Utilities test - mostly string functions. 

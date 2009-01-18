@@ -244,13 +244,13 @@ void Benchmark::benchmarkSearch() const
 
 void Benchmark::benchmarkAll() 
 {
-  //benchmarkCopyBoard();
-  //benchmarkEval();
-  //benchmarkEvalBetter();
+  benchmarkCopyBoard();
+  benchmarkEval();
+  benchmarkEvalBetter();
+  benchmarkBitPlayout();
+  benchmarkPlayout();
   benchmarkQuickGoalCheck();
   benchmarkUct();
-  benchmarkPlayout();
-  benchmarkBitPlayout();
   benchmarkSearch();
 }
 
