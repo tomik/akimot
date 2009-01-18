@@ -78,20 +78,44 @@ class SimplePlayout
      */
 		uint getPlayoutLength();  
 
-  private:
+  protected:
     /**
      * Performs one move of one player.
      *
      * Implements random step play to get the move.
      */
+    virtual void playOne();	
+
+    /**
+    * Wrapper around get winner from board.
+    */
+    virtual bool hasWinner();
+
+    SimplePlayout();
+
+    Board*		board_;
+    uint        playoutLength_;
+    uint        maxPlayoutLength_;
+    uint        evalAfterLength_;
+
+};
+
+/**
+ * BitBoard variant of SimplePlayout.
+ */
+class SimplePlayoutBit: public SimplePlayout
+{
+  public:
+    SimplePlayoutBit(BBoard*, uint maxPlayoutLength, uint evalAfterLength);
+
+  private:
+    SimplePlayoutBit();
+
     void playOne();	
 
-    Board*				board_;
-    uint					playoutLength_;
-    uint          maxPlayoutLength_;
-    uint          evalAfterLength_;
+    virtual bool hasWinner();
 
-		SimplePlayout();
+    BBoard*		bitboard_;
 };
 
 

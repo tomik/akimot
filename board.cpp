@@ -314,6 +314,9 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
   string pieceRefStr(" RCDHMErcdhme");
   string columnRefStr("abcdefgh");
 
+  s << player << "|" << piece << "|" << from << "|" << to << " ";
+  return s.str();
+
   s << pieceRefStr[piece + 6 * PLAYER_TO_INDEX(player)] << columnRefStr[from % 10 - 1] << from / 10; 
   switch (to - from)
   {
@@ -321,6 +324,11 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
     case WEST :  s << "w"; break;
     case EAST :  s << "e"; break;
     case SOUTH : s << "s"; break;
+
+    case BNORTH : s << "n"; break;
+    //case BWEST :  s << "w"; break;
+    //case BEAST :  s << "e"; break;
+    case BSOUTH : s << "s"; break;
     default :
       assert(false);
       break;
@@ -582,7 +590,7 @@ void Board::undoStepSimple(UndoStep undoStep) {
 
 //--------------------------------------------------------------------- 
 
-BBoard::BBoard(const board_t& board)
+BBoard::BBoard(const Board& b)
 {
   /* clear board */
   for (int i=0; i<7; i++) {
@@ -590,8 +598,11 @@ BBoard::BBoard(const board_t& board)
     bitboard_[1][i].reset();
   }
 
-  stepCount_ = 0;
-  toMove_ = 0;
+  stepCount_ = b.stepCount_;
+  toMove_ = b.toMoveIndex_;
+  winner_ = BNO_PLAYER;
+
+  const board_t & board = b.board_;
 
   for (int square = 11; square < 89; square++){
     if (! IS_PLAYER(board[square])){
@@ -616,7 +627,68 @@ BBoard::BBoard(const board_t& board)
 
   buildStepOffsets();
 
-  cerr << toString();
+  //cerr << toString();
+}
+
+//--------------------------------------------------------------------- 
+
+Step BBoard::findMCstep() 
+{
+  Step step;
+
+  //it's not possible to have 0 rabbits in the beginning of move
+  assert( bitboard_[toMove_][1].any() || stepCount_ > 0); 
+
+  //no piece for player to move 
+  if (bitboard_[toMove_][0].none()) {
+    //step_pass since the player with no pieces still might win 
+    //if he managed to kill opponent's last rabbit before he lost his last piece
+    return Step(STEP_PASS, toMove_);          
+  }
+
+  int len = generateSteps(toMove_, stepArray);
+  assert(len < MAX_STEPS);
+
+  //player to move has no step to play - not even pass
+  if (len == 0 ){ 
+    winner_ = BOPP(toMove_);
+    return Step(STEP_NULL,toMove_); 
+  }
+
+  assert(len > 0);
+  int index = rand() % len;
+  assert( index >= 0 && index < len );
+
+  return( stepArray[index]); 
+} 
+
+//--------------------------------------------------------------------- 
+
+bool BBoard::makeStepTryCommit(Step& step)
+{
+  makeStep(step);
+	if (stepCount_ >= 4 || ! step.pieceMoved()) {
+    updateWinner();
+    commit();
+    return true;
+  }
+  return false;
+
+}
+
+//--------------------------------------------------------------------- 
+
+void BBoard::commit()
+{
+  assert(toMove_ == BGOLD || toMove_ == BSILVER);
+  /*if (toMove_ == BSILVER) {
+    moveCount_++;
+  }
+  */
+  toMove_ = BOPP(toMove_);
+  stepCount_ = 0;
+
+  //preMoveSignature_ = signature_;
 }
 
 //--------------------------------------------------------------------- 
@@ -662,6 +734,35 @@ void BBoard::makeStep(Step& step){
         }
       }
     } 
+
+    //cerr << toString();
+    //cerr << step.toString() << endl;
+}
+
+//--------------------------------------------------------------------- 
+
+void BBoard::updateWinner()
+{
+  //check goal
+  if ( (bitboard_[toMove_][1] & winRank[toMove_]).any()) {
+    winner_ = toMove_;
+    return;
+  }
+  //check self goal
+  if ((bitboard_[BOPP(toMove_)][1] & winRank[BOPP(toMove_)]).any()){
+    winner_ = BOPP(toMove_);
+    return;
+  }
+  //opp has no rabbit 
+  if ((bitboard_[BOPP(toMove_)][1]).none()){
+    winner_ = toMove_;
+    return;
+  }
+  //player has no rabbit 
+  if ((bitboard_[toMove_][1]).none()){
+    winner_ = BOPP(toMove_);
+    return;
+  }
 }
 
 //--------------------------------------------------------------------- 
@@ -669,11 +770,11 @@ void BBoard::makeStep(Step& step){
 bit64 BBoard::calcMovable(bplayer_t player) const
 {
   bit64 ngb[2]; 
-  ngb[BGOLD] = neighbors(bitboard_[BGOLD][0]);
-  ngb[BSILVER] = neighbors(bitboard_[BSILVER][0]);
+  ngb[0] = neighbors(bitboard_[0][0]);
+  ngb[1] = neighbors(bitboard_[1][0]);
   bit64 stronger(bitboard_[BOPP(player)][0]);                  
   bit64 movable(0); //TODO - does set to all 0 ? 
-
+  
   for (int piece = 1; piece < 7; piece++) {
     movable |= bitboard_[player][piece];                           
     stronger ^= bitboard_[BOPP(player)][piece];                              
@@ -682,12 +783,11 @@ bit64 BBoard::calcMovable(bplayer_t player) const
   return movable;
 }
 
-int BBoard::generateSteps(StepArray& steps) const
+int BBoard::generateSteps(bplayer_t player, StepArray& steps) const
 {
   int stepsNum = 0;
-  bplayer_t player = toMove_;
   bit64 movable(calcMovable(player));
-  
+
   bcoord_t coord = -1;
   while ( (coord = movable._Find_next(coord)) != BIT_LEN) { 
     assert(getPlayer(coord) == player); 
@@ -714,7 +814,7 @@ void BBoard::generateStepsForPiece(bcoord_t from, bplayer_t player, bpiece_t pie
   bit64 whereStep = empty & stepOffset_[player][piece][from];
     
   //single steps
-  bcoord_t to;
+  bcoord_t to = -1;
   while ((to = whereStep._Find_next(to)) != BIT_LEN) {
     steps[stepsNum++].setValues(STEP_SINGLE, player, piece, from, to);
   }
@@ -814,14 +914,16 @@ int BBoard::reachability(int from, int to, int stepLimit)
 
 }
 
+//--------------------------------------------------------------------- 
+
 string BBoard::toString() const
 {
 
 	stringstream ss;
 
   ss << endl;
-
   ss << "Move ";
+
   if (toMove_ == BGOLD) 
     ss << "g" << endl;
   else
@@ -852,6 +954,15 @@ string BBoard::toString() const
 
 	return ss.str();
 } 
+
+//--------------------------------------------------------------------- 
+
+player_t BBoard::getWinner() const 
+{
+  return winner_;
+}
+
+//--------------------------------------------------------------------- 
 
 
 void BBoard::setSquare(bcoord_t coord, player_t player, piece_t piece) 
@@ -1869,7 +1980,7 @@ bool Board::goalCheck(player_t player, int stepLimit)
       if (SQUARE_DISTANCE(from, to) > stepLimit) {
         continue;
       }
-      BBoard bboard(board_);
+      BBoard bboard(*this);
       return true;
       //if (reachability(from, to, stepLimit) != -1){
       //  return true;

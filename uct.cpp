@@ -35,15 +35,13 @@ playoutStatus_e SimplePlayout::doPlayout()
   */
 
   while (true) {  
-	  //playOne();
-    board_->findMCmoveAndMake();
+	  playOne();
 		playoutLength_++;
 
-
-		if ( board_->getWinner() != EMPTY ) //somebody won
+    if (hasWinner())
 			return PLAYOUT_OK;
 
-		if ( playoutLength_ > 2 * maxPlayoutLength_ ) 
+		if (playoutLength_ > 2 * maxPlayoutLength_) 
 			return PLAYOUT_TOO_LONG;
 
     if (++moves >= evalAfterLength_ && evalAfterLength_)
@@ -51,10 +49,20 @@ playoutStatus_e SimplePlayout::doPlayout()
 	}
 }
 
+//--------------------------------------------------------------------- 
+
+bool SimplePlayout::hasWinner(){
+	if ( board_->getWinner() != EMPTY ) {
+    return true;  
+  }
+  return false;
+}
+
 //---------------------------------------------------------------------
 
 void SimplePlayout::playOne()
 {
+   //board_->findMCmoveAndMake();
 	Step step;
 
 	do {
@@ -69,6 +77,38 @@ void SimplePlayout::playOne()
 uint SimplePlayout::getPlayoutLength()
 {
 	return playoutLength_/2;
+}
+
+//---------------------------------------------------------------------
+// section SimplePlayoutBit
+//---------------------------------------------------------------------
+
+SimplePlayoutBit::SimplePlayoutBit(BBoard* bitboard, uint maxPlayoutLength, uint evalAfterLength):
+   SimplePlayout(NULL, maxPlayoutLength, evalAfterLength), bitboard_(bitboard)
+{
+  ;
+}
+
+//--------------------------------------------------------------------- 
+
+bool SimplePlayoutBit::hasWinner(){
+	if ( bitboard_->getWinner() != BNO_PLAYER ) {
+    return true;  
+  }
+  return false;
+}
+
+//--------------------------------------------------------------------- 
+
+void SimplePlayoutBit::playOne()
+{
+	Step step;
+
+	do {
+		step = bitboard_->findMCstep();
+	}
+	while (! bitboard_->makeStepTryCommit(step));
+  return;
 }
 
 //---------------------------------------------------------------------

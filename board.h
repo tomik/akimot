@@ -48,6 +48,11 @@ using std::bitset;
 #define EAST 1
 #define WEST -1
 
+#define BNORTH 8
+#define BSOUTH -8
+#define BEAST 1
+#define BWEST -1
+
 #define TOP_ROW 8
 #define BOTTOM_ROW 1
 #define LEFT_COL 1 
@@ -392,9 +397,9 @@ namespace bits {
   const bit64 traps		(string("0000000000000000001001000000000000000000001001000000000000000000"));
   const bit64 trapsNeighbours
 											(string("0000000000100100010110100010010000100100010110100010010000000000"));
-	//const bit64	winRank[2] = 
-	//						 { bit64(string("0000000000000000000000000000000000000000000000000000000011111111")),
-	//						   bit64(string("111111110000000000000000000000000000000000000000000000000000000")) };
+	const bit64	winRank[2] = 
+							 {bit64(string("111111110000000000000000000000000000000000000000000000000000000")),
+							 bit64(string("0000000000000000000000000000000000000000000000000000000011111111"))};
 
   extern bit64					stepOffset_[2][7][64]; //cannot be const - is build by buildStepOffset
 
@@ -410,14 +415,29 @@ class BBoard
 {
 
   public:
-    BBoard(const board_t& board);
+    BBoard(const Board& b);
 
 		uint			getStepCount();
 
+    /**
+     * Step generation for Monte Carlo playouts.
+     *
+     * Generates (random) step with some restrictions (no pass in the first step,..).
+     */
+		Step findMCstep();
+
+    bool makeStepTryCommit(Step& step);
+
+    void commit();
+
 		void makeStep(Step&);
+  
+    void updateWinner();
 
     bit64 calcMovable(bplayer_t player) const;
-    int generateSteps(StepArray& steps) const;
+
+    int generateSteps(bplayer_t player, StepArray& steps) const;
+
     void generateStepsForPiece(bcoord_t coord, bplayer_t player, bpiece_t piece, 
                                StepArray& steps, int& stepsNum) const;
 
@@ -426,6 +446,7 @@ class BBoard
     //bit64 getAllPiecesBitset(player_t player) const;
 
 		string toString() const;
+    player_t getWinner() const;
 
   private: 
     BBoard(){};
@@ -443,7 +464,8 @@ class BBoard
     int          stepArrayLen;
   
     int  stepCount_;
-    int  toMove_;
+    bplayer_t  toMove_;
+    bplayer_t  winner_;
 };
 
 
@@ -695,6 +717,8 @@ class Board
      * Last step getter.
      */
     Step lastStep() const;
+
+    friend class BBoard;
 
   private:
     /**

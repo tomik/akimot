@@ -117,6 +117,40 @@ void Benchmark::benchmarkQuickGoalCheck()
 
 //--------------------------------------------------------------------- 
 
+void Benchmark::benchmarkBitPlayout() 
+{
+		
+  float timeTotal;
+
+  playoutStatus_e  playoutStatus;
+	uint playoutAvgLen = 0;
+
+  timer.start();
+
+  BBoard * bitBoard = new BBoard(*board_);
+
+  int i = 0;
+  while (! timer.timeUp()){
+    i++;
+    BBoard *playBoard = new BBoard(*bitBoard);
+
+    SimplePlayoutBit simplePlayoutBit(playBoard, PLAYOUT_DEPTH, 0);
+    playoutStatus = simplePlayoutBit.doPlayout ();
+
+		playoutAvgLen += simplePlayoutBit.getPlayoutLength(); 
+    delete playBoard;
+  }
+
+  timer.stop();
+	timeTotal = timer.elapsed(); 
+  logRaw("Bit playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
+            i, timeTotal, int ( float(i) / timeTotal),int(playoutAvgLen/ float (i)));
+  
+}
+
+//--------------------------------------------------------------------- 
+
+
 void Benchmark::benchmarkPlayout() 
 {
 		
@@ -210,12 +244,13 @@ void Benchmark::benchmarkSearch() const
 
 void Benchmark::benchmarkAll() 
 {
-  benchmarkCopyBoard();
-  benchmarkEval();
-  benchmarkEvalBetter();
+  //benchmarkCopyBoard();
+  //benchmarkEval();
+  //benchmarkEvalBetter();
   benchmarkQuickGoalCheck();
-  benchmarkPlayout();
   benchmarkUct();
+  benchmarkPlayout();
+  benchmarkBitPlayout();
   benchmarkSearch();
 }
 
