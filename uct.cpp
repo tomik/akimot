@@ -1030,8 +1030,6 @@ void Uct::doPlayout(const Board* board)
 
         //goalCheck => value fixation
         Move move;
-        playBoard->goalCheck(playBoard->getPlayerToMove(), 4);
-        exit(1);
         if (playBoard->quickGoalCheck(&move)){
           float value = WINNER_TO_VALUE(tree_->actNode()->getPlayer());
           //if not complete step - add pass 

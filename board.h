@@ -86,6 +86,10 @@ using std::bitset;
 #define SQUARE_NUM    100
 
 typedef unsigned long long u64;
+//zobrist base table for signature creating 
+extern u64 zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+
+#define BIS_PLAYER(player) (player == BGOLD || player == BSILVER)
 
 namespace bits{
   #define NOT_A_FILE  0xfefefefefefefefeULL
@@ -96,18 +100,56 @@ namespace bits{
   #define TRAPS       0x0000240000240000ULL
   #define FPARITY     0x5555555555555555ULL
 
+
   extern u64   winRank[2]; 
   extern u64 stepOffset_[2][7][64]; 
-  int lixslow(u64& v);
-  int lix(u64& b);
+  /**
+   * Step offset builder. 
+   */
   void buildStepOffsets();
+
+  /**
+   * String to bits conversion. 
+   */
+  u64 str2bits(string str);
+
+  /**
+   * Left index bit. 
+   *
+   * Returns highest order bit and shifts the given bitset !  
+   */
+  int lix(u64& b);
+
+  /**
+   * Simpler lix. 
+   */
+  int lixslow(u64& v);
+
+  /**
+   * Bit getter. 
+   */
   bool getBit(const u64& b, int n);
-  //zobrist base table for signature creating 
-  extern u64 zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
-  ostream& printBits(ostream& o, const u64& b);
+
+  /**
+   * Fancy print. 
+   */
+  ostream& print(ostream& o, const u64& b);
+
+  /**
+   * Mask of all neighbors of given bitset.
+   * */
   u64 neighbors(u64);
+
+  /**
+   * Mask of sphere.
+   */
+  u64 sphere(int center, int radius);
+
+  /**
+   * Mask of circle. 
+   */
+  u64 circle(int center, int radius);
 }
-using namespace bits;
 
 #define BIT_LEN 64
 #define BSQUARE_NUM 64
@@ -433,12 +475,14 @@ class BBoard
   
     void updateWinner();
 
-    int generateSteps(bplayer_t player, StepArray& steps) const;
+    int genSteps(bplayer_t player, StepArray& steps) const;
 
-    void generateStepsForPiece(bcoord_t coord, bplayer_t player, bpiece_t piece, 
-                                      StepArray& steps, int& stepsNum) const;
-
-    int reachability(int from, int to, int stepLimit);
+    /**
+     * Full goal check.
+     *
+     * Done through limited full width search. 
+     */
+    bool goalCheck(player_t player, int stepLimit);
 
     /**
      * String representation.
@@ -465,19 +509,57 @@ class BBoard
      */
     bplayer_t getPlayerToMove() const;
 
+
   private: 
     BBoard(){};
+
+    /**
+     * Reachability check.
+     *
+     * Used in goalCheck. 
+     */
+    int reachability(int from, int to, bplayer_t player, int stepLimit);
+
+    /**
+     * Step generation for one.
+     * //TODO optimize/simplify
+     *
+     * Wrapper around previous function when not used from generate all. 
+     *
+     * @return stepsNum
+     */
+    int genStepsForOne(bcoord_t coord, bplayer_t player,
+                        StepArray& steps) const;
+    /**
+     * Step generation for one piece. 
+     *
+     * @param coord  Steps are generated for piece at this coord.
+     * @param player Player to generate steps for. 
+     * @param piece  Piece ( for time save). 
+     * @param steps  Steps are stored in this array.
+     * @param stepsnum Size of step array.
+     */
+    void genStepsForOneTuned(bcoord_t coord, bplayer_t player, bpiece_t piece, 
+                              StepArray& steps, int& stepsNum, u64 victims) const;
 
     /**
      * Calculates not frozen mask.
      */
     u64 calcMovable(bplayer_t player) const;
 
+    /**
+     * Calculates weaker pieces.
+     *
+     * @param player Calculation is done for this player. 
+     * @param weaker This array is filled. 
+     */
+    void calcWeaker(bplayer_t player, u64 (&weaker)[7]) const;
+
     inline void			setSquare(bcoord_t, player_t, piece_t);
     inline void			delSquare(bcoord_t, player_t);											
     inline void			delSquare(bcoord_t, player_t, piece_t);											
 
-    inline bpiece_t	getPiece(bcoord_t) const;
+    inline bpiece_t	getPiece(bcoord_t, bplayer_t) const;
     inline bplayer_t getPlayer(bcoord_t) const;
 
     u64         bitboard_[2][7];
@@ -605,7 +687,6 @@ class Board
     void updateWinner();
 
 
-    bool goalCheck(player_t player, int stepLimit);
 
     /**
      * Quick check for goal.

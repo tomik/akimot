@@ -78,6 +78,8 @@ class SimplePlayout
      */
 		uint getPlayoutLength();  
 
+    virtual ~SimplePlayout(){};
+
   protected:
     /**
      * Performs one move of one player.

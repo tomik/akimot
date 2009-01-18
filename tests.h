@@ -10,6 +10,7 @@
 #define INIT_TEST_LIST "./data/init/list.txt"
 #define RABBITS_TEST_DIR "./data/rabbits/"
 #define RABBITS_TEST_LIST "./data/rabbits/list.txt"
+#define GOAL_CHECK_TEST "./data/rabbits/t006.txt"
 #define HASH_TABLE_INSERTS 100
 
 //mature level is defined in uct.h
@@ -30,7 +31,7 @@ class DebugTestSuite : public CxxTest::TestSuite
     /*
      * Tests consistency of normal board with bitboard.
      */ 
-    void testBitboardConsistency(void)
+    void xtestBitboardConsistency(void)
     {
 
         StepArray s; 
@@ -44,7 +45,7 @@ class DebugTestSuite : public CxxTest::TestSuite
         bool w;
         bool bw;
       
-        for (int k = 0; k < 100; k++){
+        for (int k = 0; k < 10000; k++){
           Board * b = new Board(); 
           assert(b->initFromPosition(START_POS));
           BBoard * bb = new BBoard(*b);
@@ -53,7 +54,7 @@ class DebugTestSuite : public CxxTest::TestSuite
 
             do {
               slen = b->generateAllSteps(b->getPlayerToMove(), s);
-              bslen = bb->generateSteps(bb->getPlayerToMove(), bs);
+              bslen = bb->genSteps(bb->getPlayerToMove(), bs);
               /*
               for (int i = 0; i < slen; i++){
                 cerr << s[i].toString() << " ";
@@ -106,8 +107,9 @@ class DebugTestSuite : public CxxTest::TestSuite
     /**
      * Bit stuff. 
      */
-    void testBitStuff(void)
+    void testBits(void)
     {
+      using namespace bits;
       
       u64 v = u64(0);
       assert(lix(v) == -1);
@@ -120,6 +122,9 @@ class DebugTestSuite : public CxxTest::TestSuite
       v = u64(0xff00000000000000ULL);
       assert(lix(v) == 63); 
 
+      assert((str2bits(string("111")) == 7));
+      assert((str2bits(string("0")) == 0));
+      assert((str2bits(string("110010")) == 50));
     }
 
 
@@ -281,13 +286,25 @@ class DebugTestSuite : public CxxTest::TestSuite
     TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove())), true);
   }
 
+
   /**
-   * Search evaluation test. 
+   * Goal check. 
    */
-  void testSearchEval(void)
+  void testGoalCheck(void)
+  {
+    Board* b= new Board();
+    b->initFromPosition(GOAL_CHECK_TEST);
+    BBoard* bb = new BBoard(*b);
+    cerr << bb->toString();
+    bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE);
+  }
+
+  /**
+   * Quick goal check. 
+   */
+  void xtestQuickGoalCheck(void)
   {
     Board* board = new Board();
-    SearchExt* searchExt_ = new SearchExt();
     string s1, s2;
     bool expected;
 

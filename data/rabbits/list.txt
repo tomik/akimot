@@ -3,6 +3,6 @@ t002.txt 1
 t003.txt 0
 t004.txt 0
 t005.txt 1
-t006.txt 1
+t006.txt 0
 t007.txt 0
 t008.txt 0
