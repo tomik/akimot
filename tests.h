@@ -110,7 +110,7 @@ class DebugTestSuite : public CxxTest::TestSuite
     void testBits(void)
     {
       using namespace bits;
-      
+
       u64 v = u64(0);
       assert(lix(v) == -1);
       v = u64(1);
@@ -288,44 +288,32 @@ class DebugTestSuite : public CxxTest::TestSuite
 
 
   /**
-   * Goal check. 
+   * Quick and Full Goal check. 
    */
-  void testGoalCheck(void)
+  void testGoalChecks(void)
   {
-    Board* b= new Board();
-    b->initFromPosition(GOAL_CHECK_TEST);
-    BBoard* bb = new BBoard(*b);
-    cerr << bb->toString();
-    bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE);
-  }
-
-  /**
-   * Quick goal check. 
-   */
-  void xtestQuickGoalCheck(void)
-  {
-    Board* board = new Board();
-    string s1, s2;
-    bool expected;
+    string s1, s2, s3, s;
 
     FileRead* f = new FileRead(string(RABBITS_TEST_LIST));
-    while (f->getLineAsPair(s1,s2)){
-      expected = bool(str2int(s2));
+    f->ignoreLines("#");
+    while (f->getLine(s)){
+      stringstream ss(s);
+      ss >> s1; ss >> s2; ss >> s3;
+      bool quick_expected = bool(str2int(s2));
+      bool full_expected = bool(str2int(s3));
 
       string fn = string(RABBITS_TEST_DIR) + s1;
-      board->initNewGame();
-      board->initFromPosition(fn.c_str());
-      //cerr << board->toString();
-      //cerr << "expected: " << expected << endl;
+      Board* b = new Board();
+      b->initFromPosition(fn.c_str());
+      BBoard* bb = new BBoard(*b);
+      cerr << bb->toString();
       Move move;
-      if (board->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move)){
-        //cerr << "play: " << move.toString() << " buddy ! " << endl;
-        TS_ASSERT_EQUALS(expected, true);
-      }
-      else{
-        //cerr << "Dunno how to score a goal." << endl;
-        TS_ASSERT_EQUALS(expected, false);
-      }
+      assert(quick_expected == b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
+      assert(full_expected == bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE));
+      //TS_ASSERT_EQUALS(quick_expected,b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
+      //TS_ASSERT_EQUALS(full_expected, bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE));
+      delete bb;
+      delete b;
           
     }
 

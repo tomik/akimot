@@ -74,6 +74,7 @@ using std::bitset;
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
 
 #define SQUARE_DISTANCE(s1, s2) (abs(s1/10 - s2/10) + abs(s1%10 - s2%10))
+#define BSQUARE_DISTANCE(s1, s2) (abs(s1/8 - s2/8) + abs(s1%8 - s2%8))
 
 #define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
 #define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
@@ -270,6 +271,13 @@ class Step
     bool isPass() const;
     bool isSingleStep() const;
     bool isPushPull() const;
+
+    /**
+     * Actual step count.
+     *
+     * Single == 1, push/pull == 2, NULL/PASS == 0 
+     */
+    int count() const;
 
     Step toOld() const;
 
@@ -518,7 +526,7 @@ class BBoard
      *
      * Used in goalCheck. 
      */
-    int reachability(int from, int to, bplayer_t player, int stepLimit);
+    int reachability(int from, int to, bplayer_t player, int stepLimit, int depth);
 
     /**
      * Step generation for one.

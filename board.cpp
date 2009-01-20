@@ -204,6 +204,18 @@ bool Step::isPushPull() const
   return (stepType_ == STEP_PUSH || stepType_ == STEP_PULL);
 }
 
+//---------------------------------------------------------------------
+
+int Step::count() const
+{
+  switch (stepType_){
+    case STEP_SINGLE: return 1;
+    case STEP_PUSH: return 2;
+    case STEP_PULL: return 2;
+    default : return 0;
+  }
+
+}
 
 //---------------------------------------------------------------------
 
@@ -328,10 +340,14 @@ const string Step::oneSteptoString(player_t player, piece_t piece, square_t from
   string pieceRefStr(" RCDHMErcdhme");
   string columnRefStr("abcdefgh");
 
-  s << player << "|" << piece << "|" << from << "|" << to << " ";
-  return s.str();
+  //s << player << "|" << piece << "|" << from << "|" << to << " ";
+  //return s.str();
 
-  s << pieceRefStr[piece + 6 * PLAYER_TO_INDEX(player)] << columnRefStr[from % 10 - 1] << from / 10; 
+  //dirty
+  if (player == 0 || player == 1 ) 
+    s << pieceRefStr[piece + 6 * player] << columnRefStr[from % 8] << from / 8 + 1; 
+  else
+    s << pieceRefStr[piece + 6 * PLAYER_TO_INDEX(player)] << columnRefStr[from % 10 - 1] << from / 10; 
   switch (to - from)
   {
     case NORTH : s << "n"; break;
@@ -928,8 +944,10 @@ bool BBoard::goalCheck(player_t player, int stepLimit)
     u64 goals = bits::winRank[player] & bits::sphere(from, stepLimit);
     int to;
     while ( (to = bits::lix(goals)) != -1){
-      cerr << "rabbit run" << from << "->" << to << endl;
-      if (reachability(from, to, player, stepLimit) != -1){
+      cerr << "rabbit run" << from << "->" << to;
+      cerr << "goal " << BSQUARE_DISTANCE(from, to) << "far away" << endl;
+      cerr << "=================" << endl;
+      if (reachability(from, to, player, stepLimit, 0 ) != -1){
         return true;
       }
     } 
@@ -940,29 +958,71 @@ bool BBoard::goalCheck(player_t player, int stepLimit)
 
 //---------------------------------------------------------------------
 
-int BBoard::reachability(int from, int to, bplayer_t player, int stepLimit) 
+int BBoard::reachability(int from, int to, bplayer_t player, int limit, int used) 
 {
 
-  //try cutoff variant
-  //StepStack ss;
- 
-  //go through pieces (closer first)
-  //assert(getPlayer(from) == toMove_);
+  int reserve = limit - used - BSQUARE_DISTANCE(from, to);
+  //distance limit for pieces lookup
+  int distLimit = reserve + 1; 
 
-  int index = 7; 
-  for (int i = 0; i < index; i ++){
+  if (from == to){
+    return used;
+  }
+
+
+  int pseudoReserve = reserve;
+  //someone is blocking the to field 
+  if (getPlayer(to) != BNO_PLAYER){
+    //might be friend
+    pseudoReserve -= 1;
+    //or opponent
+    if (getPlayer(to) == BOPP(player)){
+      //generalize not only for rabbits
+      pseudoReserve -= 1;
+    }
+  }
+
+  if (pseudoReserve < 0 || getPlayer(from) == BNO_PLAYER){
+    cerr << "PSEUDORESERVE/DEAD CUTOFF" << endl;
+    return -1;
+  }
+
+  cerr.width(2 * (used+1));
+  cerr << ' ';
+  cerr << "used " << used << " reserve " << reserve << endl;
+
+  for (int i = 0; i <= distLimit; i ++){
     u64 iFarAway = bitboard_[player][0] & bits::circle(from, i);
 
     int bit;
     while ( (bit = bits::lix(iFarAway)) != -1){
-      cerr << "piece at " << bit << " is " << i << " far away" << endl;
+      //cerr << "piece at " << bit << " is " << i << " far away" << endl;
       assert(BIS_PLAYER(getPlayer(bit)));
       stepArrayLen = genStepsForOne(bit, player, stepArray);
+
       for (int j = 0; j < stepArrayLen; j++){
-        ;
-        //BBoard* bb = new BBoard(*this);
-        //bb->makeStep(stepArray[i]);
-        //delete(bb);
+        cerr.width(2 * (used+1));
+        cerr << ' ';
+        cerr << "trying " << stepArray[j].toString() << endl;
+
+        int newfrom = from;
+        if (stepArray[j].from_ == from){
+          newfrom = stepArray[j].to_;
+        }
+        //moving another piece => must have reserve
+        if (from == newfrom && ! reserve){
+            cerr << "RESERVE CUTOFF" << endl;
+            continue;
+        }
+        //new board - makestep - recurse 
+        BBoard* bb = new BBoard(*this);
+        bb->makeStep(stepArray[j]);
+        int r = bb->reachability(newfrom, to, player, limit, 
+                                                      used + stepArray[j].count());
+        delete(bb);
+        if (r != -1){
+          return r;
+        }
       }
     }
   }
