@@ -6,7 +6,8 @@ CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
 AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
 AKIMOT_ATS_DIR = paths.AKIMOT_ATS_DIR
 AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
-alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR)]
+RABBITS_TEST_DIR = paths.RABBITS_TEST_DIR
+alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR), ('rt', RABBITS_TEST_DIR)] 
 
 AKIMOT_LIBS = ['pthread']
 
@@ -64,8 +65,8 @@ if do_build:
     env.Object(src_files_build)
     akimot = env.Program(target = TARGET, source = obj_files_build, LIBS = AKIMOT_LIBS, CPPPATH = '.')
     for alias, dir in alias_dirs: 
-        env.Install(dir, akimot)
         env.Alias(alias, dir)
+        env.Install(dir, akimot)
     tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
                    CPPPATH=['.',CXX_INCLUDE_DIR])
     tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)

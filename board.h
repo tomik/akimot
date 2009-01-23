@@ -490,7 +490,7 @@ class BBoard
      *
      * Done through limited full width search. 
      */
-    bool goalCheck(player_t player, int stepLimit);
+    bool goalCheck(player_t player, int stepLimit, Move* move=NULL);
 
     /**
      * String representation.
@@ -526,7 +526,8 @@ class BBoard
      *
      * Used in goalCheck. 
      */
-    int reachability(int from, int to, bplayer_t player, int stepLimit, int depth);
+    int reachability(int from, int to, bplayer_t player, 
+                    int limit, int used, Move * move);
 
     /**
      * Step generation for one.

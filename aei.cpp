@@ -27,6 +27,8 @@
 #define STR_BYE "bye"
 #define STR_BOARD_DUMP "boarddump"
 #define STR_TREE_DUMP "treedump"
+#define STR_GOAL_CHECK "goalcheck"
+
 
 #define STR_INFO "info"  
 #define STR_INFO_TIME "time" 
@@ -35,6 +37,7 @@
 #define STR_INFO_DEPTH "depth"
 #define STR_INFO_STATS "stat"
 #define STR_INFO_NODES "nodes"
+#define STR_INFO_GOAL_CHECK "goalcheck"
 
 
 #define STR_TC_MOVE "tcmove"
@@ -181,6 +184,8 @@ void Aei::init()
   records_.push_back(AeiRecord(STR_BOARD_DUMP, AS_MAIN, AS_SAME, AA_BOARD_DUMP, AC_EXT));
   //tree dump
   records_.push_back(AeiRecord(STR_TREE_DUMP, AS_MAIN, AS_SAME, AA_TREE_DUMP, AC_EXT));
+  //goal check
+  records_.push_back(AeiRecord(STR_GOAL_CHECK, AS_MAIN, AS_MAIN, AA_GOAL_CHECK));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
@@ -276,6 +281,9 @@ void Aei::handleInput(const string& line)
                   }
                   startSearch(lineRest);
                   break;
+    case AA_GOAL_CHECK:    
+                  goalCheck(); 
+                  break;
     case AA_GO_NO_THREAD: 
                   engine_->timeManager()->resetSettings();
                   engine_->doSearch(board_);
@@ -369,6 +377,28 @@ void Aei::startSearch(const string& arg)
     ss << "Fatal thread error no. " << rc << " when creating.";
     aeiLog(ss.str(), AL_ERROR);
     quit();
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::goalCheck()
+{
+  BBoard * bb = new BBoard(*board_);
+  Move goaldMove;
+  Move silverMove;
+  bool goldGoal = bb->goalCheck(BGOLD, 4, &goaldMove);
+  bool silverGoal = bb->goalCheck(BSILVER, 4, &silverMove);
+
+  if (goldGoal){
+    sendInfo(STR_INFO_GOAL_CHECK, "gold " + goaldMove.toString());
+  }
+  if (silverGoal){
+    sendInfo(STR_INFO_GOAL_CHECK, "silver " + silverMove.toString());
+  }
+  delete bb; 
+  if (! goldGoal && ! silverGoal ){
+    sendInfo(STR_INFO_GOAL_CHECK, "none");
   }
 }
 

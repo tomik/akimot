@@ -20,8 +20,16 @@ def process_record(line):
             pos = pos.do_move(steps)
         except ValueError:
             break
-    if pos.is_goal():
-        print lastpos.to_short_str()
+
+    goal = pos.is_goal()
+    if goal:
+        #check not "give opponent" goal
+        if ((lastpos.color, goal) == (board.COL_GOLD, -1)  or (lastpos.color, goal) == (board.COL_SILVER, 1)):
+            #print lastpos.to_long_str()  
+            #print board.steps_to_str(steps)
+            return
+            
+        print lastpos.to_short_str(), "#", board.steps_to_str(steps)
     
 if __name__ == '__main__':
     
