@@ -220,8 +220,9 @@ float Node::ucb(float exploreCoeff) const
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
          + sqrt((exploreCoeff/visits_)) 
-         + heur_/visits_ 
-         + (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_);
+         //+ heur_/visits_ 
+         //+ (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)
+         ;
   
 }
 
@@ -444,8 +445,6 @@ string Node::recToString(int depth) const
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
-  minVisitCount = 0;
-
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
     ss << "   ";
@@ -993,18 +992,14 @@ void Uct::doPlayout(const Board* board)
       n = n->getSibling();
     }
   */
-  
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 
         //goalCheck => value fixation
         Move move;
         //if (playBoard->quickGoalCheck(&move)){
-        if (playBoard->goalCheck(&move)){
-          cerr << playBoard->toString();
-          cerr << move.toString()<< endl;
+        if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
           float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
-          cerr << value << endl;
           //if not complete step - add pass 
           //small workaround preventing for instance rabbits crouching along the victory line
           if (playBoard->canContinue(move)){
@@ -1022,7 +1017,7 @@ void Uct::doPlayout(const Board* board)
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
         stepsNum = filterTT(steps, stepsNum, playBoard); 
-        if (playBoard->canPass()){ //add pass if possible
+        if (playBoard->canPass()) { //add pass if possible
          steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
         }
 

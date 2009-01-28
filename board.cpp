@@ -1124,6 +1124,7 @@ string Board::toString() const
   else
     ss << "s" ;
   ss << moveCount_ << endl;
+  ss << "Step " << stepCount_ << endl;
 
   assert(toMove_ == GOLD || toMove_ == SILVER );
 
@@ -1350,13 +1351,12 @@ bool Board::initFromPosition(const char* fn)
     return false;
    }
 
-  init();
-
   char c;
   string pom;
   string s = "";
-  
-  //move count and side 
+  int moveCount;
+  f >> moveCount;
+  //side 
   f >> pom; s += pom;
   s += " [";
   
@@ -1376,7 +1376,9 @@ bool Board::initFromPosition(const char* fn)
 
   s += "]";
   f.close();
-  return initFromPositionCompactString(s);
+  bool res = initFromPositionCompactString(s);
+  moveCount_ = moveCount;
+  return res;
 }
 
 //---------------------------------------------------------------------

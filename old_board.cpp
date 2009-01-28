@@ -1569,4 +1569,71 @@ void OB_Board::dump() const
 }
 
 //---------------------------------------------------------------------
+// section OB_SimplePlayout
 //---------------------------------------------------------------------
+
+OB_SimplePlayout::OB_SimplePlayout()
+{
+  assert(false);
+}
+
+//---------------------------------------------------------------------
+
+OB_SimplePlayout::OB_SimplePlayout(OB_Board* board, uint maxPlayoutLength, uint evalAfterLength):
+  board_(board), playoutLength_(0), maxPlayoutLength_(maxPlayoutLength), evalAfterLength_(evalAfterLength)
+{
+  ;
+}
+
+//---------------------------------------------------------------------
+
+void OB_SimplePlayout::doPlayout()
+{
+  uint moves = 0;
+
+  while (true) {  
+	  playOne();
+	  playoutLength_++;
+    if (hasWinner())
+	    return ;
+
+		if (playoutLength_ > 2 * maxPlayoutLength_) 
+			return ;
+
+    if (++moves >= evalAfterLength_ && evalAfterLength_)
+      return ;
+	}
+}
+
+//--------------------------------------------------------------------- 
+
+bool OB_SimplePlayout::hasWinner(){
+	if ( board_->getWinner() != OB_EMPTY ) {
+    return true;  
+  }
+  return false;
+}
+
+//---------------------------------------------------------------------
+
+void OB_SimplePlayout::playOne()
+{
+   //board_->findMCmoveAndMake();
+	Step step;
+
+	do {
+		step = board_->findMCstep();
+	}
+	while (! board_->makeStepTryCommitMove(step));
+	return;
+}
+
+//---------------------------------------------------------------------
+
+uint OB_SimplePlayout::getPlayoutLength()
+{
+	return playoutLength_/2;
+}
+
+//---------------------------------------------------------------------
+// 

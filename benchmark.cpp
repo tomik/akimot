@@ -1,4 +1,5 @@
 #include "benchmark.h"
+#include "old_board.h"
 
 //---------------------------------------------------------------------
 //  section Benchmark
@@ -119,37 +120,35 @@ void Benchmark::benchmarkQuickGoalCheck()
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkBitPlayout() 
+void Benchmark::benchmarkOldPlayout() 
 {
-		
-/*
+
   float timeTotal;
 
-  playoutStatus_e  playoutStatus;
 	uint playoutAvgLen = 0;
 
   timer.start();
 
-  BBoard * bitBoard = new BBoard(*board_);
+  OB_Board * b = new OB_Board();
+  b->initFromPosition(START_POS_PATH);
 
   int i = 0;
   while (! timer.timeUp()){
     i++;
-    BBoard *playBoard = new BBoard(*bitBoard);
+    OB_Board *playBoard = new OB_Board(*b);
 
-    SimplePlayoutBit simplePlayoutBit(playBoard, PLAYOUT_DEPTH, 0);
-    playoutStatus = simplePlayoutBit.doPlayout ();
+    OB_SimplePlayout sp(playBoard, PLAYOUT_DEPTH, 0);
+    sp.doPlayout ();
 
-		playoutAvgLen += simplePlayoutBit.getPlayoutLength(); 
+		playoutAvgLen += sp.getPlayoutLength(); 
     delete playBoard;
   }
 
   timer.stop();
 	timeTotal = timer.elapsed(); 
-  logRaw("Bit playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
+  logRaw("Old playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
             i, timeTotal, int ( float(i) / timeTotal),int(playoutAvgLen/ float (i)));
   
-*/
 }
 
 //--------------------------------------------------------------------- 
@@ -251,7 +250,7 @@ void Benchmark::benchmarkAll()
   benchmarkCopyBoard();
   benchmarkEval();
   benchmarkEvalBetter();
-  benchmarkBitPlayout();
+  benchmarkOldPlayout();
   benchmarkQuickGoalCheck();
   benchmarkPlayout();
   benchmarkUct();

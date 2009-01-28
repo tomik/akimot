@@ -36,7 +36,7 @@ class Benchmark
 		void benchmarkCopyBoard(); 
 		void benchmarkQuickGoalCheck(); 
 		void benchmarkPlayout(); 
-		void benchmarkBitPlayout(); 
+		void benchmarkOldPlayout(); 
 		void benchmarkUct(); 
 		void benchmarkSearch() const;
     

@@ -31,6 +31,7 @@ float Eval::evaluateInPercent(const Board* board_)
   int evaluation = evaluateBetter(board_);
 
   float p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
+  return random01();
   if (p < 0)
     return 0;
   if (p > 1)

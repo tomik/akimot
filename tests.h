@@ -185,6 +185,8 @@ class DebugTestSuite : public CxxTest::TestSuite
           if (! board2.initFromRecord(fnRecord.c_str()))
             TS_FAIL((string) "Init from " + fnRecord + (string) " failed");
 
+          //cerr << board1.toString() << endl;
+          //cerr << board2.toString() << endl;
           TS_ASSERT_EQUALS( board1, board2);
         }
      }
@@ -314,7 +316,7 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(RABBITS_TEST_DIR) + s1;
       Board* b = new Board();
       b->initFromPosition(fn.c_str());
-      cerr<< b->toString();
+      //cerr<< b->toString();
       //BBoard* bb = new BBoard(*b);
       //cerr << bb->toString();
       Move move;

@@ -549,3 +549,50 @@ class OB_Board
 
 };
 
+
+/**
+ * Simple random playout for old board.
+ */
+class OB_SimplePlayout
+{
+	public:
+    /**
+     * Constructor with board initialization.
+     */
+		OB_SimplePlayout(OB_Board*, uint maxPlayoutLength, uint evalAfterLength);
+
+    /**
+     * Performs whole playout. 
+     *
+     * Consists of repetitive calls to playOne().
+     *
+     * @return Final playout status.
+     */
+		void doPlayout();	
+
+    /**
+     * Returns playout length in moves.  
+     */
+		uint getPlayoutLength();  
+
+  protected:
+    /**
+     * Performs one move of one player.
+     *
+     * Implements random step play to get the move.
+     */
+    void playOne();	
+
+    /**
+    * Wrapper around get winner from board.
+    */
+    bool hasWinner();
+
+    OB_SimplePlayout();
+
+    OB_Board*		board_;
+    uint        playoutLength_;
+    uint        maxPlayoutLength_;
+    uint        evalAfterLength_;
+
+};
