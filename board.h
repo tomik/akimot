@@ -43,6 +43,8 @@ typedef unsigned long long u64;
 #define SILVER      1
 #define NO_PLAYER   2
 
+#define NO_SQUARE    -1
+
 #define NO_PIECE    0
 #define RABBIT      1
 #define CAT         2
@@ -173,56 +175,6 @@ void randomStructuresInit();
 
 class Board;
 class Eval;
-
-/**
- * Array-like structure to hold pieces.
- *
- * This class is used to hold squares where pieces for 
- * one of the players are positioned, order of pieces is not fixed, 
- * just their presence is ensured.
- */
-class PieceArray
-{ 
-  public: 
-    PieceArray();
-
-    /**
-     * Add piece position to array.
-     *
-     * Adds to the end in constant time. 
-     */
-    void add(coord_t);
-
-    /**
-     * Delte piece from array. 
-     *
-     * Goes through array, when found deletes item 
-     * and replaces empty space with item from the end.
-     */
-    void del(coord_t);
-
-    /**
-     * Remove all elements. 
-     */
-    void clear();
-
-    uint getLen() const;
-    coord_t operator[](uint) const;
-
-    /**
-     * Representation.
-     */
-    string toString() const;
-    
-    /**
-     * Random square in piece array.
-     */
-    coord_t getRandom() const;
-
-  private:
-    coord_t elems[MAX_PIECES];      
-    uint len;
-};
 
 
 /**
@@ -471,6 +423,8 @@ class Move
 typedef Step  StepArray[MAX_STEPS];
 //heuristics for steps (separated because used VERY LITTLE)
 typedef float  HeurArray[MAX_STEPS];
+
+typedef list<int> intList;
 
 class Board
 {

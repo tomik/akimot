@@ -76,7 +76,7 @@ int Eval::evaluate(const Board* b) const
       }
 
       dom = 0ULL;
-      for (int i = strongestEnemy; i > 0; i--) {
+      for (int i = strongestEnemy; i <=6 ; i++) {
 	      dom |= b->bitboard_[c][i];
       }
 

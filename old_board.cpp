@@ -13,6 +13,79 @@ ThirdRep*  OB_Board::thirdRep_;
 bool OB_Board::classInit = false;
 
 //---------------------------------------------------------------------
+//  section PieceArray
+//---------------------------------------------------------------------
+
+PieceArray::PieceArray()
+{
+  len = 0;
+}
+
+//---------------------------------------------------------------------
+
+void PieceArray::add(coord_t elem)
+{
+  elems[len++] = elem;
+  assert(MAX_PIECES >= len);
+}
+
+//---------------------------------------------------------------------
+
+void PieceArray::del(coord_t elem)
+{
+  for (uint i = 0; i < len;i++)
+    if (elems[i] == elem){
+      elems[i] = elems[--len];
+      return;
+    }
+  assert(false);
+}
+
+//---------------------------------------------------------------------
+ 
+void PieceArray::clear() 
+{
+  len = 0; 
+}
+
+//---------------------------------------------------------------------
+
+string PieceArray::toString() const
+{
+  stringstream ss;
+  ss.clear();
+
+  for (uint i = 0; i < len; i++)
+    ss << elems[i] << " ";  
+  
+  ss << endl;
+  return ss.str();
+}
+
+//--------------------------------------------------------------------- 
+
+uint PieceArray::getLen() const
+{
+  return len;
+}
+
+//---------------------------------------------------------------------
+ 
+coord_t PieceArray::operator[](uint index) const
+{
+  assert( index >= 0 && index < len );
+  return elems[index];
+}
+
+//--------------------------------------------------------------------- 
+
+coord_t PieceArray::getRandom() const
+{
+  assert(len);
+  return elems[rand() % len];
+}
+
+//---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
 //

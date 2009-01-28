@@ -17,6 +17,9 @@ Eval*  Board::eval_;
 // switch to know when to init static variables in class Board
 bool Board::classInit = false;
 
+//---------------------------------------------------------------------
+//  section Global
+//---------------------------------------------------------------------
 
 void randomStructuresInit()
 {
@@ -24,79 +27,31 @@ void randomStructuresInit()
   bits::initZobrist();
 }
 
-
-//---------------------------------------------------------------------
-//  section PieceArray
-//---------------------------------------------------------------------
-
-PieceArray::PieceArray()
-{
-  len = 0;
-}
-
-//---------------------------------------------------------------------
-
-void PieceArray::add(coord_t elem)
-{
-  elems[len++] = elem;
-  assert(MAX_PIECES >= len);
-}
-
-//---------------------------------------------------------------------
-
-void PieceArray::del(coord_t elem)
-{
-  for (uint i = 0; i < len;i++)
-    if (elems[i] == elem){
-      elems[i] = elems[--len];
-      return;
-    }
-  assert(false);
-}
-
-//---------------------------------------------------------------------
- 
-void PieceArray::clear() 
-{
-  len = 0; 
-}
-
-//---------------------------------------------------------------------
-
-string PieceArray::toString() const
-{
-  stringstream ss;
-  ss.clear();
-
-  for (uint i = 0; i < len; i++)
-    ss << elems[i] << " ";  
-  
-  ss << endl;
-  return ss.str();
-}
-
 //--------------------------------------------------------------------- 
 
-uint PieceArray::getLen() const
+bool parsePieceChar(char pieceChar, player_t &player, piece_t& piece) 
 {
-  return len;
+  player = GOLD;
+  if (islower(pieceChar)){
+    player = SILVER;
+  }
+  pieceChar = tolower(pieceChar); 
+
+  switch(pieceChar) {
+    case 'e' : piece = ELEPHANT; break;
+    case 'm' : piece = CAMEL;    break;
+    case 'h' : piece = HORSE;    break;
+    case 'd' : piece = DOG;      break;
+    case 'c' : piece = CAT;      break;
+    case 'r' : piece = RABBIT;   break;
+    default:
+      logError("Incorrect piece Character encountered.");
+      return false;
+      break;
+  }
+  return true;
 }
 
-//---------------------------------------------------------------------
- 
-coord_t PieceArray::operator[](uint index) const
-{
-  assert( index >= 0 && index < len );
-  return elems[index];
-}
-
-//--------------------------------------------------------------------- 
-
-coord_t PieceArray::getRandom() const
-{
-  assert(len);
-  return elems[rand() % len];
-}
 
 //---------------------------------------------------------------------
 //  section Step
@@ -124,6 +79,9 @@ Step::Step( stepType_t stepType, player_t player, piece_t piece, coord_t from, c
   piece_    = piece;
   from_     = from;
   to_       = to;
+  oppPiece_ = NO_PIECE;
+  oppFrom_  = NO_SQUARE;
+  oppTo_    = NO_SQUARE;
 }
 
 //---------------------------------------------------------------------
@@ -493,6 +451,7 @@ Move::Move(string moveStr)
     ss >> token;
 
     recordAction = parseRecordActionToken(token, player, piece, from, to);
+    //TODO this way even push/pulls are represented as single steps ... weird ! 
     Step step = Step(STEP_SINGLE, player, piece, from, to);
 
     switch (recordAction){
@@ -613,32 +572,6 @@ recordAction_e  Move::parseRecordActionToken(const string& token, player_t& play
 
   return recordAction;
 }
-
-//--------------------------------------------------------------------- 
-
-bool parsePieceChar(char pieceChar, player_t &player, piece_t& piece) 
-{
-  player = GOLD;
-  if (islower(pieceChar)){
-    player = SILVER;
-  }
-  pieceChar = tolower(pieceChar); 
-
-  switch(pieceChar) {
-    case 'e' : piece = ELEPHANT; break;
-    case 'm' : piece = CAMEL;    break;
-    case 'h' : piece = HORSE;    break;
-    case 'd' : piece = DOG;      break;
-    case 'c' : piece = CAT;      break;
-    case 'r' : piece = RABBIT;   break;
-    default:
-      logError("Incorrect piece Character encountered.");
-      return false;
-      break;
-  }
-  return true;
-}
-
 
 //---------------------------------------------------------------------
 //  section Board
@@ -1583,9 +1516,7 @@ void Board::findMCmoveAndMake()
   }
 
   Step step;
-  PieceArray p;
-  p.clear();
-
+  intList p; 
   
   //area selection
   #define RADIUS 3
@@ -1603,20 +1534,19 @@ void Board::findMCmoveAndMake()
     if (pos == -1){
       break;
     }
-    p.add(pos);
+    p.push_back(pos);
   }
 
   do { 
     int len = 1;
     stepArray[0] = Step(STEP_PASS, toMove_);
 
-    for (uint i = 0; i < p.getLen(); i++) { 
-      if (getPlayer(p[i]) != toMove_){ //might have fallen into trap
-        p.del(p[i]);
+    for (intList::iterator it = p.begin(); it != p.end(); it++) { 
+      if (getPlayer((*it)) != toMove_){ //might have fallen into trap
         continue;
       }
-      assert(getPlayer(p[i]) == toMove_);
-      genStepsForOne(p[i], toMove_, stepArray, len);
+      assert(getPlayer((*it)) == toMove_);
+      genStepsForOne((*it), toMove_, stepArray, len);
     }
     if (cfg.knowledgeInPlayout()){
       step = chooseStepWithKnowledge(stepArray, len);
@@ -1625,8 +1555,8 @@ void Board::findMCmoveAndMake()
       step = stepArray[rand() % len];
     }
     if (! step.isPass()){
-      p.del(step.from_);
-      p.add(step.to_);
+      p.remove(step.from_);
+      p.push_back(step.to_);
     }
     //cerr << toString();
     //cerr << step.toString() << endl;
