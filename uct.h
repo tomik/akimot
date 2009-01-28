@@ -14,6 +14,8 @@
 #include "eval.h"
 #include "hash.h"
 
+#include "old_board.h"
+
 using std::map;
 using std::queue;
 using std::sqrt;

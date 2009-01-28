@@ -130,6 +130,11 @@ class FileRead
      */
     void ignoreLines(const char * start);
 
+    /**
+     * Tells whether file is good to read.
+     */
+    bool good() const;
+
   private: 
     FileRead();
     fstream f_;

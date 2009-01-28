@@ -1,6 +1,7 @@
 #pragma once
 
 #include "board.h"
+#include "old_board.h"
 
 #define ELEPHANT_VALUE 20000
 #define CAMEL_VALUE 5000

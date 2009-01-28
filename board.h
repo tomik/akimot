@@ -23,74 +23,67 @@ using std::bitset;
 #include "hash.h"
 #include "config.h"
 
-#define STEPS_IN_MOVE 4
+//max number of pieces per player 
+#define MAX_PIECES  16      
 #define MAX_STEPS  200
-#define MAX_PIECES  16      //max number of pieces per player 
 
-#define EMPTY_SQUARE 0x0U
-#define EMPTY 0x0U
-#define OFF_BOARD_SQUARE 0x9FU
-//#define OFF_BOARD 0x18U
-#define GOLD 0x10U
-#define SILVER 0x8U
-#define PIECE_OFF_BOARD 0x7U
-#define PIECE_ELEPHANT 0x6U
-#define PIECE_CAMEL 0x5U
-#define PIECE_HORSE 0x4U
-#define PIECE_DOG 0x3U
-#define PIECE_CAT 0x2U
-#define PIECE_RABBIT 0x1U
-#define PIECE_EMPTY 0x0U
-#define PIECE_MASK 0x7U
-#define OWNER_MASK 0x18U
-#define NORTH 10
-#define SOUTH -10
-#define EAST 1
-#define WEST -1
+#define STEPS_IN_MOVE 4
+
+typedef unsigned long long u64;
+//zobrist base table for signature creating 
+
+#define BIS_PLAYER(player) (player == BGOLD || player == BSILVER)
 
 #define BNORTH 8
 #define BSOUTH -8
 #define BEAST 1
 #define BWEST -1
 
-#define TOP_ROW 8
-#define BOTTOM_ROW 1
-#define LEFT_COL 1 
-#define RIGHT_COL 8
+#define BGOLD        0
+#define BSILVER      1
+#define BNO_PLAYER   2
 
-#define OWNER(square) (square & OWNER_MASK) 
-#define PIECE(square) (square & PIECE_MASK) 
-#define OPP(player) ((16 - player) + 8)
-//#define OPP(player) (player == GOLD ? SILVER : GOLD )
+#define BEMPTY       0
+#define BRABBIT      1
+#define BCAT         2
+#define BDOG         3
+#define BHORSE       4
+#define BCAMEL       5
+#define BELEPHANT    6
+
+#define BOPP(player) (1 - player)				 //opponent
+#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
+
+#define BIT_LEN 64
+#define BSQUARE_NUM 64
+#define BSIDE_SIZE 8
+
+#define STEP_PASS     0
+#define STEP_SINGLE   1
+#define STEP_PUSH     2
+#define STEP_PULL     3
+//no step is possible ( not even pass ! - position repetition )
+#define STEP_NULL     4   
+#define PLAYER_NUM    2
 
 // what row is a square in?  1 = bottom, 8 = top
 #define ROW(square) (square/10) 
 // what column is a square in?  1 = left (a), 8 = right (h)
 #define COL(square) (square%10) 
 
-//GOLD ~ 0, SILVER ~ 1
-////((16-player)/8)	
-#define PLAYER_TO_INDEX(player)	(player == GOLD ? 0 : 1 )
-#define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
-
-#define SQUARE_DISTANCE(s1, s2) (abs(s1/10 - s2/10) + abs(s1%10 - s2%10))
-#define BSQUARE_DISTANCE(s1, s2) (abs(s1/8 - s2/8) + abs(s1%8 - s2%8))
-
-#define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
-#define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
-
 #define SQUARE_TO_INDEX_64(square) (8*(ROW(square)-1) + (COL(square)-1))
 #define INDEX_64_TO_SQUARE(index) ((10 * (index/8 + 1)) + ((index % 8) + 1 ))
 
-#define PLAYER_NUM    2
-#define PIECE_NUM     7
-#define SQUARE_NUM    100
+#define BSQUARE_DISTANCE(s1, s2) (abs(s1/8 - s2/8) + abs(s1%8 - s2%8))
 
-typedef unsigned long long u64;
-//zobrist base table for signature creating 
-extern u64 zobrist[PLAYER_NUM][PIECE_NUM][SQUARE_NUM];     
+#define OLD_PLAYER_TO_NEW(player) (player == 8 ? BGOLD : BSILVER)
 
-#define BIS_PLAYER(player) (player == BGOLD || player == BSILVER)
+typedef int bplayer_t;
+typedef int bpiece_t;
+typedef int bcoord_t;
+
+typedef uint stepType_t;
+
 
 namespace bits{
   #define NOT_A_FILE  0xfefefefefefefefeULL
@@ -98,9 +91,17 @@ namespace bits{
   #define NOT_1_RANK  0x00ffffffffffffffULL
   #define NOT_8_RANK  0xffffffffffffff00ULL
   #define MSB         0x8000000000000000ULL
-  #define TRAPS       0x0000240000240000ULL
+  #define TRAPS       0x0000000000240001ULL
   #define FPARITY     0x5555555555555555ULL
+  extern u64 zobrist[2][7][64];     
 
+  /**
+   * Init zobrist table.
+   *
+   * Fills zobrist table with random u64 numbers. 
+   * Zobrist algorithm is used for making position signatures.
+   */
+  void initZobrist();
 
   extern u64   winRank[2]; 
   extern u64 stepOffset_[2][7][64]; 
@@ -142,6 +143,13 @@ namespace bits{
   u64 neighbors(u64);
 
   /**
+   * Mask of neighbors for one piece. 
+   *
+   * @param coord Piece coordinate.
+   */
+  u64 neighborsOne(bcoord_t coord);
+
+  /**
    * Mask of sphere.
    */
   u64 sphere(int center, int radius);
@@ -152,33 +160,8 @@ namespace bits{
   u64 circle(int center, int radius);
 }
 
-#define BIT_LEN 64
-#define BSQUARE_NUM 64
-#define BSIDE_SIZE 8
 
-
-#define STEP_PASS     0
-#define STEP_SINGLE   1
-#define STEP_PUSH     2
-#define STEP_PULL     3
-#define STEP_NULL  4   //no step is possible ( not even pass ! - position repetition )
-
-/**empty square in the flag board*/
-#define FLAG_BOARD_EMPTY -1
-
-extern const int direction[4];
-extern const int rabbitForward[2];
-extern const int rabbitWinRow[2];
-extern const int trap[4];
-
-typedef uint player_t;
-typedef int  square_t;
-typedef uint piece_t;		
-typedef uint stepType_t;
-typedef int FlagBoard[SQUARE_NUM];
-
-
-
+class BBoard;
 class Board;
 class Eval;
 
@@ -199,7 +182,7 @@ class PieceArray
      *
      * Adds to the end in constant time. 
      */
-    void add(square_t);
+    void add(bcoord_t);
 
     /**
      * Delte piece from array. 
@@ -207,24 +190,28 @@ class PieceArray
      * Goes through array, when found deletes item 
      * and replaces empty space with item from the end.
      */
-    void del(square_t);
+    void del(bcoord_t);
 
     /**
      * Remove all elements. 
      */
     void clear();
 
-    string toString() const;
     uint getLen() const;
-    square_t operator[](uint) const;
+    bcoord_t operator[](uint) const;
+
+    /**
+     * Representation.
+     */
+    string toString() const;
     
     /**
      * Random square in piece array.
      */
-    square_t getRandom() const;
+    bcoord_t getRandom() const;
 
   private:
-    square_t elems[MAX_PIECES];      
+    bcoord_t elems[MAX_PIECES];      
     uint len;
 };
 
@@ -238,15 +225,15 @@ class KillInfo
 {
   public:
     KillInfo();
-    KillInfo( player_t player, piece_t piece, square_t square);
-    void setValues( player_t player, piece_t piece, square_t square);
+    KillInfo(bplayer_t player, bpiece_t piece, bcoord_t coord);
+    void setValues(bplayer_t player, bpiece_t piece, bcoord_t coord);
     const string toString() const;
 
   private:
     bool     active_;
-    player_t player_;
-    piece_t  piece_;
-    square_t square_;
+    bplayer_t player_;
+    bpiece_t  piece_;
+    bcoord_t coord_;
 };
 
 
@@ -263,11 +250,11 @@ class Step
 {
   public:
 		Step();
-		Step(stepType_t, player_t);
-    Step(stepType_t, player_t, piece_t, square_t, square_t);
-    Step(stepType_t, player_t, piece_t, square_t, square_t, piece_t, square_t, square_t);
+		Step(stepType_t, bplayer_t);
+    Step(stepType_t, bplayer_t, bpiece_t, bcoord_t, bcoord_t);
+    Step(stepType_t, bplayer_t, bpiece_t, bcoord_t, bcoord_t, bpiece_t, bcoord_t, bcoord_t);
 
-    player_t getPlayer() const;
+    bplayer_t getPlayer() const;
     bool isPass() const;
     bool isSingleStep() const;
     bool isPushPull() const;
@@ -279,7 +266,13 @@ class Step
      */
     int count() const;
 
-    Step toOld() const;
+    /**
+     * Temporary converter to new steps.
+     *
+     * For printing the old-like steps (from board). Now steps 
+     * conforming to BBoard.
+     */
+    Step toNew() const;
 
     /**
      * Checks (pseudo)inversion to given step.
@@ -298,27 +291,24 @@ class Step
 		bool operator== (const Step&) const;
     bool operator<(const Step&) const;
 
-    //TODO inline
-    void setValues( stepType_t, player_t, piece_t, square_t, square_t );
-    void setValues( stepType_t, player_t, piece_t, square_t, square_t, 
-                    piece_t, square_t, square_t );
+    void setValues( stepType_t, bplayer_t, bpiece_t, bcoord_t, bcoord_t );
+    void setValues( stepType_t, bplayer_t, bpiece_t, bcoord_t, bcoord_t, 
+                    bpiece_t, bcoord_t, bcoord_t );
     /**
      * Step string representation.
-     *
-     * Might be overriden in ancestors.
      */
     string toString() const;
 
 	protected:
-    stepType_t    stepType_;    //! defines what kind of step this is i.e. PASS, SINGLE, PUSH, PULL
-    player_t      player_;      
-    piece_t       piece_;  
-    square_t      from_;     
-    square_t      to_;        
+    stepType_t    stepType_;    
+    bplayer_t      player_;      
+    bpiece_t       piece_;  
+    bcoord_t      from_;     
+    bcoord_t      to_;        
 
-    piece_t       oppPiece_;  //opponent piece/from/to values used for pushing, pulling 
-    square_t      oppFrom_;
-    square_t      oppTo_;
+    bpiece_t       oppPiece_;  
+    bcoord_t      oppFrom_;
+    bcoord_t      oppTo_;
 
     friend class  Board;
     friend class  BBoard;
@@ -329,8 +319,7 @@ class Step
      *
      * Push/pull move calls this method twice.
      */
-    const string oneSteptoString(player_t, piece_t, square_t, square_t) const;
-    void dump(); 
+    const string oneSteptoString(bplayer_t, bpiece_t, bcoord_t, bcoord_t) const;
   
 };
 
@@ -343,7 +332,7 @@ class Step
 class StepWithKills: public Step
 {
   public:
-    StepWithKills(Step step, const Board* board);
+    StepWithKills(Step step, const BBoard* board);
 
     /**
      * Print of step.
@@ -361,11 +350,10 @@ class StepWithKills: public Step
      * Checks forward kill of the step and 
      * adds kill if neccessary.
      */
-    void addKills(const Board* board);
+    void addKills(const BBoard* board);
 
     KillInfo kills[2];
 };
-
 
 typedef list<Step> StepList;
 typedef StepList::iterator StepListIter;
@@ -380,7 +368,6 @@ class Move
 {
   public:
     string toString();
-    string toStringWithKills(const Board* board);
 
     /**
      * Appends step to the move.
@@ -428,170 +415,19 @@ class Move
  * Potential values are: placement in the beginning (e.g. RA1), 
  * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
  */
-enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL}; 
+enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERROR}; 
 
-typedef pair<player_t, piece_t>  PiecePair;
-
-typedef uint board_t[SQUARE_NUM];
+typedef pair<bplayer_t, bpiece_t>  PiecePair;
 
 //steps
 typedef Step  StepArray[MAX_STEPS];
 //heuristics for steps (separated because used VERY LITTLE)
 typedef float  HeurArray[MAX_STEPS];
 
-//*******************************************BITBOARD stuff
-#define BGOLD        0
-#define BSILVER      1
-#define BNO_PLAYER   2
-
-#define BEMPTY       0
-#define BRABBIT      1
-#define BCAT         2
-#define BDOG         3
-#define BHORSE       4
-#define BCAMEL       5
-#define BELEPHANT    6
-
-#define BOPP(player) (1 - player)				 //opponent
-#define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
-
-
-typedef int bplayer_t;
-typedef int bpiece_t;
-typedef int bcoord_t;
-
 class BBoard
 {
 
   public:
-    BBoard(const Board& b);
-
-		uint			getStepCount();
-
-    /**
-     * Step generation for Monte Carlo playouts.
-     *
-     * Generates (random) step with some restrictions (no pass in the first step,..).
-     */
-		Step findMCstep();
-
-    bool makeStepTryCommit(Step& step);
-
-    void commit();
-
-		void makeStep(Step&);
-  
-    void updateWinner();
-
-    int genSteps(bplayer_t player, StepArray& steps) const;
-
-    /**
-     * Full goal check.
-     *
-     * Done through limited full width search. 
-     */
-    bool goalCheck(player_t player, int stepLimit, Move* move=NULL);
-
-    /**
-     * String representation.
-     */
-		string toString() const;
-
-    /**
-     * Signature getter.
-     */
-    u64 getSignature() const;
-
-    /**
-     * Winner getter. 
-     */
-    bplayer_t getWinner() const;
-
-    /**
-     * There is a winner. 
-     */
-    bplayer_t gameOver() const; 
-
-    /**
-     * Actual player getter.
-     */
-    bplayer_t getPlayerToMove() const;
-
-
-  private: 
-    BBoard(){};
-
-    /**
-     * Reachability check.
-     *
-     * Used in goalCheck. 
-     */
-    int reachability(int from, int to, bplayer_t player, 
-                    int limit, int used, Move * move);
-
-    /**
-     * Step generation for one.
-     * //TODO optimize/simplify
-     *
-     * Wrapper around previous function when not used from generate all. 
-     *
-     * @return stepsNum
-     */
-    int genStepsForOne(bcoord_t coord, bplayer_t player,
-                        StepArray& steps) const;
-    /**
-     * Step generation for one piece. 
-     *
-     * @param coord  Steps are generated for piece at this coord.
-     * @param player Player to generate steps for. 
-     * @param piece  Piece ( for time save). 
-     * @param steps  Steps are stored in this array.
-     * @param stepsnum Size of step array.
-     */
-    void genStepsForOneTuned(bcoord_t coord, bplayer_t player, bpiece_t piece, 
-                              StepArray& steps, int& stepsNum, u64 victims) const;
-
-    /**
-     * Calculates not frozen mask.
-     */
-    u64 calcMovable(bplayer_t player) const;
-
-    /**
-     * Calculates weaker pieces.
-     *
-     * @param player Calculation is done for this player. 
-     * @param weaker This array is filled. 
-     */
-    void calcWeaker(bplayer_t player, u64 (&weaker)[7]) const;
-
-    inline void			setSquare(bcoord_t, player_t, piece_t);
-    inline void			delSquare(bcoord_t, player_t);											
-    inline void			delSquare(bcoord_t, player_t, piece_t);											
-
-    inline bpiece_t	getPiece(bcoord_t, bplayer_t) const;
-    inline bplayer_t getPlayer(bcoord_t) const;
-
-    u64         bitboard_[2][7];
-
-    StepArray     stepArray;
-    int          stepArrayLen;
-  
-    int  stepCount_;
-    bplayer_t  toMove_;
-    bplayer_t  winner_;
-    u64 signature_;
-};
-
-
-/**
- * Board representation.
- *
- * Crucial building block of the whole program. 
- */
-class Board
-{
-  public:
-    Board();
 
     /**
      * Public wrapper around init(newGame=true). 
@@ -644,10 +480,23 @@ class Board
      * Check signatures and moveCount.
      * Right now doesn't check pieceArrays and other stuff.
      */
-		bool operator== (const Board& board) const;
+		bool operator== (const BBoard& board) const;
+
+     /**
+     * Performs whole move. 
+     *
+     * There is no control whether move is legal.
+     * @param move String representation of the move.
+     */
+		void makeMove(const string& move);
     
-    //TODO from here till private: restructuralize in .cpp
-    
+     /**
+     * Making whole move.
+     *
+     * Wrapper around makeMoveNoCommit with commit() added.
+     */
+		void makeMove(const Move& move);
+
     /**
      *  Wraper for makeStep with commiting.
      *
@@ -658,73 +507,12 @@ class Board
      */
 		bool makeStepTryCommitMove(const Step&);
 
-     /**
-     * Performs whole move. 
-     *
-     * There is no control whether move is legal.
-     * @param move String representation of the move.
-     */
-		void makeMove(const string& move);
-
-     /**
-     * Making whole move.
-     *
-     * Retrieves the step list from move, 
-     * performs them, does no commit.
-     */
-		void makeMoveNoCommit(const Move& move);
-
-     /**
-     * Making whole move.
-     *
-     * Wrapper around makeMoveNoCommit with commit() added.
-     */
-		void makeMove(const Move& move);
-
     /**
      * Commits the move.
      *
      * Handles switching the sides, updating preMoveSignature.
      */
 		void commitMove();
-
-    /**
-     * Updates winner of the game.
-     *
-     * Checks winner according to reaching goal, opponent has 0 rabbits.
-     */
-    void updateWinner();
-
-
-
-    /**
-     * Quick check for goal.
-     *
-     * Checking is unreliable ! 
-     * (looks only for direct goal score without help of other pieces).
-     * Done by wave algorithm from the goal line for given player. 
-     *
-     * @return True if knows goal can be reached,   
-     *         false otherwise.
-     */
-    bool quickGoalCheck(player_t player, int stepLimit, Move* move=NULL) const;
-
-    /**
-     * Quick check for goal.
-     *
-     * Wrapper around previous function with 
-     * player = player to move in current position
-     * stepLimit = steps left for player to move in current position
-     */
-     bool quickGoalCheck(Move* move=NULL) const;
-
-     /**
-      * Traceback on flag board.
-      *
-      * After successfull goal check, this method determines the 
-      * move that scores the goal. 
-      */
-     Move tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, player_t player) const;
 
     /**
      * Repetition check.
@@ -744,28 +532,13 @@ class Board
     bool  isSetupPhase() const;
 
     /**
-     * Actual player getter.
-     */
-    player_t  getPlayerToMove() const;
-
-    /**
-     * Next step's player getter.
-     */
-    player_t  getPlayerToMoveAfterStep(const Step& step) const;
-
-    /**
-     * String representation of board.
-     */
-		string toString() const;
-
-    /**
      * Forward check. 
      *
      * Checking whether step defined by from, to is causing a kill 
      * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
      * This function causes no board update and is used in class StepWithKills. 
      */
-    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo=NULL) const;
+    bool checkKillForward(bcoord_t from, bcoord_t to, KillInfo* killInfo=NULL) const;
 
     /**
      * Calculater signature for one step forward. 
@@ -778,24 +551,7 @@ class Board
      * Generates all (syntatically) legal steps from the position EXCEPT from Pass.
      * Doesn't check 3 - repetitions rule / virtual pass. 
      */
-		int generateAllStepsNoPass(player_t, StepArray&) const;
-
-    /**
-     * Step generation. 
-     *
-     * Wrapper around previous function with added step Pass.
-     */
-		int generateAllSteps(player_t, StepArray&) const;
-
-    /**
-     * Step generation for one piece. 
-     *
-     * @param square Steps are generated for this piece.
-     * @param stepArray Steps are stored in this array.
-     * @param stepsnum Size of step array.
-     */
-    void generateStepsForPiece(
-              square_t square, StepArray& steps, uint& stepsNum) const;
+		int generateAllStepsNoPass(bplayer_t, StepArray&) const;
 
     /**
      * Knowledge for steps. 
@@ -807,14 +563,6 @@ class Board
      */
     void getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const;
 
-    u64       getSignature() const;
-    player_t	getWinner() const;
-
-    /**
-     * There is a winner. 
-     */
-    player_t gameOver() const; 
-
     /**
      * Continue check.
      *
@@ -825,20 +573,119 @@ class Board
     bool canContinue(const Move& move) const;
 
     /**
-     * Checks pass validity.
-     *
-     * stepsNum must be > 0 and third repetition is not allowed
-     */
-    bool canPass() const;
-
-    /**
      * Last step getter.
      */
     Step lastStep() const;
 
-    friend class BBoard;
+    BBoard(const Board& b);
 
-  private:
+		uint			getStepCount();
+
+    bool makeStepTryCommit(Step& step);
+
+    void commit();
+
+    void updateWinner();
+
+    int genSteps(bplayer_t player, StepArray& steps) const;
+
+    /**
+     * Full goal check.
+     *
+     * Done through limited full width search. 
+     */
+    bool goalCheck(bplayer_t player, int stepLimit, Move* move=NULL);
+
+    /**
+     * String representation.
+     */
+		string toString() const;
+
+    /**
+     * Print of move with kills.
+     */
+    string MovetoStringWithKills(const Move& m) const;
+
+    /**
+     * Signature getter.
+     */
+    u64 getSignature() const;
+
+    /**
+     * Winner getter. 
+     */
+    bplayer_t getWinner() const;
+
+    /**
+     * There is a winner. 
+     */
+    bplayer_t gameOver() const; 
+
+    /**
+     * Actual player getter.
+     */
+    bplayer_t getPlayerToMove() const;
+
+    /**
+     * Next step's player getter.
+     */
+    bplayer_t getPlayerToMoveAfterStep(const Step& step) const;
+
+
+  private: 
+
+    BBoard(){};
+
+    /**
+     * Reachability check.
+     *
+     * Used in goalCheck. 
+     */
+    int reachability(int from, int to, bplayer_t player, 
+                    int limit, int used, Move * move);
+
+    /**
+     * Step generation for one.
+     * //TODO optimize/simplify
+     *
+     * Wrapper around previous function when not used from generate all. 
+     *
+     * @return stepsNum
+     */
+    int genStepsForOne(bcoord_t coord, bplayer_t player,
+                        StepArray& steps) const;
+    /**
+     * Step generation for one piece. 
+     *
+     * @param coord  Steps are generated for piece at this coord.
+     * @param player Player to generate steps for. 
+     * @param piece  Piece ( for time save). 
+     * @param steps  Steps are stored in this array.
+     * @param stepsnum Size of step array.
+     */
+    void genStepsForOneTuned(bcoord_t coord, bplayer_t player, bpiece_t piece, 
+                              StepArray& steps, int& stepsNum, u64 victims) const;
+
+    /**
+     * Calculates not frozen mask.
+     */
+    u64 calcMovable(bplayer_t player) const;
+
+    /**
+     * Calculates weaker pieces.
+     *
+     * @param player Calculation is done for this player. 
+     * @param weaker This array is filled. 
+     */
+    void calcWeaker(bplayer_t player, u64 (&weaker)[7]) const;
+
+    inline void	setSquare(bcoord_t, bplayer_t, bpiece_t);
+    inline void	delSquare(bcoord_t, bplayer_t);											
+    inline void	delSquare(bcoord_t, bplayer_t, bpiece_t);											
+
+    inline bpiece_t	getPiece(bcoord_t, bplayer_t) const;
+    inline bplayer_t getPlayer(bcoord_t) const;
+
     /**
      * General init - nullifies variables.
      *
@@ -846,14 +693,6 @@ class Board
      * e.g. -> zobrist table, thirdRepetition table, etc.
      */
     void  init(bool newGame=false);
-
-    /**
-     * Inits board from position stream.
-     * 
-     * @return true if initialization went right 
-     * otherwise false
-     */
-    bool  initFromPositionStream(istream& ss); 
 
     /**
      * After load from position actions. 
@@ -867,7 +706,7 @@ class Board
      *
      * Maps 'w','g' -> gold ; 'b', 's' -> silver.
      */
-    player_t sideCharToPlayer(char side) const; 
+    bplayer_t sideCharToPlayer(char side) const; 
 
     /**
     * Parsing single token for init from game record.
@@ -879,8 +718,8 @@ class Board
     * @param to (optional) new position parsed from the token (only if it is a step)
     * @return what recordAction was parsed (i.e. placement in the beginning,...)
     */
-    recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
-                                           piece_t& piece, square_t& from, square_t& to); 
+    recordAction_e  parseRecordActionToken(const string& token, bplayer_t& player, 
+                                           bpiece_t& piece, bcoord_t& from, bcoord_t& to); 
 
     /**
     * Parsing piece char (e.g. R,H,c,m, ... ) 
@@ -888,15 +727,8 @@ class Board
     * @return pair: (player, piece) belonging to given char.
     * Throws an exception when unknown pieceChar encountered.
     */
-    PiecePair parsePieceChar(char pieceChar); 
+    bool parsePieceChar(char pieceChar, bplayer_t& player, bpiece_t& piece); 
 
-    /**
-     * Init zobrist table.
-     *
-     * Fills zobrist table with random u64 numbers. 
-     * Zobrist algorithm is used for making position signatures.
-     */
-    void  initZobrist() const;
 
     /**
      * Take (hopefully) unique signature of position - u64 number. 
@@ -914,14 +746,6 @@ class Board
      * steps, frozenBoard update). 
      */
 		void makeStep(const Step& step);
-
-    /**
-     * "Random" step generator.
-     *
-     * Generates random step ( random type, from, to, ... ) and returns it if it's correctness
-     * is verified (might try to generate the step more times).
-     */
-		bool findRandomStep(Step&) const;
 
     //TODO move evaluation methods to eval ???
     
@@ -942,20 +766,6 @@ class Board
     float evaluateStep(const Step& step) const;
 
     /**
-     * Kill checker.
-     *
-     * Checks whether kill is happening in the vicinity of given square.
-     */
-    bool checkKill(square_t square);
-
-    /**
-     * Performs kill.
-     *
-     * Performs operation connected to kill - board update, rabbits num update, etc.
-     */
-    void performKill(square_t trapPos);
-
-    /**
      * Virtual pass check.
      *
      * @param step - expected to be last step in current move
@@ -973,85 +783,21 @@ class Board
      */
     bool stepIsThirdRepetition(const Step& ) const;
 
-    /**
-     * Has a friend test.
-     *
-     * Piece on given square has a friend test.
-     * Used in trap kill check.
-     */
-		bool hasFriend(square_t) const;
-
-    /**
-     * Has a friend test.
-     *
-     * Variant for forward tests.
-     * Color must be supplied as well.
-     */
-		inline bool hasFriend(square_t, player_t owner) const;
-
-    /**
-     * Two friends test. 
-     *
-     * This is used for forward tests (without actually moveing pieces).
-     * Therefore color of player must be supplied as well.
-     */
-		bool hasTwoFriends(square_t, player_t) const;
-
-    /**
-     * Has stronger enemy test. 
-     *
-     * Used for checking a trap kill. 
-     */
-		bool hasStrongerEnemy(square_t) const;
-
-    /**
-     * Has stronger enemy test. 
-     *
-     * Variant for forward tests. 
-     * Color and piece must be supplied as well  
-     */
-		inline bool hasStrongerEnemy(square_t, player_t owner, piece_t piece) const;
-
-    /**
-     * Frozen check.
-     *
-     * Checks whether piece at given square is frozen == !hasFriend and hasStrongerEnemy
-     */
-		bool isFrozen(square_t) const;
-
 		uint			getStepCount() const;
     u64       getPreMoveSignature() const;
-		
-    /**
-     * Sets square and updates signature. 
-     */
-    void setSquare(square_t, player_t, piece_t);
 
-    /**
-     * Clears square and update signature.
-     */
-    void clearSquare(square_t);
+    u64       bitboard_[2][7];
 
-		string allStepsToString() const;
-		void dumpAllSteps() const;
-    void dump() const;
-
-    //Attributes
-
+    StepArray     stepArray;
+    int          stepArrayLen;
+  
     static bool       classInit;
     static ThirdRep*  thirdRep_;
 
-		board_t					board_;					//actual pieces are stored here 
-		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
-
-    PieceArray    pieceArray[2];  
-    uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
-  
-    StepArray     stepArray;
-    uint          stepArrayLen;
-
-    u64           signature_;            //position signature - for hash tables, corectness checks, etc. 
-    u64           preMoveSignature_;     //signature of position from when the current move started
+    //signature of position from when the current move started
+    u64 signature_;            
+    //position signature - for hash tables, corectness checks, etc. 
+    u64 preMoveSignature_;     
 
     /**Last made step.*/
     Step lastStep_;
@@ -1062,11 +808,8 @@ class Board
 		// thus stepCount_ takes values 0 - 4 
     uint  stepCount_;
 
-    player_t toMove_;
-    uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
-		player_t winner_;
+    bplayer_t toMove_;
+		bplayer_t winner_;
 
     friend class Eval;
-
 };
-

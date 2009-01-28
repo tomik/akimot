@@ -991,7 +991,7 @@ void Uct::refineResults(const Board* board)
   
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);
-  bestMoveRepr_ = bestMove.toStringWithKills(board);
+  bestMoveRepr_ = board->MovetoStringWithKills(bestMove);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
   //TODO this should be done when the move is actually MADE ! 

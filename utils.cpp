@@ -95,7 +95,13 @@ void FileRead::ignoreLines(const char* ignoreStart)
 
 //--------------------------------------------------------------------- 
 
-  
+bool FileRead::good() const
+{
+  return f_.good();
+}
+
+//--------------------------------------------------------------------- 
+
 int str2int(const string& str)
 {
   stringstream ss(str);
