@@ -35,7 +35,8 @@ playoutStatus_e SimplePlayout::doPlayout()
   */
 
   while (true) {  
-	  playOne();
+	  //playOne();
+    board_->findMCmoveAndMake();
 	  playoutLength_++;
     if (hasWinner())
 	    return PLAYOUT_OK;
@@ -959,7 +960,7 @@ void Uct::refineResults(const Board* board)
   
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);
-  bestMoveRepr_ = board->MovetoStringWithKills(bestMove);
+  bestMoveRepr_ = board->moveToStringWithKills(bestMove);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
   //TODO this should be done when the move is actually MADE ! 

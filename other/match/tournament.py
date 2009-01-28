@@ -7,8 +7,6 @@ record_file = "record"
 dir_list = "list.txt"
 log_file = "log"
 
-from ConfigParser import SafeConfigParser
-
 def runTournament(bots, matches, comment):
 
     bot_1 = bots[0]

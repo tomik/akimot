@@ -141,3 +141,9 @@ string trim(const string& str);
  */
 string getStreamRest(istream& is);
 
+/**
+ * Tr analogy.
+ *
+ * Replaces all ocurences of c1 in s by c2.
+ */
+string replaceAllChars(string s, char c1, char c2);

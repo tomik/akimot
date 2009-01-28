@@ -11,7 +11,8 @@
 #define INIT_TEST_LIST "./data/init/list.txt"
 #define RABBITS_TEST_DIR "./data/rabbits/"
 #define RABBITS_TEST_LIST "./data/rabbits/list.txt"
-#define GOAL_CHECK_TEST "./data/rabbits/t006.txt"
+#define STEP_KILL_PRINT_TEST_LIST "./data/step_kill_print/list.txt"
+#define STEP_KILL_PRINT_TEST_DIR "./data/step_kill_print/"
 #define HASH_TABLE_INSERTS 100
 
 //mature level is defined in uct.h
@@ -112,7 +113,6 @@ class DebugTestSuite : public CxxTest::TestSuite
  
     } 
 
-
     /**
      * Bit stuff. 
      */
@@ -135,7 +135,6 @@ class DebugTestSuite : public CxxTest::TestSuite
       assert((str2bits(string("0")) == 0));
       assert((str2bits(string("110010")) == 50));
     }
-
 
     /**
      * Utilities test - mostly string functions. 
@@ -192,10 +191,37 @@ class DebugTestSuite : public CxxTest::TestSuite
      }
 
     /**
-     * Test for distance macro defined in board.h. 
+     * Test step with kills print. 
+     */
+    void testStepWithKills(void)
+    {
+      string s1, s2, s3, s;
+
+      FileRead* f = new FileRead(string(STEP_KILL_PRINT_TEST_LIST));
+      f->ignoreLines("#");
+      while (f->getLine(s)){
+        stringstream ss(s);
+        ss >> s1; ss >> s2; ss >> s3;
+
+        s2 = replaceAllChars(s2,'_', ' ');
+        s3 = replaceAllChars(s3,'_', ' ');
+
+        string fn = string(STEP_KILL_PRINT_TEST_DIR) + s1;
+        Board* b = new Board();
+        b->initFromPosition(fn.c_str());
+        //cerr << b->toString();
+        
+        TS_ASSERT_EQUALS(b->moveToStringWithKills(s2), s3);
+        delete b;
+      }
+    }
+
+    /**
+     * Test for distance macro defined in [old]board.h. 
      */
     void testDistanceMacro(void)
     {
+      //old_board
       TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(11, 12), 1);
       TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(11, 21), 1);
       TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(21, 18), 8);
@@ -203,6 +229,11 @@ class DebugTestSuite : public CxxTest::TestSuite
       TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(33, 66), 6);
       //neighbour trap distance
       TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(33, 63), 3);
+      
+      //board
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(0, 2), 2);
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(18, 21), 3);
+      TS_ASSERT_EQUALS(SQUARE_DISTANCE(42, 18), 3);
     }
 
     /**

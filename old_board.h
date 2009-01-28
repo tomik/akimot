@@ -58,6 +58,8 @@ typedef uint ob_piece_t;
 typedef int FlagBoard[OB_SQUARE_NUM];
 typedef uint board_t[OB_SQUARE_NUM];
 
+typedef pair<ob_player_t, ob_piece_t> PiecePair;
+
 #define FLAG_BOARD_EMPTY -1
 
 /**

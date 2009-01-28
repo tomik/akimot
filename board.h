@@ -34,10 +34,10 @@ typedef unsigned long long u64;
 
 #define IS_PLAYER(player) (player == GOLD || player == SILVER)
 
-#define BNORTH 8
-#define BSOUTH -8
-#define BEAST 1
-#define BWEST -1
+#define NORTH 8
+#define SOUTH -8
+#define EAST 1
+#define WEST -1
 
 #define GOLD        0
 #define SILVER      1
@@ -126,6 +126,11 @@ namespace bits{
    * Simpler lix. 
    */
   int lixslow(u64& v);
+  
+  /**
+   * Bit count.
+   */
+  int  bitCount(u64 b);
 
   /**
    * Bit getter. 
@@ -364,15 +369,35 @@ typedef list<Step> StepList;
 typedef StepList::iterator StepListIter;
 
 /**
+ * Record action as parsed from the game record (file).
+ *
+ * Potential values are: placement in the beginning (e.g. RA1), 
+ * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
+ */
+enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERROR}; 
+
+/**
+* Parsing piece char (e.g. R,H,c,m, ... ) 
+* 
+* @return pair: (player, piece) belonging to given char.
+* Throws an exception when unknown pieceChar encountered.
+*/
+bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece); 
+
+/**
  * Move = list of steps (up to STEP_IN_MOVE).
  *
  * Accepts Steps as well as StepWithKills.
  */
-
 class Move
 {
   public:
-    string toString();
+    Move();
+
+    /**
+     * Constructor from string.
+     */
+    Move(string moveStr);
 
     /**
      * Appends step to the move.
@@ -409,20 +434,38 @@ class Move
      * Step count in move getter.
      */
     int getStepCount() const;
+
+    /**
+     * Opening getter.
+     */
+    bool isOpening() const;
+
+    /**
+     * Representation.
+     */
+    string toString();
     
   private:
+    /**
+    * Parsing single token for init from game record.
+    *
+    * @param token given string token (e.g. Ra1n)
+    * @param player player parsed from the token
+    * @param piece  piece parsed from the token
+    * @param from position parsed from the token
+    * @param to (optional) new position parsed from the token (only if it is a step)
+    * @return what recordAction was parsed (i.e. placement in the beginning,...)
+    */
+    recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
+                                           piece_t& piece, coord_t& from, coord_t& to);
     StepList stepList_;
+
+    /**
+     * Is opening move. 
+     */
+    bool opening_;
 };
 
-/**
- * Record action as parsed from the game record (file).
- *
- * Potential values are: placement in the beginning (e.g. RA1), 
- * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
- */
-enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERROR}; 
-
-typedef pair<player_t, piece_t>  PiecePair;
 
 //steps
 typedef Step  StepArray[MAX_STEPS];
@@ -623,7 +666,7 @@ class Board
     /**
      * Print of move with kills.
      */
-    string MovetoStringWithKills(const Move& m) const;
+    string moveToStringWithKills(const Move& m) const;
 
     /**
      * Signature getter.
@@ -667,11 +710,9 @@ class Board
      * //TODO optimize/simplify
      *
      * Wrapper around previous function when not used from generate all. 
-     *
-     * @return stepsNum
      */
-    int genStepsForOne(coord_t coord, player_t player,
-                        StepArray& steps) const;
+    void genStepsForOne(coord_t coord, player_t player,
+                        StepArray& steps, int& stepsNum) const;
     /**
      * Step generation for one piece. 
      *
@@ -726,27 +767,6 @@ class Board
      */
     player_t sideCharToPlayer(char side) const; 
 
-    /**
-    * Parsing single token for init from game record.
-    *
-    * @param token given string token (e.g. Ra1n)
-    * @param player player parsed from the token
-    * @param piece  piece parsed from the token
-    * @param from position parsed from the token
-    * @param to (optional) new position parsed from the token (only if it is a step)
-    * @return what recordAction was parsed (i.e. placement in the beginning,...)
-    */
-    recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
-                                           piece_t& piece, coord_t& from, coord_t& to); 
-
-    /**
-    * Parsing piece char (e.g. R,H,c,m, ... ) 
-    * 
-    * @return pair: (player, piece) belonging to given char.
-    * Throws an exception when unknown pieceChar encountered.
-    */
-    bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece); 
-
 
     /**
      * Take (hopefully) unique signature of position - u64 number. 
@@ -777,13 +797,6 @@ class Board
     Step chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const;
 
     /**
-     * Evaluates one step.
-     *
-     * In this play game knowledge is applied.
-     */
-    float evaluateStep(const Step& step) const;
-
-    /**
      * Virtual pass check.
      *
      * @param step - expected to be last step in current move
@@ -807,10 +820,10 @@ class Board
     u64 bitboard_[2][7];
 
     StepArray     stepArray;
-    int          stepArrayLen;
   
     static bool       classInit;
     static ThirdRep*  thirdRep_;
+    static Eval*      eval_;
 
     //signature of position from when the current move started
     u64 signature_;            

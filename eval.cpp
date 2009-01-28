@@ -4,34 +4,25 @@
 //  section Eval
 //---------------------------------------------------------------------- 
 
-int Eval::evaluate(const Board* board_)
-{
-/*  static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
-  int eval[2] = {0,0};
+u64 adv[8][2] = { 
+        {0x00000000000000ffULL, 0xff00000000000000ULL},
+		    {0x000000000000ff00ULL, 0x00ff000000000000ULL},
+		    {0x0000000000ff0000ULL, 0x0000ff0000000000ULL},
+		    {0x00000000ff000000ULL, 0x000000ff00000000ULL},
+		    {0x000000ff00000000ULL, 0x00000000ff000000ULL},
+		    {0x0000ff0000000000ULL, 0x0000000000ff0000ULL},
+		    {0x00ff000000000000ULL, 0x000000000000ff00ULL},
+		    {0xff00000000000000ULL, 0x00000000000000ffULL} 
+      };
 
-  for ( uint i = 0; i < 2; i++){
-    for ( uint j = 0; j < board_->pieceArray[i].getLen(); j++){
-      assert(PIECE(board_->board_[board_->pieceArray[i][j]]) > 0 && PIECE(board_->board_[board_->pieceArray[i][j]]) < 7);
-      eval[i] += piece_value[PIECE(board_->board_[board_->pieceArray[i][j]])];
-  //  cerr << i << "+ " << piece_value[PIECE(board_[pieceArray[i][j]])] << endl;
-    }
-   // cerr <<endl;
-  }
-  return eval[0] - eval[1];
-    */
-    return 0;
-}
-
-//--------------------------------------------------------------------- 
 #define EVAL_MAX 10000
 #define EVAL_MIN (-10000)
 
-float Eval::evaluateInPercent(const Board* board_) 
+float Eval::evaluateInPercent(const Board* b) const
 {
-  int evaluation = evaluateBetter(board_);
+  int evaluation = evaluate(b);
 
   float p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
-  return random01();
   if (p < 0)
     return 0;
   if (p > 1)
@@ -41,396 +32,185 @@ float Eval::evaluateInPercent(const Board* board_)
 
 //--------------------------------------------------------------------- 
 
-#define RABBIT_FREE_AHEAD 1000
-#define RABBIT_FRIENDLY_AHEAD 500
-#define RABBIT_FREE_SIDE 300
-#define RABBIT_FRIENDLY_SIDE 200
-
-// board constants
-static const int trap_square[4]={33,36,63,66};
-
-static const int adjacent_trap[100]={0,0,0,0,0,0,0,0,0,0,0,
-
-                                      0, 0, 0, 0, 0, 0, 0, 0,     0,0,                               
-                                      0, 0,33, 0, 0,36, 0, 0,     0,0,                               
-                                      0,33, 0,33,36, 0,36, 0,     0,0,                               
-                                      0, 0,33, 0, 0,36, 0, 0,     0,0,                               
-                                      0, 0,63, 0, 0,66, 0, 0,     0,0,                               
-                                      0,63, 0,63,66, 0,66, 0,     0,0,                               
-                                      0, 0,63, 0, 0,66, 0, 0,     0,0,                               
-                                      0, 0, 0, 0, 0, 0, 0, 0,     0,0,                               
-
-                                     0,0,0,0,0,0,0,0,0};
-
-static const int adjacent2_trap[100]={0,0,0,0,0,0,0,0,0,0,0,
-
-                                       0, 0,33, 0, 0,36, 0, 0,     0,0,                               
-                                       0,33, 0,33,36, 0,36, 0,     0,0,                               
-                                      33, 0, 0,36,33, 0, 0,36,     0,0,                               
-                                       0,33,63,33,36,66,36, 0,     0,0,                               
-                                       0,63,33,63,66,36,66, 0,     0,0,                               
-                                      63, 0, 0,66,63, 0, 0,66,     0,0,                               
-                                       0,63, 0,63,66, 0,66, 0,     0,0,                               
-                                       0, 0,63, 0, 0,66, 0, 0,     0,0,                               
-
-                                      0,0,0,0,0,0,0,0,0};
-                                                                    
-// Evaluation is done from gold's perspective.  At the end of the evaluation, it's adjusted to be seen from current player's perspective.
-
-
-int Eval::evaluateBetter(const Board* board)
+int Eval::evaluate(const Board* b) const
 {
-    return 0;
-    /*
-  // evaluation constants
-  static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
-  // variables    
-  
-  // utility variables
-  int side_mask[OWNER_MASK];
-   
-  // loop variables
-  int square; 
-  int side;
-  int trap;
-  int dir;
-  int i;
-      
-  // value variables
-  int value=0;
-  int material_value[2]={0,0};
-  int trap_value[2]={0,0};
-  int rabbit_value[2]={0,0};
-      
-  // trap evaluation variables
-  int trap_adjacent[2];
-  int trap_adjacent_strength[2];
-  int trap_adjacent_strongest[2];
+  int   tot[2] = { 0, 0 };
+  u64   dom;                   // bit board of dominant pieces.
+  u64   ndom;                   // bb of non-dominant pieces 
 
-  //list<int> pieces[2][8];
+//  if (playrand){ return (rand()%10000 - 5000); } /* act like a random bot */
+//  if (playrand){ return (10000 - (p->steps)*1000); } /* act like a random bot */
+  assert(b->getStepCount() == 0);
 
-  int rabbits[2]={0,0};
-  int rabbit_pos[2][8];
-                   
-  // material evaluation variables
-  int material[100]; // What is the piece on this square worth?
-  int piece_frozen;
-  int piece_adjacent_stronger_enemy;
-  int piece_adjacent_empty;
-  int piece_adjacent_strongest[2];
-  int piece_adjacent[2];
-  int piece_adjacent_trap;
-
-
-  //position
-  const board_t & p = board->board_;
-
-  #define FOWNER(square) (int) OWNER(p[square])
-  #define FPIECE(square) (int) PIECE(p[square])
-  #define FBOARD(square) (int) p[square]
-  
-  // rabbit evaluation variables
-  int row;
-  
-  // Initialize some evaluation stuff
-
-  side_mask[GOLD]=0;
-  side_mask[SILVER]=1;
-
-  for ( uint i = 0; i < SQUARE_NUM; i++)
-    material[i] = 0;
-  
-  for ( uint i = 0; i < 2; i++){
-    for ( uint j = 0; j < board->pieceArray[i].getLen(); j++){
-      int square = board->pieceArray[i][j];
-      assert(FPIECE(square) > 0 && FPIECE(square) < 7);
-      //pieces[i][FPIECE(square)].push_back(square);
-      if (FPIECE(square) == PIECE_RABBIT){
-        rabbit_pos[i][rabbits[i]++] = square;
-      }
-      material[square] = piece_value[FPIECE(square)];
-    }
-  }
-
-  // Evaluate trap squares, decide trap ownership.
-  for (trap=0; trap<4; trap++){
-    for (side=0; side<2; side++){
-      trap_adjacent[side]=0;
-      trap_adjacent_strength[side]=0;
-      trap_adjacent_strongest[side]=0;
-    }
-    for (dir=0; dir<4; dir++){
-      switch (FOWNER(trap_square[trap]+direction[dir])){
-        case GOLD :
-          trap_adjacent[0]++;
-          trap_adjacent_strength[0]+=FPIECE(trap_square[trap]+direction[dir]);
-          if (FPIECE(trap_square[trap]+direction[dir])>trap_adjacent_strongest[0]){
-            trap_adjacent_strongest[0]=FPIECE(trap_square[trap]+direction[dir]);
-          }
-          break;
-        case SILVER :
-          trap_adjacent[1]++;
-          trap_adjacent_strength[1]+=FPIECE(trap_square[trap]+direction[dir]);
-          if (FPIECE(trap_square[trap]+direction[dir])>trap_adjacent_strongest[1]){
-            trap_adjacent_strongest[1]=FPIECE(trap_square[trap]+direction[dir]);
-          }
-          break;
-      }
-    }
-    // Basically, 200 points are given out per trap.  50 to whoever has the strongest piece by the trap, 
-    // and 150 points split according to total strength of pieces, with two neutral strength added.
-    
-    // case 1 - only one side has pieces by the trap.
-    if (trap_adjacent[0]>0 && trap_adjacent[1]==0){
-      trap_value[0]+=50+trap_adjacent_strength[0]*150/(trap_adjacent_strength[0]+1);
-    }
-    if (trap_adjacent[1]>0 && trap_adjacent[0]==0){
-      trap_value[1]+=50+trap_adjacent_strength[1]*150/(trap_adjacent_strength[1]+1);
-    }
-    // case 2 - both sides have pieces by the trap.
-    if (trap_adjacent[0]>0 && trap_adjacent[1]>0){
-      // subcase 1 - they are equally strong.  Split 100 points according to number of pieces.
-      if (trap_adjacent_strongest[0]==trap_adjacent_strongest[1]){
-        trap_value[0]+=trap_adjacent_strength[0]*200/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-        trap_value[1]+=trap_adjacent_strength[1]*200/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-      }
-      // subcase 2 - gold is stronger.  Give 50 points to gold, and split 50 according to number of pieces.
-      if (trap_adjacent_strongest[0]>trap_adjacent_strongest[1]){
-        trap_value[0]+=50+trap_adjacent_strength[0]*150/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-        trap_value[1]+=trap_adjacent_strength[1]*150/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-      }
-      // subcase 3 - silver is stronger.  Give 50 points to silver, and split 50 according to number of pieces.
-      if (trap_adjacent_strongest[1]>trap_adjacent_strongest[0]){
-        trap_value[0]+=trap_adjacent_strength[0]*150/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-        trap_value[1]+=50+trap_adjacent_strength[1]*150/(trap_adjacent_strength[0]+trap_adjacent_strength[1]+1);
-      }
-    }
-
-    // special case - give minus for (possible) frames
-    if (FOWNER(trap_square[trap])==GOLD && trap_adjacent[1]>2){
-      material[trap_square[trap]]=material[trap_square[trap]]*4/5; // Trapped piece loses 20% of its value
-    }
-    if (FOWNER(trap_square[trap])==SILVER && trap_adjacent[0]>2){
-      material[trap_square[trap]]=material[trap_square[trap]]*4/5; // Trapped piece loses 20% of its value
-    }
-  }
-
-  // Evaluate material and individual pieces.
-
-  for (side=0; side<2; side++){
-    for (i=0; i<cats[side]; i++){
-      if (side == 0)
-        row=ROW(cat_pos[0][i]);
-      else
-        row=9-ROW(cat_pos[1][i]);
-      if (row>3){
-        material[cat_pos[side][i]]=material[cat_pos[side][i]]*197/200; // Advanced cat lose 1.5 % of its value
-      } else if (row==3)
-      {
-        material[cat_pos[side][i]]=material[cat_pos[side][i]]*199/200; // Slightly advanced cat lose 0.5 % of its value
-      }
-    }
-  
-    for (i=0; i<dogs[side]; i++){
-      if (side == 0){
-          row=ROW(dog_pos[0][i]);
-      }
-      else{
-          row=9-ROW(dog_pos[1][i]);
-      }
-      if (row>3){
-        material[dog_pos[side][i]]=material[dog_pos[side][i]]*197/200; // Advanced dog lose 1.5 % of its value
-      } else if (row==3)
-      {
-        material[dog_pos[side][i]]=material[dog_pos[side][i]]*199/200; // Slightly advanced dog lose 0.5 % of its value
-      }
-    }
-  }
-
-  for (square=11; square<=88; square++)
-  {  
-    if (square%10==9) square+=2;
-    if (FOWNER(square)==GOLD || FOWNER(square)==SILVER)
-    {
-      // Check if it's frozen, number of adjacent empty, strongest adjacent, and all that
-      piece_adjacent[0]=0;
-      piece_adjacent[1]=0;
-      piece_adjacent_empty=0;
-      piece_adjacent_strongest[0]=0;
-      piece_adjacent_strongest[1]=0;
-      for (dir=0; dir<4; dir++)
-      {
-        switch (FOWNER(square+direction[dir]))
-        {
-          case GOLD :
-            piece_adjacent[0]++;
-            if (FPIECE(square+direction[dir])>piece_adjacent_strongest[0])
-            {
-              piece_adjacent_strongest[0]=FPIECE(square+direction[dir]);
-            }
-            break;
-          case SILVER :
-            piece_adjacent[1]++;
-            if (FPIECE(square+direction[dir])>piece_adjacent_strongest[1])
-            {
-              piece_adjacent_strongest[1]=FPIECE(square+direction[dir]);
-            }
-            break;
-          case EMPTY :
-            piece_adjacent_empty++;
-            break;
-        }
-      }
-      if (FOWNER(square) == GOLD){
-          piece_adjacent_stronger_enemy=piece_adjacent_strongest[1]>FPIECE(square);
-          piece_frozen=piece_adjacent_stronger_enemy && piece_adjacent[0]==0;
-      }
-      else { 
-          piece_adjacent_stronger_enemy=piece_adjacent_strongest[0]>FPIECE(square);
-          piece_frozen=piece_adjacent_stronger_enemy && piece_adjacent[1]==0;
-      }
-      if (piece_frozen)
-      {
-        material[square]=material[square]*9/10; // Frozen piece loses 10% of its value
-      }
-      if (piece_adjacent_empty==0) 
-      {
-        material[square]=material[square]*199/200; // Immobile piece loses 0.5% of its value
-      }
-      if ((piece_frozen || piece_adjacent_empty==0) && piece_adjacent_stronger_enemy) // Our piece has limited mobility, and there is a stronger enemy piece adjacent
-      {
-        // Check if it's held hostage or threatened by a capture
-        if (adjacent_trap[square]) // It's adjacent to a trap
-        {
-          // If we have no other piece next to the trap, then consider this piece to be threatened, losing 30% of its value
-          piece_adjacent_trap=0;
-          for (dir=0; dir<4; dir++)
-          {
-            if (FOWNER(adjacent_trap[square]+direction[dir])==FOWNER(square))
-            {
-              piece_adjacent_trap++;
-            }
-          }
-          if (piece_adjacent_trap==1)
-          {
-            material[square]=material[square]*7/10;
-          }
-        }
-        if (adjacent2_trap[square] && FBOARD(adjacent2_trap[square])==EMPTY_SQUARE) 
-        // It's two steps away from an empty trap
-        {
-          // If we have no piece next to the trap,
-          // Really - should check so that there is a free path to trap.
-          // then consider this piece to be threatened, losing 30% of its value
-          piece_adjacent_trap=0;
-          for (dir=0; dir<4; dir++)
-          {
-            if (FOWNER(adjacent2_trap[square]+direction[dir])==FOWNER(square))
-            {
-              piece_adjacent_trap++;
-            }
-          }
-          if (piece_adjacent_trap==0)
-          {
-            material[square]=material[square]*7/10;
-          }
-        }
-      }
-      // Another case - if adjacent to a trap, and no other friendly piece adjacent, various possibilities for being threatened....
-      switch (FOWNER(square))
-      {
-        case GOLD :
-          material_value[0]+=material[square];
-          break;
-        case SILVER :
-          material_value[1]+=material[square];
-          break;
-      }
-    }
-  }
-
-  
-  // Evaluate rabbits
-
-  for (i=0; i<rabbits[0]; i++)
+  for (int c = 0; c < 2; c++)  // c = color, 0 or 1
   {
-    row=ROW(rabbit_pos[0][i]);
-    rabbit_value[0]+=(row-1)*(row-1)*(row-1);
-    if (row==7)
-    {
-      switch (FOWNER(rabbit_pos[0][i]+NORTH))
-      {
-        case EMPTY :
-          rabbit_value[0]+=RABBIT_FREE_AHEAD;
-          break;
-        case GOLD :
-          rabbit_value[0]+=RABBIT_FRIENDLY_AHEAD;
-          break;
-      }
-      switch (FOWNER(rabbit_pos[0][i]+EAST))
-      {
-        case EMPTY :
-          rabbit_value[0]+=RABBIT_FREE_SIDE;
-          break;
-        case GOLD :
-          rabbit_value[0]+=RABBIT_FRIENDLY_SIDE;
-          break;
-      }
-      switch (FOWNER(rabbit_pos[0][i]+WEST))
-      {
-        case EMPTY :
-          rabbit_value[0]+=RABBIT_FREE_SIDE;
-          break;
-        case GOLD :
-          rabbit_value[0]+=RABBIT_FRIENDLY_SIDE;
-          break;
-      }
+
+    for (int i = 1; i < 7; i++){
+      tot[c] += bits::bitCount(b->bitboard_[c][i]) * i * 100;
     }
-  }
-  for (i=0; i<rabbits[1]; i++)
-  {
-    row=9-ROW(rabbit_pos[1][i]);
-    rabbit_value[1]+=(row-1)*(row-1);
-    if (row==7)
+
+    // small connectivity bonus
+    tot[c] += bits::bitCount(b->bitboard_[c][0] & 
+              bits::neighbors(b->bitboard_[c][0]));
+
+    // bonus for rabbit advancement - advance if a few enemy (non-pawn) 
+    // pieces have left the board.
+    if ( bits::bitCount(b->bitboard_[OPP(c)][0] ^ b->bitboard_[OPP(c)][1] ) < 5 ) 
     {
-      switch (FOWNER(rabbit_pos[1][i]+SOUTH))
-      {
-        case EMPTY :
-          rabbit_value[1]+=RABBIT_FREE_AHEAD;
-          break;
-        case SILVER :
-          rabbit_value[1]+=RABBIT_FRIENDLY_AHEAD;
-          break;
-      }
-      switch (FOWNER(rabbit_pos[1][i]+EAST))
-      {
-        case EMPTY :
-          rabbit_value[1]+=RABBIT_FREE_SIDE;
-          break;
-        case SILVER :
-          rabbit_value[1]+=RABBIT_FRIENDLY_SIDE;
-          break;
-      }
-      switch (FOWNER(rabbit_pos[1][i]+WEST))
-      {
-        case EMPTY :
-          rabbit_value[1]+=RABBIT_FREE_SIDE;
-          break;
-        case SILVER :
-          rabbit_value[1]+=RABBIT_FRIENDLY_SIDE;
-          break;
-      }
+      tot[c] += bits::bitCount(b->bitboard_[c][1] & adv[4][c] ) * 2;
+      tot[c] += bits::bitCount(b->bitboard_[c][1] & adv[5][c] ) * 3;
+      tot[c] += bits::bitCount(b->bitboard_[c][1] & adv[6][c] ) * 5;
+      tot[c] += bits::bitCount(b->bitboard_[c][1] & adv[7][c] ) * 8;
     }
+
+    // figure out which pieces are dominant
+    // ------------------------------------
+    {
+      int  strongestEnemy = 0;   
+      for (int i = 6; i > 0; i--) {
+        if (b->bitboard_[OPP(c)][i]) 
+        {
+          strongestEnemy = i;
+          break;
+        }
+      }
+
+      dom = 0ULL;
+      for (int i = strongestEnemy; i > 0; i--) {
+	      dom |= b->bitboard_[c][i];
+      }
+
+      ndom = b->bitboard_[c][0] ^ dom;
+    }
+
+    // get dominant piece out to center
+    // --------------------------------
+    tot[c] += bits::bitCount(dom & RING0) * 10;
+    tot[c] += bits::bitCount(dom & RING1) * 4;
+
+    // don't hang out in traps.
+    // ------------------------
+    tot[c] -= bits::bitCount(dom & TRAPS) * 12;    // penalty 12 for dominant
+    tot[c] -= bits::bitCount((ndom & TRAPS)) * 7;   // penalty  7 for non
   }
 
-  //add all up
-  value+=material_value[0]-material_value[1];
-  value+=trap_value[0]-trap_value[1];
-  value+=rabbit_value[0]-rabbit_value[1];
-
-  //REMOVE
-  return value;
-    */
+  return(tot[0] - tot[1]);
 }
+
+//--------------------------------------------------------------------- 
+
+
+float Eval::evaluateStep(const Board* b, const Step& step) const
+{
+
+  return 0;
+  /*
+  float eval = 0; 
+
+  if (step.isPass()){
+    eval -= 0.5 * (STEPS_IN_MOVE - stepCount_);
+    return eval;
+  }
+
+  assert(step.pieceMoved());
+  assert(IS_PLAYER(board_[step.from_]));
   
-/**/
+  //we don't like inverse steps 
+  //TODO ... inverse step is reasonable when something dies in the trap
+  if (step.inversed(lastStep_)){
+    eval -= 5;
+    return eval;
+  }
+
+  if (step.piece_ == ELEPHANT ) {
+    eval += 0.1;
+  }
+
+  if (step.isPushPull()){
+    //push opponent to the goal :( not impossible ? )
+    if (step.oppPiece_ == PIECE_RABBIT && 
+        ROW(step.oppTo_) == rabbitWinRow[PLAYER_TO_INDEX(OPP(step.player_))]){
+      eval -= 10;
+    }
+    //otherwise push/pulls are encouraged
+    else{
+      eval += 0.5; 
+    }
+  } 
+  
+  //check self-kill
+  if (checkKillForward(step.from_, step.to_)){
+    //allow self-kills to allow rabbits move to the goal
+    //in the opponent's part of the board
+    if (step.piece_ == PIECE_RABBIT && ! IS_TRAP(step.to_) && 
+        ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == SILVER && ROW(step.from_) <= 5))){
+      eval -= 1;
+    }
+    else{
+      eval -= 5;   
+    }
+  }
+  else{
+
+    //push opp to trap is good 
+    if (step.isPushPull() && IS_TRAP(step.oppTo_)){
+      eval += 3;
+    }
+
+    //check opp-kill
+    if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
+      eval += 5;   
+    }
+  }
+
+  //rabbit movements 
+  if (step.piece_ == PIECE_RABBIT){
+    //moves in opponent's part of the board are encouraged
+    if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == SILVER && ROW(step.from_) <= 5)){
+      //empty space ahead is good 
+      bool empty = true;
+      int emptyNum = 0;
+      int row = ROW(step.from_);
+      int toEdge = toMove_ == GOLD ? 
+          TOP_ROW - row : 
+          row - BOTTOM_ROW;
+      while (emptyNum < toEdge){
+        row += toMove_ == GOLD ? +1 : -1 ;
+        if (board_[row * 10 + COL(step.from_)] != EMPTY_SQUARE){
+          empty = false;
+          assert(toEdge > emptyNum);
+          break;
+        }
+        emptyNum++;
+      } 
+      //moving forward
+      if (step.to_ - step.from_ == rabbitForward[toMoveIndex_]) {
+        if (empty){
+          eval += 5;
+        }
+        eval += emptyNum * 1;
+      }
+      //TODO add evaluation for moves left right
+
+    }
+    else { //move in player's part
+      eval += -2;
+    }
+  } //rabbits
+
+  //locality 
+  if (cfg.localPlayout() && 
+      lastStep_.stepType_ != STEP_NULL){
+    int d = SQUARE_DISTANCE(lastStep_.to_, step.from_);
+    eval += d <= 3 ? (3 - d) * 0.5 : 0;
+  }
+
+  return eval;
+  */
+}
+
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+
