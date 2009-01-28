@@ -1,6 +1,7 @@
 #include <cxxtest/TestSuite.h>
 #include "utils.h"
 #include "board.h"
+#include "old_board.h"
 #include "hash.h"
 #include "uct.h"
 
@@ -26,14 +27,13 @@ class DebugTestSuite : public CxxTest::TestSuite
 {
   public:
 
-    void setUp() { srand((unsigned) time(NULL));}
+    void setUp() { randomStructuresInit();}
 
     /*
      * Tests consistency of normal board with bitboard.
      */ 
-    void xtestBitboardConsistency(void)
+    void testBitboardConsistency(void)
     {
-        /*
         StepArray s; 
         uint slen;
         StepArray bs; 
@@ -45,16 +45,34 @@ class DebugTestSuite : public CxxTest::TestSuite
         bool w;
         bool bw;
       
-        for (int k = 0; k < 10000; k++){
-          Board * b = new Board(); 
+        for (int k = 0; k < 100; k++){
+          Board * bb = new Board();
+          OB_Board * b = new OB_Board(); 
+          assert(b->getSignature() == bb->getSignature());
           assert(b->initFromPosition(START_POS));
-          BBoard * bb = new BBoard(*b);
+          assert(bb->initFromPosition(START_POS));
+          assert(b->getSignature() == bb->getSignature());
 
           do { 
 
             do {
               slen = b->generateAllSteps(b->getPlayerToMove(), s);
               bslen = bb->genSteps(bb->getPlayerToMove(), bs);
+             /* cerr << "=============================";
+
+              cerr << b->toString();
+              cerr << slen;
+              for (int i = 0; i < slen; i++){
+                cerr << s[i].toString() << " ";
+              }
+                cerr << endl;
+              cerr << bb->toString();
+              cerr << bslen;
+              for (int i = 0; i < bslen; i++){
+                cerr << bs[i].toString() << " ";
+              }
+                cerr << endl;
+              */  
                 
               assert(slen == bslen); 
               if (slen == 0)
@@ -64,7 +82,7 @@ class DebugTestSuite : public CxxTest::TestSuite
               for (int i = 0; i < slen; i++){
                 bool found = false;
                 for (int j = 0; j < bslen; j++){
-                  if (s[i] == bs[j].toOld()){
+                  if (s[i].toNew() == bs[j]){
                     found = true;
                     if (i == index)
                       bindex = j;
@@ -74,6 +92,7 @@ class DebugTestSuite : public CxxTest::TestSuite
               }
               c = b->makeStepTryCommitMove(s[index]);
               bc = bb->makeStepTryCommit(bs[bindex]);
+              //cerr << s[index].toString() << " =?= " << bs[bindex].toString();
               //cerr << b->toString() << bb->toString() << " ======================== " << endl;
               assert(b->getSignature() == bb->getSignature());
               assert(c == bc); 
@@ -91,7 +110,6 @@ class DebugTestSuite : public CxxTest::TestSuite
           delete bb;
         }
  
-        */
     } 
 
 
@@ -176,13 +194,13 @@ class DebugTestSuite : public CxxTest::TestSuite
      */
     void testDistanceMacro(void)
     {
-      TS_ASSERT_EQUALS(SQUARE_DISTANCE(11, 12), 1);
-      TS_ASSERT_EQUALS(SQUARE_DISTANCE(11, 21), 1);
-      TS_ASSERT_EQUALS(SQUARE_DISTANCE(21, 18), 8);
+      TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(11, 12), 1);
+      TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(11, 21), 1);
+      TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(21, 18), 8);
       //diagonal trap distance
-      TS_ASSERT_EQUALS(SQUARE_DISTANCE(33, 66), 6);
+      TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(33, 66), 6);
       //neighbour trap distance
-      TS_ASSERT_EQUALS(SQUARE_DISTANCE(33, 63), 3);
+      TS_ASSERT_EQUALS(OB_SQUARE_DISTANCE(33, 63), 3);
     }
 
     /**
@@ -296,6 +314,7 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(RABBITS_TEST_DIR) + s1;
       Board* b = new Board();
       b->initFromPosition(fn.c_str());
+      cerr<< b->toString();
       //BBoard* bb = new BBoard(*b);
       //cerr << bb->toString();
       Move move;

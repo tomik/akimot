@@ -173,7 +173,7 @@ void Benchmark::benchmarkPlayout()
     SimplePlayout simplePlayout(playBoard, PLAYOUT_DEPTH, 0);
     playoutStatus = simplePlayout.doPlayout ();
 
-		playoutAvgLen += simplePlayout.getPlayoutLength(); 
+	playoutAvgLen += simplePlayout.getPlayoutLength(); 
     delete playBoard;
   }
 
@@ -251,9 +251,9 @@ void Benchmark::benchmarkAll()
   benchmarkCopyBoard();
   benchmarkEval();
   benchmarkEvalBetter();
-  benchmarkPlayout();
   benchmarkBitPlayout();
   benchmarkQuickGoalCheck();
+  benchmarkPlayout();
   benchmarkUct();
   benchmarkSearch();
   

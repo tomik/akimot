@@ -1,35 +1,36 @@
 #include "old_board.h"
 
-const int direction[4]={NORTH,EAST,SOUTH,WEST};
-const int rabbitForward[2]={NORTH,SOUTH};
+const int direction[4]={OB_NORTH,OB_EAST,OB_SOUTH,OB_WEST};
+const int rabbitForward[2]={OB_NORTH,OB_SOUTH};
 const int rabbitWinRow[2]={8,1};
 const int trap[4]={33,36,63,66};
+u64 zobrist[2][7][100];     
 
 //thirdRepetition class
-ThirdRep*  Board::thirdRep_;
+ThirdRep*  OB_Board::thirdRep_;
 
 // switch to know when to init static variables in class Board
-bool Board::classInit = false;
+bool OB_Board::classInit = false;
 
 //---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
 //
 
-Board::Board()
+OB_Board::OB_Board()
 {
 }
 
 //--------------------------------------------------------------------- 
 
-void Board::initNewGame()
+void OB_Board::initNewGame()
 {
   init(true);
 }
 
 //--------------------------------------------------------------------- 
 
-bool Board::initFromRecord(const char* fn)
+bool OB_Board::initFromRecord(const char* fn)
 {
 
   init();
@@ -71,14 +72,14 @@ bool Board::initFromRecord(const char* fn)
 
 //--------------------------------------------------------------------- 
 
-bool Board::operator== ( const Board& board) const
+bool OB_Board::operator== ( const OB_Board& board) const
 {
   return (signature_ == board.signature_ && moveCount_ == board.moveCount_ ) ;
 }
 
 //---------------------------------------------------------------------
 
-bool Board::initFromPosition(const char* fn)
+bool OB_Board::initFromPosition(const char* fn)
 {
   fstream f;
 
@@ -97,7 +98,7 @@ bool Board::initFromPosition(const char* fn)
 
 //---------------------------------------------------------------------
 
-bool Board::initFromPositionCompactString(const string& s)
+bool OB_Board::initFromPositionCompactString(const string& s)
 {
   stringstream ss;
   ss.str(s);
@@ -106,7 +107,7 @@ bool Board::initFromPositionCompactString(const string& s)
   ss >> side;
 
   toMove_ = sideCharToPlayer(side);
-  if (! IS_PLAYER(toMove_))
+  if (! OB_IS_PLAYER(toMove_))
     return false;
   string boardStr = getStreamRest(ss);
   
@@ -120,7 +121,7 @@ bool Board::initFromPositionCompactString(const string& s)
       assert(k < boardStr.length());
       char c = boardStr[k++];
       if (c == ' ' || c=='X' || c=='x')
-        board_[i*10+j] = (EMPTY_SQUARE); 
+        board_[i*10+j] = (OB_EMPTY_SQUARE); 
       else {
         try{
           PiecePair piecePair = parsePieceChar(c);
@@ -138,7 +139,7 @@ bool Board::initFromPositionCompactString(const string& s)
 
 //--------------------------------------------------------------------- 
 
-Step Board::findMCstep() 
+Step OB_Board::findMCstep() 
 {
   Step step;
 
@@ -164,7 +165,7 @@ Step Board::findMCstep()
   assert(stepArrayLen < MAX_STEPS);
 
   if (len == 0 ){ //player to move has no step to play - not even pass
-    winner_ = OPP(toMove_);
+    winner_ = OB_OPP(toMove_);
     return Step(STEP_NULL,toMove_); 
   }
 
@@ -181,7 +182,7 @@ Step Board::findMCstep()
 
 //--------------------------------------------------------------------- 
 
-void Board::findMCmoveAndMake()
+void OB_Board::findMCmoveAndMake()
 {
   //TODO area selection 
   
@@ -208,7 +209,7 @@ void Board::findMCmoveAndMake()
     stepArray[0] = Step(STEP_PASS, toMove_);
 
     for (uint i = 0; i < p.getLen(); i++) { 
-      if (OWNER(board_[p[i]]) == toMove_){
+      if (OB_OWNER(board_[p[i]]) == toMove_){
         generateStepsForPiece(p[i], stepArray, stepArrayLen);
       }
     }
@@ -234,7 +235,7 @@ void Board::findMCmoveAndMake()
 
 //--------------------------------------------------------------------- 
 
-void Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const
+void OB_Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const
 {
   for (uint i = 0; i < stepsNum; i++){
     heurs[i] = evaluateStep(steps[i]); 
@@ -244,13 +245,13 @@ void Board::getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heur
 
 //--------------------------------------------------------------------- 
 
-void Board::init(bool newGame)
+void OB_Board::init(bool newGame)
 {
 
   stepArrayLen = 0;
 
-  assert(OPP(GOLD) == SILVER);
-  assert(OPP(SILVER) == GOLD);
+  assert(OB_OPP(OB_GOLD) == OB_SILVER);
+  assert(OB_OPP(OB_SILVER) == OB_GOLD);
 
   //game initialization - done in the first run or when newgame is specified
   if (! classInit || newGame) {
@@ -261,21 +262,21 @@ void Board::init(bool newGame)
   }
 
   for (int i = 0; i < 100; i++)  
-    board_[i] = OFF_BOARD_SQUARE;
+    board_[i] = OB_OFF_BOARD_SQUARE;
 
   for (int i = 1; i < 9; i++)
     for (int j = 1; j < 9; j++){
-      board_[10*i+j]       = EMPTY_SQUARE;
+      board_[10*i+j]       = OB_EMPTY_SQUARE;
       //frozenBoard is not in use now
       //frozenBoard_[10*i+j] = false;           //implicitly we consider everything not frozen
     }
 
-  toMove_    = GOLD;
+  toMove_    = OB_GOLD;
   toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
   stepCount_ = 0;
   moveCount_ = 1;
   lastStep_  = Step();
-  winner_    = EMPTY;
+  winner_    = OB_EMPTY;
 
   //init pieceArray and rabbitsNum
   pieceArray[0].clear();
@@ -283,7 +284,7 @@ void Board::init(bool newGame)
   rabbitsNum[0] = 0;
   rabbitsNum[1] = 0;
 
-  assert(PLAYER_TO_INDEX(GOLD) == 0 && PLAYER_TO_INDEX(SILVER) == 1);
+  assert(PLAYER_TO_INDEX(OB_GOLD) == 0 && PLAYER_TO_INDEX(OB_SILVER) == 1);
 
   signature_ = 0;
   preMoveSignature_ = 0; 
@@ -293,7 +294,7 @@ void Board::init(bool newGame)
 //---------------------------------------------------------------------
 
 
-bool Board::initFromPositionStream(istream& is)
+bool OB_Board::initFromPositionStream(istream& is)
 {
 
   init();
@@ -308,7 +309,7 @@ bool Board::initFromPositionStream(istream& is)
     is >> side;
     is.ignore(1024,'\n'); //ignores the rest of initial line 
     toMove_ = sideCharToPlayer(side);
-    if (! IS_PLAYER(toMove_))
+    if (! OB_IS_PLAYER(toMove_))
       return false;
     toMoveIndex_ = PLAYER_TO_INDEX(toMove_);
     is.ignore(1024,'\n'); //ignores the top of the border till EOF 
@@ -321,7 +322,7 @@ bool Board::initFromPositionStream(istream& is)
         c=is.get();
 
         if (c == ' ' || c=='X' || c=='x' || c == '.')
-          board_[i*10+j] = (EMPTY_SQUARE); 
+          board_[i*10+j] = (OB_EMPTY_SQUARE); 
         else {
           try{
             piecePair = parsePieceChar(c);
@@ -346,17 +347,17 @@ bool Board::initFromPositionStream(istream& is)
 
 //--------------------------------------------------------------------- 
 
-player_t Board::sideCharToPlayer(char side) const
+ob_player_t OB_Board::sideCharToPlayer(char side) const
 {
-  player_t player;
+  ob_player_t player;
   if (! (side == 'w' || side == 'b' || side == 'g' || side =='s'))
-    return EMPTY;
+    return OB_EMPTY;
 
 
   if (side == 'w' || side == 'g')
-    player = GOLD;
+    player = OB_GOLD;
   else {
-    player = SILVER;
+    player = OB_SILVER;
   }
 
   return player;
@@ -364,23 +365,23 @@ player_t Board::sideCharToPlayer(char side) const
 
 //--------------------------------------------------------------------- 
 
-void Board::afterPositionLoad()
+void OB_Board::afterPositionLoad()
 {
   makeSignature();    //(unique) position identification
   preMoveSignature_ = signature_;
 
   for (int square = 11; square < 89; square++){
-    if (IS_PLAYER(board_[square]))
-      pieceArray[PLAYER_TO_INDEX(OWNER(board_[square]))].add(square);
-    if (PIECE(board_[square]) == PIECE_RABBIT)
-      rabbitsNum[PLAYER_TO_INDEX(OWNER(board_[square]))]++; 
+    if (OB_IS_PLAYER(board_[square]))
+      pieceArray[PLAYER_TO_INDEX(OB_OWNER(board_[square]))].add(square);
+    if (OB_PIECE(board_[square]) == OB_PIECE_RABBIT)
+      rabbitsNum[PLAYER_TO_INDEX(OB_OWNER(board_[square]))]++; 
   }
 }
 
 //--------------------------------------------------------------------- 
 
-recordAction_e  Board::parseRecordActionToken(const string& token, player_t& player, 
-                                              piece_t& piece, square_t& from, square_t& to)
+recordAction_e  OB_Board::parseRecordActionToken(const string& token, ob_player_t& player, 
+                                              ob_piece_t& piece, ob_square_t& from, ob_square_t& to)
 {
   assert(token.length() == 3 || token.length() == 4);
   recordAction_e recordAction = ACTION_STEP;
@@ -404,15 +405,15 @@ recordAction_e  Board::parseRecordActionToken(const string& token, player_t& pla
   from = (row) * 10 + (col + 1);
 
   if (recordAction == ACTION_STEP){
-    square_t direction = 0; 
+    ob_square_t direction = 0; 
     switch  (token[3]){
-      case 'n': direction = NORTH;  
+      case 'n': direction = OB_NORTH;  
         break;  
-      case 's': direction = SOUTH;  
+      case 's': direction = OB_SOUTH;  
         break;  
-      case 'e': direction = EAST;  
+      case 'e': direction = OB_EAST;  
         break;  
-      case 'w': direction = WEST;  
+      case 'w': direction = OB_WEST;  
         break;  
       default:
         assert(false);
@@ -426,23 +427,23 @@ recordAction_e  Board::parseRecordActionToken(const string& token, player_t& pla
 
 //--------------------------------------------------------------------- 
 
-PiecePair Board::parsePieceChar(char pieceChar) 
+PiecePair OB_Board::parsePieceChar(char pieceChar) 
 {
-  player_t player;
-  piece_t piece;
+  ob_player_t player;
+  ob_piece_t piece;
 
-  player = GOLD;
+  player = OB_GOLD;
   if (islower(pieceChar))
-    player = SILVER;
+    player = OB_SILVER;
   pieceChar = tolower(pieceChar); 
 
   switch(pieceChar) {
-    case 'e' : piece = PIECE_ELEPHANT; break;
-    case 'm' : piece = PIECE_CAMEL;    break;
-    case 'h' : piece = PIECE_HORSE;    break;
-    case 'd' : piece = PIECE_DOG;      break;
-    case 'c' : piece = PIECE_CAT;      break;
-    case 'r' : piece = PIECE_RABBIT;   break;
+    case 'e' : piece = OB_PIECE_ELEPHANT; break;
+    case 'm' : piece = OB_PIECE_CAMEL;    break;
+    case 'h' : piece = OB_PIECE_HORSE;    break;
+    case 'd' : piece = OB_PIECE_DOG;      break;
+    case 'c' : piece = OB_PIECE_CAT;      break;
+    case 'r' : piece = OB_PIECE_RABBIT;   break;
     default:
       throw "Incorrect piece Character encountered.";
       break;
@@ -453,27 +454,30 @@ PiecePair Board::parsePieceChar(char pieceChar)
 
 //---------------------------------------------------------------------
 
-void Board::initZobrist() const
+void OB_Board::initZobrist() const
 {
    for (int i = 0; i < PLAYER_NUM; i++)
-    for (int j = 0; j < PIECE_NUM; j++)
-      for (int k = 0; k < SQUARE_NUM; k++)
-        zobrist[i][j][k] = getRandomU64(); 
+    for (int j = 0; j < OB_PIECE_NUM; j++)
+      for (int k = 0; k < OB_SQUARE_NUM; k++){
+        //cerr << k <<  " ~ "  << SQUARE_TO_INDEX_64(k) << endl;
+        zobrist[i][j][k] = bits::zobrist[i][j][SQUARE_TO_INDEX_64(k)];
+      }
+  //exit(1);
 }
 
 //---------------------------------------------------------------------
 
-void Board::makeSignature()
+void OB_Board::makeSignature()
 {
   signature_ = 0;
   for (int i = 0; i < 100; i++)  
-    if IS_PLAYER(board_[i])
-      signature_ ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[i]))][PIECE(board_[i])][i] ;
+    if OB_IS_PLAYER(board_[i])
+      signature_ ^= zobrist[PLAYER_TO_INDEX(OB_OWNER(board_[i]))][OB_PIECE(board_[i])][i] ;
 }
 
 //---------------------------------------------------------------------
 
-void Board::makeStep(const Step& step)
+void OB_Board::makeStep(const Step& step)
 {
   
   lastStep_ = step;
@@ -492,7 +496,7 @@ void Board::makeStep(const Step& step)
   //in STEP_PUSH victim's move must be made first ! 
   if (step.stepType_ == STEP_PUSH ){  
     assert( stepCount_ < 3 ); 
-    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    setSquare( step.oppTo_, OB_OPP(step.player_), step.oppPiece_);
     clearSquare(step.oppFrom_);
     stepCount_++;
     pieceArray[1 - playerIndex].del(step.oppFrom_);
@@ -513,7 +517,7 @@ void Board::makeStep(const Step& step)
   //pull steps
   if (step.stepType_ == STEP_PULL) {  
     assert( stepCount_ < 4 ); 
-    setSquare( step.oppTo_, OPP(step.player_), step.oppPiece_);
+    setSquare( step.oppTo_, OB_OPP(step.player_), step.oppPiece_);
     clearSquare(step.oppFrom_);
     stepCount_++;
     pieceArray[1 - playerIndex].del(step.oppFrom_);
@@ -526,16 +530,16 @@ void Board::makeStep(const Step& step)
 
 //---------------------------------------------------------------------
 
-bool Board::findRandomStep(Step& step) const
+bool OB_Board::findRandomStep(Step& step) const
 {
   
   bool found = false; //once set to true, move is generated and returned 
   
   bool tryLocal = false;
   if (cfg.localPlayout() && 
-      lastStep_.player_ == toMove_ && 
+      lastStep_.player_ == int(toMove_) && 
       lastStep_.stepType_ != STEP_NULL && 
-      IS_PLAYER(board_[lastStep_.to_])){
+      OB_IS_PLAYER(board_[lastStep_.to_])){
     tryLocal = true;
   }
 
@@ -550,26 +554,26 @@ bool Board::findRandomStep(Step& step) const
       step.from_ = pieceArray[toMoveIndex_][rand() % pieceArray[toMoveIndex_].getLen()];
     }
 
-    assert(IS_PLAYER(board_[step.from_]));
-    assert(OWNER(board_[step.from_]) == toMove_);
+    assert(OB_IS_PLAYER(board_[step.from_]));
+    assert(OB_OWNER(board_[step.from_]) == toMove_);
 
     if (isFrozen(step.from_))
       continue;
    
     step.to_ = step.from_ + direction[rand() % 4];
-    if ( board_[step.to_] == EMPTY_SQUARE ){ //single/pull
-      if (PIECE(board_[step.from_]) == PIECE_RABBIT &&   //rabbits cannot backwards
-         (step.to_ - step.from_ == (toMove_ == GOLD ? SOUTH : NORTH ))) {
+    if ( board_[step.to_] == OB_EMPTY_SQUARE ){ //single/pull
+      if (OB_PIECE(board_[step.from_]) == OB_PIECE_RABBIT &&   //rabbits cannot backwards
+         (step.to_ - step.from_ == (toMove_ == OB_GOLD ? OB_SOUTH : OB_NORTH ))) {
         continue;
       }
 
       for (int j = 0; j < 4; j++){
         step.oppFrom_ = step.from_ + direction[j];    //todo - exclude "to" direction
-        if ( OWNER(board_[step.oppFrom_]) == OPP(OWNER(board_[step.from_])) &&
-             PIECE(board_[step.oppFrom_]) <  PIECE(board_[step.from_])){
+        if ( OB_OWNER(board_[step.oppFrom_]) == OB_OPP(OB_OWNER(board_[step.from_])) &&
+             OB_PIECE(board_[step.oppFrom_]) <  OB_PIECE(board_[step.from_])){
           found = true; //generate the step 
           step.stepType_ = STEP_PULL;
-          assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
+          assert(OB_OWNER(board_[step.oppFrom_]) == OB_OPP(toMove_)); 
           step.oppTo_ = step.from_; 
           break;
         }
@@ -580,15 +584,15 @@ bool Board::findRandomStep(Step& step) const
       }
     }else{ //push
 
-      if ( OWNER(board_[step.to_]) == OPP(OWNER(board_[step.from_])) &&
-           PIECE(board_[step.to_]) <  PIECE(board_[step.from_])){
-        assert(IS_PLAYER(board_[step.to_]));
+      if ( OB_OWNER(board_[step.to_]) == OB_OPP(OB_OWNER(board_[step.from_])) &&
+           OB_PIECE(board_[step.to_]) <  OB_PIECE(board_[step.from_])){
+        assert(OB_IS_PLAYER(board_[step.to_]));
         for (int j = 0; j < 4; j++){
-          if (board_[step.to_ + direction[j]] == EMPTY_SQUARE){  //generate the step
+          if (board_[step.to_ + direction[j]] == OB_EMPTY_SQUARE){  //generate the step
             step.oppTo_ = step.to_ + direction[j];    
             step.stepType_ = STEP_PUSH;
             step.oppFrom_ = step.to_; 
-            assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
+            assert(OB_OWNER(board_[step.oppFrom_]) == OB_OPP(toMove_)); 
             found = true;
             break;
           }
@@ -598,8 +602,8 @@ bool Board::findRandomStep(Step& step) const
 
     if (found){
       step.player_ = toMove_;
-      step.piece_  = PIECE(board_[step.from_]);
-      assert(OWNER(board_[step.from_]) == toMove_);
+      step.piece_  = OB_PIECE(board_[step.from_]);
+      assert(OB_OWNER(board_[step.from_]) == toMove_);
       assert(step.stepType_ == STEP_SINGLE || step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL);
 
       if (step.stepType_ != STEP_SINGLE) {
@@ -608,8 +612,8 @@ bool Board::findRandomStep(Step& step) const
           found = false;
           continue;
         }
-        assert(OWNER(board_[step.oppFrom_]) == OPP(toMove_)); 
-        step.oppPiece_  = PIECE(board_[step.oppFrom_]);
+        assert(OB_OWNER(board_[step.oppFrom_]) == OB_OPP(toMove_)); 
+        step.oppPiece_  = OB_PIECE(board_[step.oppFrom_]);
       }
 
       return true;
@@ -620,7 +624,7 @@ bool Board::findRandomStep(Step& step) const
 
 //--------------------------------------------------------------------- 
 
-Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
+Step OB_Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
 {
   assert(stepsNum > 0);
   uint bestIndex = stepsNum - 1;
@@ -666,7 +670,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
 
 //--------------------------------------------------------------------- 
 
-float Board::evaluateStep(const Step& step) const
+float OB_Board::evaluateStep(const Step& step) const
 {
   float eval = 0; 
 
@@ -676,7 +680,7 @@ float Board::evaluateStep(const Step& step) const
   }
 
   assert(step.pieceMoved());
-  assert(IS_PLAYER(board_[step.from_]));
+  assert(OB_IS_PLAYER(board_[step.from_]));
   
   //we don't like inverse steps 
   //TODO ... inverse step is reasonable when something dies in the trap
@@ -685,14 +689,14 @@ float Board::evaluateStep(const Step& step) const
     return eval;
   }
 
-  if (step.piece_ == PIECE_ELEPHANT ) {
+  if (step.piece_ == OB_PIECE_ELEPHANT ) {
     eval += 0.1;
   }
 
   if (step.isPushPull()){
     //push opponent to the goal :( not impossible ? )
-    if (step.oppPiece_ == PIECE_RABBIT && 
-        ROW(step.oppTo_) == rabbitWinRow[PLAYER_TO_INDEX(OPP(step.player_))]){
+    if (step.oppPiece_ == OB_PIECE_RABBIT && 
+        ROW(step.oppTo_) == rabbitWinRow[PLAYER_TO_INDEX(OB_OPP(step.player_))]){
       eval -= 10;
     }
     //otherwise push/pulls are encouraged
@@ -705,9 +709,9 @@ float Board::evaluateStep(const Step& step) const
   if (checkKillForward(step.from_, step.to_)){
     //allow self-kills to allow rabbits move to the goal
     //in the opponent's part of the board
-    if (step.piece_ == PIECE_RABBIT && ! IS_TRAP(step.to_) && 
-        ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
-        (toMove_ == SILVER && ROW(step.from_) <= 5))){
+    if (step.piece_ == OB_PIECE_RABBIT && ! OB_IS_TRAP(step.to_) && 
+        ((toMove_ == OB_GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == OB_SILVER && ROW(step.from_) <= 5))){
       eval -= 1;
     }
     else{
@@ -717,7 +721,7 @@ float Board::evaluateStep(const Step& step) const
   else{
 
     //push opp to trap is good 
-    if (step.isPushPull() && IS_TRAP(step.oppTo_)){
+    if (step.isPushPull() && OB_IS_TRAP(step.oppTo_)){
       eval += 3;
     }
 
@@ -728,20 +732,20 @@ float Board::evaluateStep(const Step& step) const
   }
 
   //rabbit movements 
-  if (step.piece_ == PIECE_RABBIT){
+  if (step.piece_ == OB_PIECE_RABBIT){
     //moves in opponent's part of the board are encouraged
-    if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
-        (toMove_ == SILVER && ROW(step.from_) <= 5)){
+    if ((toMove_ == OB_GOLD && ROW(step.from_) >= 4) ||
+        (toMove_ == OB_SILVER && ROW(step.from_) <= 5)){
       //empty space ahead is good 
       bool empty = true;
       int emptyNum = 0;
       int row = ROW(step.from_);
-      int toEdge = toMove_ == GOLD ? 
+      int toEdge = toMove_ == OB_GOLD ? 
           TOP_ROW - row : 
           row - BOTTOM_ROW;
       while (emptyNum < toEdge){
-        row += toMove_ == GOLD ? +1 : -1 ;
-        if (board_[row * 10 + COL(step.from_)] != EMPTY_SQUARE){
+        row += toMove_ == OB_GOLD ? +1 : -1 ;
+        if (board_[row * 10 + COL(step.from_)] != OB_EMPTY_SQUARE){
           empty = false;
           assert(toEdge > emptyNum);
           break;
@@ -766,7 +770,7 @@ float Board::evaluateStep(const Step& step) const
   //locality 
   if (cfg.localPlayout() && 
       lastStep_.stepType_ != STEP_NULL){
-    int d = SQUARE_DISTANCE(lastStep_.to_, step.from_);
+    int d = OB_SQUARE_DISTANCE(lastStep_.to_, step.from_);
     eval += d <= 3 ? (3 - d) * 0.5 : 0;
   }
 
@@ -775,13 +779,13 @@ float Board::evaluateStep(const Step& step) const
 
 //--------------------------------------------------------------------- 
 
-bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) const
+bool OB_Board::checkKillForward(ob_square_t from, ob_square_t to, KillInfo* killInfo) const
 {
 
-  if ( IS_TRAP(to) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
-    if ( ! hasTwoFriends(to, OWNER(board_[from])) ) { 
+  if ( OB_IS_TRAP(to) ) { //piece steps into the trap ( or is pushed/pulled in there ) 
+    if ( ! hasTwoFriends(to, OB_OWNER(board_[from])) ) { 
       if (killInfo != NULL){
-        killInfo->setValues(OWNER(board_[from]), PIECE(board_[from]), to); //activates as well
+        killInfo->setValues(OB_OWNER(board_[from]), OB_PIECE(board_[from]), to); //activates as well
       }
       return true;
     }
@@ -792,12 +796,12 @@ bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) con
   int actTrapPos;
   for (int i = 0; i < 4; i++){
     actTrapPos = from + direction[i];
-    if ( IS_TRAP(actTrapPos) && 
-        board_[actTrapPos] != EMPTY_SQUARE &&          //it is a trap where piece is standing
-        OWNER(board_[actTrapPos]) == OWNER(board_[from]) && 
-        ! hasTwoFriends(actTrapPos, OWNER(board_[actTrapPos])) ){   //piece has < 2 friends
+    if ( OB_IS_TRAP(actTrapPos) && 
+        board_[actTrapPos] != OB_EMPTY_SQUARE &&          //it is a trap where piece is standing
+        OB_OWNER(board_[actTrapPos]) == OB_OWNER(board_[from]) && 
+        ! hasTwoFriends(actTrapPos, OB_OWNER(board_[actTrapPos])) ){   //piece has < 2 friends
         if (killInfo != NULL){
-          killInfo->setValues(OWNER(board_[actTrapPos]), PIECE(board_[actTrapPos]), actTrapPos);                   
+          killInfo->setValues(OB_OWNER(board_[actTrapPos]), OB_PIECE(board_[actTrapPos]), actTrapPos);                   
         }
         return true;
     }
@@ -807,13 +811,13 @@ bool Board::checkKillForward(square_t from, square_t to, KillInfo* killInfo) con
 
 //--------------------------------------------------------------------- 
 
-bool Board::checkKill(square_t square) 
+bool OB_Board::checkKill(ob_square_t square) 
 {
   int actTrapPos;
   for (int i = 0; i < 4; i++){
     actTrapPos = square + direction[i];
-    if ( IS_TRAP(actTrapPos) ){    
-      if ( board_[actTrapPos] != EMPTY_SQUARE && ! hasFriend(actTrapPos) ){
+    if ( OB_IS_TRAP(actTrapPos) ){    
+      if ( board_[actTrapPos] != OB_EMPTY_SQUARE && ! hasFriend(actTrapPos) ){
         performKill(actTrapPos);
         return true;
       }
@@ -825,11 +829,11 @@ bool Board::checkKill(square_t square)
 
 //--------------------------------------------------------------------- 
 
-void Board::performKill(square_t trapPos)
+void OB_Board::performKill(ob_square_t trapPos)
 {
-  int playerIndex = PLAYER_TO_INDEX(OWNER(board_[trapPos]));
+  int playerIndex = PLAYER_TO_INDEX(OB_OWNER(board_[trapPos]));
 
-  if (PIECE(board_[trapPos]) == PIECE_RABBIT)   //update rabbitsNum - for gameEnd check 
+  if (OB_PIECE(board_[trapPos]) == OB_PIECE_RABBIT)   //update rabbitsNum - for gameEnd check 
      rabbitsNum[playerIndex]--;
   clearSquare(trapPos);
   pieceArray[playerIndex].del(trapPos);
@@ -837,7 +841,7 @@ void Board::performKill(square_t trapPos)
 
 //---------------------------------------------------------------------
 
-bool Board::makeStepTryCommitMove(const Step& step) 
+bool OB_Board::makeStepTryCommitMove(const Step& step) 
 {
   makeStep(step);
 	if (stepCount_ >= 4 || ! step.pieceMoved()) {
@@ -850,7 +854,7 @@ bool Board::makeStepTryCommitMove(const Step& step)
 
 //---------------------------------------------------------------------
 
-void Board::makeMove(const string& moveRaw)
+void OB_Board::makeMove(const string& moveRaw)
 {
   string move = trimLeft(trimRight(moveRaw));
   if (move == "")
@@ -861,10 +865,10 @@ void Board::makeMove(const string& moveRaw)
   while (ss.good()){
     recordAction_e recordAction;
     string token;
-    player_t player; 
-    piece_t  piece;
-    square_t from;
-    square_t to;
+    ob_player_t player; 
+    ob_piece_t  piece;
+    ob_square_t from;
+    ob_square_t to;
 
     ss >> token;
 
@@ -876,7 +880,7 @@ void Board::makeMove(const string& moveRaw)
         assert(moveCount_ == 1);
         setSquare(from, player, piece);
         pieceArray[PLAYER_TO_INDEX(player)].add(from);
-        if (piece == PIECE_RABBIT)
+        if (piece == OB_PIECE_RABBIT)
           rabbitsNum[PLAYER_TO_INDEX(player)]++; 
         break;
       case ACTION_STEP:
@@ -884,6 +888,7 @@ void Board::makeMove(const string& moveRaw)
         makeStep(step);
         break;
       case ACTION_TRAP_FALL:
+      case ACTION_ERROR:
         break;
     }
   }
@@ -894,7 +899,7 @@ void Board::makeMove(const string& moveRaw)
 
 //---------------------------------------------------------------------
 
-void Board::makeMove(const Move& move)
+void OB_Board::makeMove(const Move& move)
 {
   makeMoveNoCommit(move);
   commitMove();
@@ -902,7 +907,7 @@ void Board::makeMove(const Move& move)
 
 //---------------------------------------------------------------------
 
-void Board::makeMoveNoCommit(const Move& move)
+void OB_Board::makeMoveNoCommit(const Move& move)
 {
   StepList stepList;
   stepList  = move.getStepList();
@@ -915,12 +920,12 @@ void Board::makeMoveNoCommit(const Move& move)
 
 //--------------------------------------------------------------------- 
 
-void Board::commitMove()
+void OB_Board::commitMove()
 {
-  assert(toMove_ == GOLD || toMove_ == SILVER);
-  if (toMove_ == SILVER) 
+  assert(toMove_ == OB_GOLD || toMove_ == OB_SILVER);
+  if (toMove_ == OB_SILVER) 
     moveCount_++;
-  toMove_ = OPP(toMove_);
+  toMove_ = OB_OPP(toMove_);
   toMoveIndex_ = 1 - toMoveIndex_;
   assert(toMoveIndex_ == uint(PLAYER_TO_INDEX(toMove_)));
   stepCount_ = 0;
@@ -932,19 +937,19 @@ void Board::commitMove()
 
 //--------------------------------------------------------------------- 
 
-void Board::updateWinner()
+void OB_Board::updateWinner()
 {
-  //assert(winner_ == EMPTY);
+  //assert(winner_ == OB_EMPTY);
   //winner might be set already ( when player to move has no move ) 
   for (int i = 11; i <= 19; i++)
-    if (board_[i] == (SILVER | PIECE_RABBIT) )
-      winner_ = SILVER;
+    if (board_[i] == (OB_SILVER | OB_PIECE_RABBIT) )
+      winner_ = OB_SILVER;
   for (int i = 81; i <= 88; i++)
-    if (board_[i] == (GOLD | PIECE_RABBIT) )
-      winner_ = GOLD;
+    if (board_[i] == (OB_GOLD | OB_PIECE_RABBIT) )
+      winner_ = OB_GOLD;
 
   if (rabbitsNum[toMoveIndex_] <= 0)  //if player lost his last rabbit in his move - he loses ... 
-    winner_ = OPP(toMove_);
+    winner_ = OB_OPP(toMove_);
   if (rabbitsNum[1 - toMoveIndex_] <= 0)  //unless the other also lost his last rabbit 
     winner_ = toMove_;
 }
@@ -952,14 +957,14 @@ void Board::updateWinner()
 //--------------------------------------------------------------------- 
 
 
-bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
+bool OB_Board::quickGoalCheck(ob_player_t player, int stepLimit, Move* move) const
 {
-  assert(IS_PLAYER(player));
+  assert(OB_IS_PLAYER(player));
   assert(stepLimit <= STEPS_IN_MOVE);
 
   queue<int> q;
   FlagBoard flagBoard;
-  int rabbitDirection[3] = {player == GOLD ? NORTH : SOUTH, EAST, WEST}; 
+  int rabbitDirection[3] = {player == OB_GOLD ? OB_NORTH : OB_SOUTH, OB_EAST, OB_WEST}; 
   int winRow[2] = {TOP_ROW, BOTTOM_ROW};
   int index = PLAYER_TO_INDEX(player);
 
@@ -968,17 +973,17 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
   //conditions on rabbits should hold search in these bounds 
   //we get like 10% speedup in quickGoalCheck by this
   //TODO this might be still narrowed when stepLimit < 4
-  const int lower = player == GOLD ? 41 : 11;
-  const int upper = player == GOLD ? 89 : 59;
+  const int lower = player == OB_GOLD ? 41 : 11;
+  const int upper = player == OB_GOLD ? 89 : 59;
 
   //init with rabbits having chance to reach the goal (distance 4 from some trap)
   for (uint i = 0; i < pieceArray[index].getLen(); i++){
-    if (PIECE(board_[pieceArray[index][i]]) != PIECE_RABBIT || 
+    if (OB_PIECE(board_[pieceArray[index][i]]) != OB_PIECE_RABBIT || 
         abs(ROW(pieceArray[index][i]) - winRow[index]) > stepLimit){
       continue;
     }
 
-    //narrower (=>quicker) than [0, SQUARE_NUM])
+    //narrower (=>quicker) than [0, OB_SQUARE_NUM])
     for (int k = lower; k < upper; k++ ){
       flagBoard[k] = FLAG_BOARD_EMPTY;
     } 
@@ -988,10 +993,10 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
     //sacrifice trap issues
     for (int j = 0; j < 4; j++){
       int ngb = pieceArray[index][i] + direction[j];
-      if ( IS_TRAP(ngb) && 
-          OWNER(board_[ngb]) == player && 
+      if ( OB_IS_TRAP(ngb) && 
+          OB_OWNER(board_[ngb]) == player && 
           ! hasTwoFriends(ngb, player)){
-        assert(board_[ngb] != EMPTY_SQUARE);
+        assert(board_[ngb] != OB_EMPTY_SQUARE);
         sacrificeTrap = ngb;
       }
     }
@@ -1017,14 +1022,14 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
         continue;
       //frozen or in the trap
       if (flagBoard[act] == 1  || 
-          (flagBoard[act] == 2 && SQUARE_DISTANCE(act, sacrificeTrap) == 1)) {
+          (flagBoard[act] == 2 && OB_SQUARE_DISTANCE(act, sacrificeTrap) == 1)) {
         if (!hasTwoFriends(act, player) && 
-            (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
+            (hasStrongerEnemy(act, player, OB_PIECE_RABBIT) || OB_IS_TRAP(act)))
           continue;
       }
       else{
         if (!hasFriend(act, player) && 
-            (hasStrongerEnemy(act, player, PIECE_RABBIT) || IS_TRAP(act)))
+            (hasStrongerEnemy(act, player, OB_PIECE_RABBIT) || OB_IS_TRAP(act)))
           continue;
       }
 
@@ -1036,7 +1041,7 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
         if (flagBoard[ngb] != FLAG_BOARD_EMPTY ) {
           continue; 
         }
-        if ( board_[ngb] == EMPTY_SQUARE ){ 
+        if ( board_[ngb] == OB_EMPTY_SQUARE ){ 
           if (ROW(ngb) == winRow[index]){
             if (move != NULL){
               flagBoard[ngb] = flagBoard[act] + 1;
@@ -1057,15 +1062,15 @@ bool Board::quickGoalCheck(player_t player, int stepLimit, Move* move) const
 
 //--------------------------------------------------------------------- 
 
-bool Board::quickGoalCheck(Move* move) const
+bool OB_Board::quickGoalCheck(Move* move) const
 {
   return quickGoalCheck(toMove_, STEPS_IN_MOVE - stepCount_, move );
 }
 
 //---------------------------------------------------------------------
 
-Move Board::tracebackFlagBoard(const FlagBoard& flagBoard, 
-                                int win_square, player_t player) const
+Move OB_Board::tracebackFlagBoard(const FlagBoard& flagBoard, 
+                                int win_square, ob_player_t player) const
 {
   assert(flagBoard[win_square] <= STEPS_IN_MOVE);
   assert(flagBoard[win_square] > 0);
@@ -1079,10 +1084,10 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard,
     found_nbg = false;
     for (int j = 0; j < 4; j++){
       int nbg = act + direction[j];
-      if ( board_[nbg] != OFF_BOARD_SQUARE &&
+      if ( board_[nbg] != OB_OFF_BOARD_SQUARE &&
           flagBoard[nbg] == flagBoard[act] - 1) {
         //going backwards => prepending! 
-        move.prependStep(Step(STEP_SINGLE, player, PIECE_RABBIT, nbg, act));
+        move.prependStep(Step(STEP_SINGLE, player, OB_PIECE_RABBIT, nbg, act));
         act = nbg;
         found_nbg = true;
         break;
@@ -1096,7 +1101,7 @@ Move Board::tracebackFlagBoard(const FlagBoard& flagBoard,
 
 //---------------------------------------------------------------------
 
-u64 Board::calcAfterStepSignature(const Step& step) const
+u64 OB_Board::calcAfterStepSignature(const Step& step) const
 {
   if (step.stepType_ == STEP_PASS)
     return signature_;
@@ -1111,15 +1116,15 @@ u64 Board::calcAfterStepSignature(const Step& step) const
   u64 newSignature = signature_;
 
   if (step.stepType_ == STEP_PUSH || step.stepType_ == STEP_PULL){
-    newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppFrom_];  //erase previous location
-    if ( (! IS_TRAP(step.oppTo_)) || hasTwoFriends(step.oppTo_, OPP(toMove_)) ){              //if not killed in the trap
-      newSignature ^= zobrist[PLAYER_TO_INDEX(OPP(toMove_))][step.oppPiece_][step.oppTo_];  //add new location 
+    newSignature ^= zobrist[PLAYER_TO_INDEX(OB_OPP(toMove_))][step.oppPiece_][step.oppFrom_];  //erase previous location
+    if ( (! OB_IS_TRAP(step.oppTo_)) || hasTwoFriends(step.oppTo_, OB_OPP(toMove_)) ){              //if not killed in the trap
+      newSignature ^= zobrist[PLAYER_TO_INDEX(OB_OPP(toMove_))][step.oppPiece_][step.oppTo_];  //add new location 
       checkTrap[checkTrapNum++] = step.oppFrom_;
     }
   }
 
   newSignature ^= zobrist[PLAYER_TO_INDEX(toMove_)][step.piece_][step.from_];               //erase previous location 
-  if ( ! IS_TRAP(step.to_) || hasTwoFriends(step.to_, toMove_) ){                   //if not killed in the trap
+  if ( ! OB_IS_TRAP(step.to_) || hasTwoFriends(step.to_, toMove_) ){                   //if not killed in the trap
     newSignature ^= zobrist[PLAYER_TO_INDEX(toMove_)][step.piece_][step.to_];               //add new location 
     checkTrap[checkTrapNum++] = step.from_;
   }
@@ -1129,11 +1134,11 @@ u64 Board::calcAfterStepSignature(const Step& step) const
   for (int j = 0; j < checkTrapNum; j++){
     for (int i = 0; i < 4; i++){
       actTrap = checkTrap[j] + direction[i];
-      if ( IS_TRAP(actTrap) &&                                          //there is a trap next to the position of piece
-           board_[actTrap] != EMPTY_SQUARE &&                           
-           OWNER(board_[actTrap]) == OWNER(board_[checkTrap[j]]) &&    //there is a friend in the trap 
-           ! hasTwoFriends(actTrap, OWNER(board_[actTrap])) )          //he will die on lack of friends
-        newSignature ^= zobrist[PLAYER_TO_INDEX(OWNER(board_[actTrap]))][PIECE(board_[actTrap])][actTrap];      //erase 
+      if ( OB_IS_TRAP(actTrap) &&                                          //there is a trap next to the position of piece
+           board_[actTrap] != OB_EMPTY_SQUARE &&                           
+           OB_OWNER(board_[actTrap]) == OB_OWNER(board_[checkTrap[j]]) &&    //there is a friend in the trap 
+           ! hasTwoFriends(actTrap, OB_OWNER(board_[actTrap])) )          //he will die on lack of friends
+        newSignature ^= zobrist[PLAYER_TO_INDEX(OB_OWNER(board_[actTrap]))][OB_PIECE(board_[actTrap])][actTrap];      //erase 
     } 
   }
 
@@ -1142,7 +1147,7 @@ u64 Board::calcAfterStepSignature(const Step& step) const
 
 //---------------------------------------------------------------------
 
-int Board::generateAllStepsNoPass(player_t player, StepArray& steps) const
+int OB_Board::generateAllStepsNoPass(ob_player_t player, StepArray& steps) const
 {
   uint stepsNum = 0;
   int square;
@@ -1151,7 +1156,7 @@ int Board::generateAllStepsNoPass(player_t player, StepArray& steps) const
   for (uint index =0 ; 
       index < pieceArray[PLAYER_TO_INDEX(player)].getLen(); index++) { 
     square = pieceArray[PLAYER_TO_INDEX(player)][index];
-    assert(OWNER(board_[square]) == player); 
+    assert(OB_OWNER(board_[square]) == player); 
     generateStepsForPiece(square, steps, stepsNum);
   } //for pieces on board
 
@@ -1160,7 +1165,7 @@ int Board::generateAllStepsNoPass(player_t player, StepArray& steps) const
 
 //--------------------------------------------------------------------- 
 
-int Board::generateAllSteps(player_t player, StepArray& steps) const {
+int OB_Board::generateAllSteps(ob_player_t player, StepArray& steps) const {
   int stepsNum = generateAllStepsNoPass(player, steps);
   if (canPass()){
     steps[stepsNum++] = Step(STEP_PASS, player);
@@ -1170,27 +1175,27 @@ int Board::generateAllSteps(player_t player, StepArray& steps) const {
 
 //--------------------------------------------------------------------- 
 
-void Board::generateStepsForPiece(
-        square_t square, StepArray& steps, uint& stepsNum) const { 
+void OB_Board::generateStepsForPiece(
+        ob_square_t square, StepArray& steps, uint& stepsNum) const { 
 
   if ( isFrozen(square))  //frozen
     return; 
-  player_t player = OWNER(board_[square]);
+  ob_player_t player = OB_OWNER(board_[square]);
 
   //generate push/pull moves
   if (stepCount_ < 3) {    
     for (int i = 0; i < 4; i++) {  
-      if (OWNER(board_[square + direction[i]]) == OPP(player) 
-          && PIECE(board_[square + direction[i]]) < PIECE(board_[square])){ //weaker enemy
+      if (OB_OWNER(board_[square + direction[i]]) == OB_OPP(player) 
+          && OB_PIECE(board_[square + direction[i]]) < OB_PIECE(board_[square])){ //weaker enemy
         for (int j=0; j<4; j++)  // pull
-          if (board_[square + direction[j]] == EMPTY_SQUARE) { //create move
-              steps[stepsNum++].setValues( STEP_PULL, player,PIECE(board_[square]), square, 
-                    square + direction[j], PIECE(board_[square + direction[i]]), square + direction[i], square);
+          if (board_[square + direction[j]] == OB_EMPTY_SQUARE) { //create move
+              steps[stepsNum++].setValues( STEP_PULL, player,OB_PIECE(board_[square]), square, 
+                    square + direction[j], OB_PIECE(board_[square + direction[i]]), square + direction[i], square);
           }
         for (int j=0; j<4; j++)  //push
-          if (board_[square + direction[i] + direction[j]] == EMPTY_SQUARE) { //create move
-              steps[stepsNum++].setValues( STEP_PUSH, player, PIECE(board_[square]), square, 
-                    square + direction[i], PIECE(board_[square + direction[i]]),
+          if (board_[square + direction[i] + direction[j]] == OB_EMPTY_SQUARE) { //create move
+              steps[stepsNum++].setValues( STEP_PUSH, player, OB_PIECE(board_[square]), square, 
+                    square + direction[i], OB_PIECE(board_[square + direction[i]]),
                     square + direction[i], square + direction[i] + direction[j]);
         }
       } //if weaker enemy
@@ -1199,15 +1204,15 @@ void Board::generateStepsForPiece(
 
   // generate single moves
   for (int i=0; i<4; i++) // check each direction
-    if (board_[square + direction[i]] == EMPTY_SQUARE)  {
-      if (PIECE(board_[square]) == PIECE_RABBIT){ // rabbit cannot backwards
-        if (OWNER(board_[square]) == GOLD && direction[i] == SOUTH)
+    if (board_[square + direction[i]] == OB_EMPTY_SQUARE)  {
+      if (OB_PIECE(board_[square]) == OB_PIECE_RABBIT){ // rabbit cannot backwards
+        if (OB_OWNER(board_[square]) == OB_GOLD && direction[i] == OB_SOUTH)
           continue;
-        if (OWNER(board_[square]) == SILVER && direction[i] == NORTH)
+        if (OB_OWNER(board_[square]) == OB_SILVER && direction[i] == OB_NORTH)
           continue;
       }
       //create move
-      steps[stepsNum++].setValues(STEP_SINGLE, player, PIECE(board_[square]), 
+      steps[stepsNum++].setValues(STEP_SINGLE, player, OB_PIECE(board_[square]), 
                                       square, square + direction[i]);
     }
 
@@ -1216,7 +1221,7 @@ void Board::generateStepsForPiece(
 
 //---------------------------------------------------------------------
 
-int Board::filterRepetitions(StepArray& steps, int stepsNum) const 
+int OB_Board::filterRepetitions(StepArray& steps, int stepsNum) const 
 {
 
   //check virtual passes ( immediate repetetitions ) 
@@ -1250,7 +1255,7 @@ int Board::filterRepetitions(StepArray& steps, int stepsNum) const
 
 //---------------------------------------------------------------------
 
-bool Board::stepIsVirtualPass( Step& step ) const 
+bool OB_Board::stepIsVirtualPass( Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   if (afterStepSignature == preMoveSignature_) 
@@ -1261,7 +1266,7 @@ bool Board::stepIsVirtualPass( Step& step ) const
 
 //---------------------------------------------------------------------
 
-bool Board::stepIsThirdRepetition(const Step& step ) const 
+bool OB_Board::stepIsThirdRepetition(const Step& step ) const 
 {
   u64 afterStepSignature = calcAfterStepSignature(step);
   assert(1 - PLAYER_TO_INDEX(step.getPlayer()) == 
@@ -1275,19 +1280,19 @@ bool Board::stepIsThirdRepetition(const Step& step ) const
 
 //---------------------------------------------------------------------
 
-bool Board::hasFriend(square_t square) const 
+bool OB_Board::hasFriend(ob_square_t square) const 
 { 
-  uint owner = OWNER(board_[square]);
+  uint owner = OB_OWNER(board_[square]);
   return hasFriend(square, owner);
 }
 
 //--------------------------------------------------------------------- 
 
-bool Board::hasFriend(square_t square, player_t owner) const 
+bool OB_Board::hasFriend(ob_square_t square, ob_player_t owner) const 
 { 
-  assert( owner == GOLD || owner == SILVER );
+  assert( owner == OB_GOLD || owner == OB_SILVER );
   for(int i = 0; i < 4; i++)
-    if (OWNER(board_[square + direction[i]]) == owner)
+    if (OB_OWNER(board_[square + direction[i]]) == owner)
       return true;
 
   return false;
@@ -1295,12 +1300,12 @@ bool Board::hasFriend(square_t square, player_t owner) const
 
 //---------------------------------------------------------------------
 
-bool Board::hasTwoFriends(square_t square, player_t player) const 
+bool OB_Board::hasTwoFriends(ob_square_t square, ob_player_t player) const 
 { 
-  assert( player == GOLD || player == SILVER );
+  assert( player == OB_GOLD || player == OB_SILVER );
   bool hasFriend = false;
   for(int i = 0; i < 4; i++)
-    if (OWNER(board_[square + direction[i]]) == player) {
+    if (OB_OWNER(board_[square + direction[i]]) == player) {
       if (hasFriend)
         return true;
       hasFriend = true;
@@ -1310,20 +1315,20 @@ bool Board::hasTwoFriends(square_t square, player_t player) const
 
 //---------------------------------------------------------------------
 
-bool Board::hasStrongerEnemy(square_t square) const
+bool OB_Board::hasStrongerEnemy(ob_square_t square) const
 {
-  uint owner = OWNER(board_[square]);
-  return hasStrongerEnemy(square, owner, PIECE(board_[square]));
+  uint owner = OB_OWNER(board_[square]);
+  return hasStrongerEnemy(square, owner, OB_PIECE(board_[square]));
 }
 
 //--------------------------------------------------------------------- 
 
-bool Board::hasStrongerEnemy(square_t square, player_t owner, piece_t piece) const
+bool OB_Board::hasStrongerEnemy(ob_square_t square, ob_player_t owner, ob_piece_t piece) const
 {
-  assert( owner == GOLD || owner == SILVER );
+  assert( owner == OB_GOLD || owner == OB_SILVER );
   for(int i = 0; i < 4; i++)
-    if (OWNER(board_[square + direction[i]]) == OPP(owner) && 
-        PIECE(board_[square + direction[i]]) > piece)
+    if (OB_OWNER(board_[square + direction[i]]) == OB_OPP(owner) && 
+        OB_PIECE(board_[square + direction[i]]) > piece)
       return true;
 
   return false;
@@ -1332,91 +1337,91 @@ bool Board::hasStrongerEnemy(square_t square, player_t owner, piece_t piece) con
 
 //---------------------------------------------------------------------
 
-bool Board::isFrozen(square_t square) const
+bool OB_Board::isFrozen(ob_square_t square) const
 {
   return (!hasFriend(square) && hasStrongerEnemy(square)); 
 }
 
 //---------------------------------------------------------------------
 
-bool Board::isSetupPhase() const
+bool OB_Board::isSetupPhase() const
 {
   return moveCount_ == 1 && pieceArray[toMoveIndex_].getLen() == 0; 
 }
 
 //---------------------------------------------------------------------
 
-uint Board::getStepCount() const
+uint OB_Board::getStepCount() const
 {
   return stepCount_;
 }
 
 //--------------------------------------------------------------------- 
 
-u64 Board::getSignature() const
+u64 OB_Board::getSignature() const
 {
   return signature_;
 }
 
 //---------------------------------------------------------------------
 
-u64 Board::getPreMoveSignature() const
+u64 OB_Board::getPreMoveSignature() const
 {
   return preMoveSignature_; 
 }
 
 //---------------------------------------------------------------------
 
-player_t Board::getPlayerToMove() const
+ob_player_t OB_Board::getPlayerToMove() const
 {
   return toMove_;
 }
 
 //---------------------------------------------------------------------
 
-player_t Board::getPlayerToMoveAfterStep(const Step& step) const
+ob_player_t OB_Board::getPlayerToMoveAfterStep(const Step& step) const
 { 
   //TODO what about resing step ? 
   assert( step.isPass() || step.isPushPull() || step.isSingleStep());
-  player_t player = toMove_;
+  ob_player_t player = toMove_;
 
   //check whether player switches after the step
   if (step.isPass() || stepCount_ == 3 || (stepCount_ == 2 && step.isPushPull())) 
-    player = OPP(player);
+    player = OB_OPP(player);
   return player;
 }
 
 //---------------------------------------------------------------------
 
-player_t Board::getWinner() const
+ob_player_t OB_Board::getWinner() const
 {
   return winner_;
 }
 
 //--------------------------------------------------------------------- 
 
-player_t Board::gameOver() const
+ob_player_t OB_Board::gameOver() const
 {
-  return IS_PLAYER(winner_);
+  return OB_IS_PLAYER(winner_);
 }
 
 //---------------------------------------------------------------------
 
-bool Board::canContinue(const Move& move) const
+bool OB_Board::canContinue(const Move& move) const
 {
   return (getStepCount() + move.getStepCount() ) < STEPS_IN_MOVE;
 }
 
 //--------------------------------------------------------------------- 
   
-bool Board::canPass() const
+bool OB_Board::canPass() const
 {
   return stepCount_ > 0 && ! stepIsThirdRepetition(Step(STEP_PASS, toMove_));
 }
 
 //--------------------------------------------------------------------- 
 
-Step Board::lastStep() const 
+Step OB_Board::lastStep() const 
 {
   return lastStep_;
 }
@@ -1424,7 +1429,7 @@ Step Board::lastStep() const
 //--------------------------------------------------------------------- 
 
 /*places piece at given position and updates signature*/
-void Board::setSquare( square_t square, player_t player, piece_t piece)  
+void OB_Board::setSquare( ob_square_t square, ob_player_t player, ob_piece_t piece)  
 {
   signature_ ^=  zobrist[PLAYER_TO_INDEX(player)][piece][square]; 
   board_[square] = ( player | piece ); 
@@ -1433,15 +1438,15 @@ void Board::setSquare( square_t square, player_t player, piece_t piece)
 //---------------------------------------------------------------------
 
 /*removes piece from given position and updates signature*/ 
-void Board::clearSquare( square_t square) 
+void OB_Board::clearSquare( ob_square_t square) 
 {
-  signature_ ^=  zobrist[PLAYER_TO_INDEX(OWNER(board_[square]))][PIECE(board_[square])][square]; 
-  board_[square] = EMPTY_SQUARE; 
+  signature_ ^=  zobrist[PLAYER_TO_INDEX(OB_OWNER(board_[square]))][OB_PIECE(board_[square])][square]; 
+  board_[square] = OB_EMPTY_SQUARE; 
 } 
 
 //---------------------------------------------------------------------
 
-string Board::toString() const
+string OB_Board::toString() const
 {
 
   stringstream ss;
@@ -1452,12 +1457,12 @@ string Board::toString() const
   //ss << pieceArray[0].toString() << pieceArray[1].toString();
 
 
-  //print zobrist
+  //print bits::zobrist
   /*
   for (int i = 0; i < PLAYER_NUM; i++)
-   for (int j = 0; j < PIECE_NUM; j++)
-     for (int k = 0; k < SQUARE_NUM; k++)
-        ss << zobrist[i][j][k] << endl;
+   for (int j = 0; j < OB_PIECE_NUM; j++)
+     for (int k = 0; k < OB_SQUARE_NUM; k++)
+        ss << bits::zobrist[i][j][k] << endl;
   */
 
 
@@ -1466,13 +1471,13 @@ string Board::toString() const
   ss << "Signature " << signature_ << endl;
   //#endif
 
-  ss << "Move " << (toMove_ == GOLD ? "g" : "s") << moveCount_ ;
+  ss << "Move " << (toMove_ == OB_GOLD ? "g" : "s") << moveCount_ ;
   #ifdef DEBUG_2
     ss << ", Step " << stepCount_ << ", ";
   #endif 
   ss << endl;
     
-  assert(toMove_ == GOLD || toMove_ == SILVER );
+  assert(toMove_ == OB_GOLD || toMove_ == OB_SILVER );
 
   ss << " +-----------------+\n";
 
@@ -1481,19 +1486,19 @@ string Board::toString() const
     for (int j=1; j<9; j++) {
 
       switch(board_[i*10+j]){
-        case (GOLD | PIECE_ELEPHANT) :    ss << "E"; break;
-        case (GOLD | PIECE_CAMEL) :       ss << "M"; break;
-        case (GOLD | PIECE_HORSE) :       ss << "H"; break;
-        case (GOLD | PIECE_DOG) :         ss << "D"; break;
-        case (GOLD | PIECE_CAT) :         ss << "C"; break;
-        case (GOLD | PIECE_RABBIT) :      ss << "R"; break;
-        case (SILVER | PIECE_ELEPHANT) :    ss << "e"; break;
-        case (SILVER | PIECE_CAMEL) :       ss << "m"; break;
-        case (SILVER | PIECE_HORSE) :       ss << "h"; break;
-        case (SILVER | PIECE_DOG) :         ss << "d"; break;
-        case (SILVER | PIECE_CAT) :         ss << "c"; break;
-        case (SILVER | PIECE_RABBIT) :      ss << "r"; break;
-        case EMPTY_SQUARE :
+        case (OB_GOLD | OB_PIECE_ELEPHANT) :    ss << "E"; break;
+        case (OB_GOLD | OB_PIECE_CAMEL) :       ss << "M"; break;
+        case (OB_GOLD | OB_PIECE_HORSE) :       ss << "H"; break;
+        case (OB_GOLD | OB_PIECE_DOG) :         ss << "D"; break;
+        case (OB_GOLD | OB_PIECE_CAT) :         ss << "C"; break;
+        case (OB_GOLD | OB_PIECE_RABBIT) :      ss << "R"; break;
+        case (OB_SILVER | OB_PIECE_ELEPHANT) :    ss << "e"; break;
+        case (OB_SILVER | OB_PIECE_CAMEL) :       ss << "m"; break;
+        case (OB_SILVER | OB_PIECE_HORSE) :       ss << "h"; break;
+        case (OB_SILVER | OB_PIECE_DOG) :         ss << "d"; break;
+        case (OB_SILVER | OB_PIECE_CAT) :         ss << "c"; break;
+        case (OB_SILVER | OB_PIECE_RABBIT) :      ss << "r"; break;
+        case OB_EMPTY_SQUARE :
           if ((i==3 || i==6) && (j==3 || j==6))
               ss << "X ";
           else
@@ -1503,8 +1508,8 @@ string Board::toString() const
             ss << "? ";
             break;
       }
-      if ( OWNER(board_[i * 10 + j]) != EMPTY){
-        //assert( frozenBoard_[i * 10 + j] == isFrozen( i * 10 + j)); uncomment when ready
+      if ( OB_OWNER(board_[i * 10 + j]) != OB_EMPTY){
+        //assert( frozenOB_Board_[i * 10 + j] == isFrozen( i * 10 + j)); uncomment when ready
         if (frozenBoard_[i * 10 + j] )
           ss << "*";
         else
@@ -1522,29 +1527,30 @@ string Board::toString() const
 
 //---------------------------------------------------------------------
 
-string Board::MovetoStringWithKills(const Move& move) const
+string OB_Board::MovetoStringWithKills(const Move& move) const
 {
-  Board * playBoard = new Board(*this);
+  OB_Board * playBoard = new OB_Board(*this);
   string s;
   StepList stepList = move.getStepList();
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
-    s = s + StepWithKills((*it), playBoard).toString();
+    s = "TODO ! "; //s = s + StepWithKills((*it), playBoard).toString();
     playBoard->makeStepTryCommitMove(*it);
   }
   delete playBoard;
   return s;
+}
 
 //---------------------------------------------------------------------
 
-string Board::allStepsToString() const
+string OB_Board::allStepsToString() const
 {
   stringstream ss;
 
   for (uint playerIndex = 0; playerIndex < 2; playerIndex++) {
     if ( playerIndex ) 
-      ss << endl << "Potential moves for SILVER: " << endl;
+      ss << endl << "Potential moves for OB_SILVER: " << endl;
     else
-      ss << endl << "Potential moves for GOLD: " << endl;
+      ss << endl << "Potential moves for OB_GOLD: " << endl;
 
     /*for ( uint i = 0; i < stepArrayLen; i++){
       ss << stepArray[playerIndex][i].toString();
@@ -1557,7 +1563,7 @@ string Board::allStepsToString() const
 
 //---------------------------------------------------------------------
 
-void Board::dump() const
+void OB_Board::dump() const
 {
   logRaw(toString().c_str());
 }

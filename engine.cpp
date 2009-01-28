@@ -247,7 +247,6 @@ void Engine::mockupSearchResults(const Board* board, Uct* ucts[], int resultsNum
 {
 
   Uct * uct = new Uct(board, ucts, resultsNum);
-  
   //get stuff from the search 
   bestMove_ = uct->getBestMoveRepr();
   stats_ = uct->getStats(timeManager_->secondsElapsed());

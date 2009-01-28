@@ -36,12 +36,6 @@ float Eval::evaluateInPercent(const Board* board_)
   if (p > 1)
     return 1;
   return p;
-    
-  //TODO mapping evaluation -> win percentage is VERY DUMMY - improve
-  if (evaluation > 0)
-    return 1;
-  else 
-    return 0;
 }
 
 //--------------------------------------------------------------------- 

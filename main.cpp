@@ -9,7 +9,7 @@
 int main(int argc, char *argv[]) 
 {
 
-  srand((unsigned) time(NULL));
+  randomStructuresInit();
 
   options.parse(argc, (const char **) (argv));
   //options.printAll();

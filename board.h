@@ -43,7 +43,7 @@ typedef unsigned long long u64;
 #define SILVER      1
 #define NO_PLAYER   2
 
-#define EMPTY       0
+#define NO_PIECE    0
 #define RABBIT      1
 #define CAT         2
 #define DOG         3
@@ -76,7 +76,7 @@ typedef unsigned long long u64;
 
 #define SQUARE_DISTANCE(s1, s2) (abs(s1/8 - s2/8) + abs(s1%8 - s2%8))
 
-#define OLD_PLAYER_TO_NEW(player) (player == 8 ? GOLD : SILVER)
+#define OLD_PLAYER_TO_NEW(player) (player == 16 ? GOLD : SILVER)
 
 typedef int player_t;
 typedef int piece_t;
@@ -91,7 +91,7 @@ namespace bits{
   #define NOT_1_RANK  0x00ffffffffffffffULL
   #define NOT_8_RANK  0xffffffffffffff00ULL
   #define MSB         0x8000000000000000ULL
-  #define TRAPS       0x0000000000240001ULL
+  #define TRAPS       0x0000240000240000ULL
   #define FPARITY     0x5555555555555555ULL
   extern u64 zobrist[2][7][64];     
 
@@ -159,6 +159,11 @@ namespace bits{
    */
   u64 circle(int center, int radius);
 }
+
+/**
+ * Zobrist and random numbers init;
+ */
+void randomStructuresInit();
 
 
 class Board;
@@ -235,6 +240,7 @@ class KillInfo
     coord_t coord_;
 };
 
+class OB_BOARD;
 
 /**
  * One step of a player.
@@ -310,6 +316,7 @@ class Step
     coord_t      oppTo_;
 
     friend class Board;
+    friend class OB_Board;
   
   private: 
     /**

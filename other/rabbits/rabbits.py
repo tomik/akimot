@@ -48,7 +48,7 @@ def do_test(engine, pos_str, move):
     if result not in  ['gold', 'silver']:
         wrong['result'] = True
     
-    if (len(wron) > 0):
+    if (len(wrong) > 0):
         print "========================="
         print pos.to_long_str()
         print result

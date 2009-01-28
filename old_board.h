@@ -2,61 +2,61 @@
 
 #include "board.h"
 
-#define EMPTY_SQUARE 0x0U
-#define EMPTY 0x0U
-#define OFF_BOARD_SQUARE 0x9FU
+#define OB_EMPTY_SQUARE 0x0U
+#define OB_EMPTY 0x0U
+#define OB_OFF_BOARD_SQUARE 0x9FU
 //#define OFF_BOARD 0x18U
-#define GOLD 0x10U
-#define SILVER 0x8U
-#define PIECE_OFF_BOARD 0x7U
-#define PIECE_ELEPHANT 0x6U
-#define PIECE_CAMEL 0x5U
-#define PIECE_HORSE 0x4U
-#define PIECE_DOG 0x3U
-#define PIECE_CAT 0x2U
-#define PIECE_RABBIT 0x1U
-#define PIECE_EMPTY 0x0U
-#define PIECE_MASK 0x7U
-#define OWNER_MASK 0x18U
-#define NORTH 10
-#define SOUTH -10
-#define EAST 1
-#define WEST -1
+#define OB_GOLD 0x10U
+#define OB_SILVER 0x8U
+#define OB_PIECE_OFF_BOARD 0x7U
+#define OB_PIECE_ELEPHANT 0x6U
+#define OB_PIECE_CAMEL 0x5U
+#define OB_PIECE_HORSE 0x4U
+#define OB_PIECE_DOG 0x3U
+#define OB_PIECE_CAT 0x2U
+#define OB_PIECE_RABBIT 0x1U
+#define OB_PIECE_EMPTY 0x0U
+#define OB_PIECE_MASK 0x7U
+#define OB_OWNER_MASK 0x18U
+#define OB_NORTH 10
+#define OB_SOUTH -10
+#define OB_EAST 1
+#define OB_WEST -1
 
 #define TOP_ROW 8
 #define BOTTOM_ROW 1
 #define LEFT_COL 1 
 #define RIGHT_COL 8
 
-#define OWNER(square) (square & OWNER_MASK) 
-#define PIECE(square) (square & PIECE_MASK) 
-#define OPP(player) ((16 - player) + 8)
-//#define OPP(player) (player == GOLD ? SILVER : GOLD )
+#define OB_OWNER(square) (square & OB_OWNER_MASK) 
+#define OB_PIECE(square) (square & OB_PIECE_MASK) 
+#define OB_OPP(player) ((16 - player) + 8)
+//#define OB_OPP(player) (player == OB_GOLD ? OB_SILVER : OB_GOLD )
 
 
-//GOLD ~ 0, SILVER ~ 1
+//OB_GOLD ~ 0, OB_SILVER ~ 1
 ////((16-player)/8)	
-#define PLAYER_TO_INDEX(player)	(player == GOLD ? 0 : 1 )
+#define PLAYER_TO_INDEX(player)	(player == OB_GOLD ? 0 : 1 )
 #define INDEX_TO_PLAYER(index)  (uint) (16-8*index)	
 
-#define SQUARE_DISTANCE(s1, s2) (abs(s1/10 - s2/10) + abs(s1%10 - s2%10))
+#define OB_SQUARE_DISTANCE(s1, s2) (abs(s1/10 - s2/10) + abs(s1%10 - s2%10))
 
-#define IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
-#define IS_PLAYER(square) (OWNER(square) == GOLD || OWNER(square) == SILVER )
+#define OB_IS_TRAP(index) (index == 33 || index == 36 || index == 63 || index == 66 ) 
+#define OB_IS_PLAYER(square) (OB_OWNER(square) == OB_GOLD || OB_OWNER(square) == OB_SILVER )
 
-#define PIECE_NUM     7
-#define SQUARE_NUM    100
+#define OB_PIECE_NUM     7
+#define OB_SQUARE_NUM    100
 
 extern const int direction[4];
 extern const int rabbitForward[2];
 extern const int rabbitWinRow[2];
 extern const int trap[4];
 
-typedef uint player_t;
-typedef int  square_t;
-typedef uint piece_t;		
-typedef int FlagBoard[SQUARE_NUM];
-typedef uint board_t[SQUARE_NUM];
+typedef uint ob_player_t;
+typedef int  ob_square_t;
+typedef uint ob_piece_t;		
+typedef int FlagBoard[OB_SQUARE_NUM];
+typedef uint board_t[OB_SQUARE_NUM];
 
 #define FLAG_BOARD_EMPTY -1
 
@@ -65,10 +65,10 @@ typedef uint board_t[SQUARE_NUM];
  *
  * Crucial building block of the whole program. 
  */
-class Board
+class OB_Board
 {
   public:
-    Board();
+    OB_Board();
 
     /**
      * Public wrapper around init(newGame=true). 
@@ -120,7 +120,7 @@ class Board
      * Check signatures and moveCount.
      * Right now doesn't check pieceArrays and other stuff.
      */
-		bool operator== (const Board& board) const;
+		bool operator== (const OB_Board& board) const;
     
     //TODO from here till private: restructuralize in .cpp
     
@@ -183,7 +183,7 @@ class Board
      * @return True if knows goal can be reached,   
      *         false otherwise.
      */
-    bool quickGoalCheck(player_t player, int stepLimit, Move* move=NULL) const;
+    bool quickGoalCheck(ob_player_t player, int stepLimit, Move* move=NULL) const;
 
     /**
      * Quick check for goal.
@@ -200,7 +200,7 @@ class Board
       * After successfull goal check, this method determines the 
       * move that scores the goal. 
       */
-     Move tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, player_t player) const;
+     Move tracebackFlagBoard(const FlagBoard& flagBoard, int win_square, ob_player_t player) const;
 
     /**
      * Repetition check.
@@ -222,12 +222,12 @@ class Board
     /**
      * Actual player getter.
      */
-    player_t  getPlayerToMove() const;
+    ob_player_t  getPlayerToMove() const;
 
     /**
      * Next step's player getter.
      */
-    player_t  getPlayerToMoveAfterStep(const Step& step) const;
+    ob_player_t  getPlayerToMoveAfterStep(const Step& step) const;
 
     /**
      * String representation of board.
@@ -246,7 +246,7 @@ class Board
      * i.e. suicide, being pushed/pulled to trap, stops protecting piece on the trap.
      * This function causes no board update and is used in class StepWithKills. 
      */
-    bool checkKillForward(square_t from, square_t to, KillInfo* killInfo=NULL) const;
+    bool checkKillForward(ob_square_t from, ob_square_t to, KillInfo* killInfo=NULL) const;
 
     /**
      * Calculater signature for one step forward. 
@@ -259,14 +259,14 @@ class Board
      * Generates all (syntatically) legal steps from the position EXCEPT from Pass.
      * Doesn't check 3 - repetitions rule / virtual pass. 
      */
-		int generateAllStepsNoPass(player_t, StepArray&) const;
+		int generateAllStepsNoPass(ob_player_t, StepArray&) const;
 
     /**
      * Step generation. 
      *
      * Wrapper around previous function with added step Pass.
      */
-		int generateAllSteps(player_t, StepArray&) const;
+		int generateAllSteps(ob_player_t, StepArray&) const;
 
     /**
      * Step generation for one piece. 
@@ -276,7 +276,7 @@ class Board
      * @param stepsnum Size of step array.
      */
     void generateStepsForPiece(
-              square_t square, StepArray& steps, uint& stepsNum) const;
+              ob_square_t square, StepArray& steps, uint& stepsNum) const;
 
     /**
      * Knowledge for steps. 
@@ -289,12 +289,12 @@ class Board
     void getHeuristics(const StepArray& steps, uint stepsNum, HeurArray& heurs) const;
 
     u64       getSignature() const;
-    player_t	getWinner() const;
+    ob_player_t	getWinner() const;
 
     /**
      * There is a winner. 
      */
-    player_t gameOver() const; 
+    ob_player_t gameOver() const; 
 
     /**
      * Continue check.
@@ -316,8 +316,6 @@ class Board
      * Last step getter.
      */
     Step lastStep() const;
-
-    friend class BBoard;
 
   private:
     /**
@@ -348,7 +346,7 @@ class Board
      *
      * Maps 'w','g' -> gold ; 'b', 's' -> silver.
      */
-    player_t sideCharToPlayer(char side) const; 
+    ob_player_t sideCharToPlayer(char side) const; 
 
     /**
     * Parsing single token for init from game record.
@@ -360,8 +358,8 @@ class Board
     * @param to (optional) new position parsed from the token (only if it is a step)
     * @return what recordAction was parsed (i.e. placement in the beginning,...)
     */
-    recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
-                                           piece_t& piece, square_t& from, square_t& to); 
+    recordAction_e  parseRecordActionToken(const string& token, ob_player_t& player, 
+                                           ob_piece_t& piece, ob_square_t& from, ob_square_t& to); 
 
     /**
     * Parsing piece char (e.g. R,H,c,m, ... ) 
@@ -427,14 +425,14 @@ class Board
      *
      * Checks whether kill is happening in the vicinity of given square.
      */
-    bool checkKill(square_t square);
+    bool checkKill(ob_square_t square);
 
     /**
      * Performs kill.
      *
      * Performs operation connected to kill - board update, rabbits num update, etc.
      */
-    void performKill(square_t trapPos);
+    void performKill(ob_square_t trapPos);
 
     /**
      * Virtual pass check.
@@ -460,7 +458,7 @@ class Board
      * Piece on given square has a friend test.
      * Used in trap kill check.
      */
-		bool hasFriend(square_t) const;
+		bool hasFriend(ob_square_t) const;
 
     /**
      * Has a friend test.
@@ -468,7 +466,7 @@ class Board
      * Variant for forward tests.
      * Color must be supplied as well.
      */
-		inline bool hasFriend(square_t, player_t owner) const;
+		inline bool hasFriend(ob_square_t, ob_player_t owner) const;
 
     /**
      * Two friends test. 
@@ -476,14 +474,14 @@ class Board
      * This is used for forward tests (without actually moveing pieces).
      * Therefore color of player must be supplied as well.
      */
-		bool hasTwoFriends(square_t, player_t) const;
+		bool hasTwoFriends(ob_square_t, ob_player_t) const;
 
     /**
      * Has stronger enemy test. 
      *
      * Used for checking a trap kill. 
      */
-		bool hasStrongerEnemy(square_t) const;
+		bool hasStrongerEnemy(ob_square_t) const;
 
     /**
      * Has stronger enemy test. 
@@ -491,14 +489,14 @@ class Board
      * Variant for forward tests. 
      * Color and piece must be supplied as well  
      */
-		inline bool hasStrongerEnemy(square_t, player_t owner, piece_t piece) const;
+		inline bool hasStrongerEnemy(ob_square_t, ob_player_t owner, ob_piece_t piece) const;
 
     /**
      * Frozen check.
      *
      * Checks whether piece at given square is frozen == !hasFriend and hasStrongerEnemy
      */
-		bool isFrozen(square_t) const;
+		bool isFrozen(ob_square_t) const;
 
 		uint			getStepCount() const;
     u64       getPreMoveSignature() const;
@@ -506,12 +504,12 @@ class Board
     /**
      * Sets square and updates signature. 
      */
-    void setSquare(square_t, player_t, piece_t);
+    void setSquare(ob_square_t, ob_player_t, ob_piece_t);
 
     /**
      * Clears square and update signature.
      */
-    void clearSquare(square_t);
+    void clearSquare(ob_square_t);
 
 		string allStepsToString() const;
 		void dumpAllSteps() const;
@@ -523,7 +521,7 @@ class Board
     static ThirdRep*  thirdRep_;
 
 		board_t					board_;					//actual pieces are stored here 
-		bool					frozenBoard_[SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
+		bool					frozenBoard_[OB_SQUARE_NUM];			//keep information on frozen pieces, false == notfrozen, true == frozen
 
     PieceArray    pieceArray[2];  
     uint          rabbitsNum[2];        //kept number of rabbits for each player - for quick check on rabbitsNum != 0 
@@ -543,9 +541,9 @@ class Board
 		// thus stepCount_ takes values 0 - 4 
     uint  stepCount_;
 
-    player_t toMove_;
-    uint     toMoveIndex_;    //0 == GOLD, 1 == SILVER
-		player_t winner_;
+    ob_player_t toMove_;
+    uint     toMoveIndex_;    //0 == OB_GOLD, 1 == OB_SILVER
+		ob_player_t winner_;
 
     friend class Eval;
 

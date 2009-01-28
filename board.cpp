@@ -16,6 +16,14 @@ ThirdRep*  Board::thirdRep_;
 // switch to know when to init static variables in class Board
 bool Board::classInit = false;
 
+
+void randomStructuresInit()
+{
+  srand((unsigned) time(NULL));
+  bits::initZobrist();
+}
+
+
 //---------------------------------------------------------------------
 //  section PieceArray
 //---------------------------------------------------------------------
@@ -203,7 +211,7 @@ int Step::count() const
 Step Step::toNew() const
 {
   //already new
-  if (pieceMoved() && (player_ != GOLD || player_ != SILVER)){
+  if (pieceMoved() && (player_ == GOLD || player_ == SILVER)){
     assert(false);
     return *this;
   }
@@ -292,7 +300,7 @@ string Step::toString() const
   ss.str(""); 
 
   //dirty
-  if (pieceMoved() && (player_ != GOLD || player_ != SILVER)){
+  if (pieceMoved() && (player_ != GOLD && player_ != SILVER)){
     return toNew().toString();
   }
 
@@ -526,8 +534,9 @@ void bits::initZobrist()
 {
    for (int i = 0; i < 2; i++)
     for (int j = 0; j < 7; j++)
-      for (int k = 0; k < 64; k++)
-        zobrist[i][j][k] = getRandomU64(); 
+      for (int k = 0; k < 64; k++){
+        bits::zobrist[i][j][k] = getRandomU64(); 
+      }
 }
 
 int bits::lix(u64& b){
@@ -736,7 +745,6 @@ Step Board::findMCstep()
     //if he managed to kill opponent's last rabbit before he lost his last piece
     return Step(STEP_PASS, toMove_);          
   }
-  
   int len = genSteps(toMove_, stepArray);
   assert(len < MAX_STEPS);
 
@@ -746,9 +754,10 @@ Step Board::findMCstep()
     return Step(STEP_NULL,toMove_); 
   }
 
-  if (cfg.knowledgeInPlayout()){
+  /*if (cfg.knowledgeInPlayout()){
     return chooseStepWithKnowledge(stepArray, stepArrayLen);
   }
+  */
 
   assert(len > 0);
   int index = rand() % len;
@@ -776,14 +785,14 @@ bool Board::makeStepTryCommit(const Step& step)
 void Board::commit()
 {
   assert(toMove_ == GOLD || toMove_ == SILVER);
-  /*if (toMove_ == SILVER) {
+  if (toMove_ == SILVER) {
     moveCount_++;
   }
-  */
+  
   toMove_ = OPP(toMove_);
   stepCount_ = 0;
 
-  //preMoveSignature_ = signature_;
+  preMoveSignature_ = signature_;
 }
 
 //--------------------------------------------------------------------- 
@@ -1111,9 +1120,10 @@ string Board::toString() const
   ss << "Move ";
 
   if (toMove_ == GOLD) 
-    ss << "g" << endl;
+    ss << "g" ;
   else
-    ss << "s" << endl;
+    ss << "s" ;
+  ss << moveCount_ << endl;
 
   assert(toMove_ == GOLD || toMove_ == SILVER );
 
@@ -1217,7 +1227,7 @@ void Board::setSquare(coord_t coord, player_t player, piece_t piece)
   bitboard_[player][piece] |= BIT_ON(coord);
   bitboard_[player][0] |= BIT_ON(coord);
 
-  signature_ ^= bits::zobrist[player][piece][INDEX_64_TO_SQUARE(coord)]; 
+  signature_ ^= bits::zobrist[player][piece][coord]; 
 }
 
 //--------------------------------------------------------------------- 
@@ -1229,7 +1239,7 @@ void Board::delSquare(coord_t coord, player_t player)
   for (int i = 1; i < 7; i++ ){
     if (bits::getBit(bitboard_[player][i], coord)){
       bitboard_[player][i] ^= BIT_ON(coord);
-      signature_ ^=  bits::zobrist[player][i][INDEX_64_TO_SQUARE(coord)]; 
+      signature_ ^=  bits::zobrist[player][i][coord]; 
       return;
     }
   }
@@ -1243,7 +1253,7 @@ void Board::delSquare(coord_t coord, player_t player, piece_t piece)
   assert(bits::getBit(bitboard_[player][piece],coord));
   bitboard_[player][0] ^= BIT_ON(coord);
   bitboard_[player][piece] ^= BIT_ON(coord);
-  signature_ ^=  bits::zobrist[player][piece][INDEX_64_TO_SQUARE(coord)]; 
+  signature_ ^=  bits::zobrist[player][piece][coord]; 
 }
 
 //--------------------------------------------------------------------- 
@@ -1258,7 +1268,7 @@ piece_t Board::getPiece(coord_t coord, player_t player) const
   } 
   assert(false);
 
-  return EMPTY;
+  return NO_PIECE;
 }
 
 //--------------------------------------------------------------------- 
@@ -1348,6 +1358,7 @@ bool Board::initFromPosition(const char* fn)
   
   //move count and side 
   f >> pom; s += pom;
+  s += " [";
   
   f.ignore(1024,'\n'); //ignores the rest of initial line 
   f.ignore(1024,'\n'); //ignores the top of the border till EOF 
@@ -1363,6 +1374,7 @@ bool Board::initFromPosition(const char* fn)
     f.ignore(1024,'\n'); //finish the line
   } 
 
+  s += "]";
   f.close();
   return initFromPositionCompactString(s);
 }
@@ -1375,8 +1387,8 @@ bool Board::initFromPositionCompactString(const string& s)
   ss.str(s);
   init();
   char side;
+//ss >> moveCount_; 
   ss >> side;
-
   toMove_ = sideCharToPlayer(side);
   if (! IS_PLAYER(toMove_)){
     return false;
@@ -1387,13 +1399,12 @@ bool Board::initFromPositionCompactString(const string& s)
   if (boardStr[0] != '[' || boardStr[65] != ']') {
     return false;
   }
-
   uint k = 1;
-  for (int i = 8; i > 0; i--) {
+  for (int i = 7; i >= 0; i--) {
     for (int j = 0; j < 8; j++) {
       assert(k < boardStr.length());
       char c = boardStr[k++];
-      if (c == ' ' || c=='X' || c=='x')
+      if (c == ' ' || c=='X' || c=='x' || c=='.')
         continue;
       else {
         player_t player;
@@ -1402,8 +1413,8 @@ bool Board::initFromPositionCompactString(const string& s)
           logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
           return false;
         }
-        setSquare(i, piece, player);
-        return false;
+        setSquare(8*i + j, player, piece);
+        //return false;
       }
     }
   }
@@ -1480,7 +1491,8 @@ void Board::init(bool newGame)
   //game initialization - done in the first run or when newgame is specified
   if (! classInit || newGame) {
     classInit = true;
-    bits::initZobrist();  
+    //bits::initZobrist();  
+    bits::buildStepOffsets();
     thirdRep.clear();
     thirdRep_ = &thirdRep;
   }
@@ -1525,7 +1537,6 @@ void Board::afterPositionLoad()
 {
   makeSignature();    //(unique) position identification
   preMoveSignature_ = signature_;
-
 }
 
 //--------------------------------------------------------------------- 
@@ -1789,7 +1800,7 @@ bool Board::stepIsThirdRepetition(const Step& step ) const
 
 bool Board::isSetupPhase() const
 {
-  return moveCount_ == 1; 
+  return moveCount_ == 1 && ! bitboard_[toMove_][0];
 }
 
 //---------------------------------------------------------------------

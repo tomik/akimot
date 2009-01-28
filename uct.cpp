@@ -36,10 +36,9 @@ playoutStatus_e SimplePlayout::doPlayout()
 
   while (true) {  
 	  playOne();
-		playoutLength_++;
-
+	  playoutLength_++;
     if (hasWinner())
-			return PLAYOUT_OK;
+	    return PLAYOUT_OK;
 
 		if (playoutLength_ > 2 * maxPlayoutLength_) 
 			return PLAYOUT_TOO_LONG;
@@ -52,7 +51,7 @@ playoutStatus_e SimplePlayout::doPlayout()
 //--------------------------------------------------------------------- 
 
 bool SimplePlayout::hasWinner(){
-	if ( board_->getWinner() != EMPTY ) {
+	if ( board_->getWinner() != NO_PLAYER ) {
     return true;  
   }
   return false;
@@ -77,38 +76,6 @@ void SimplePlayout::playOne()
 uint SimplePlayout::getPlayoutLength()
 {
 	return playoutLength_/2;
-}
-
-//---------------------------------------------------------------------
-// section SimplePlayoutBit
-//---------------------------------------------------------------------
-
-SimplePlayoutBit::SimplePlayoutBit(Board* bitboard, uint maxPlayoutLength, uint evalAfterLength):
-   SimplePlayout(NULL, maxPlayoutLength, evalAfterLength), bitboard_(bitboard)
-{
-  ;
-}
-
-//--------------------------------------------------------------------- 
-
-bool SimplePlayoutBit::hasWinner(){
-	if ( bitboard_->getWinner() != NO_PLAYER ) {
-    return true;  
-  }
-  return false;
-}
-
-//--------------------------------------------------------------------- 
-
-void SimplePlayoutBit::playOne()
-{
-	Step step;
-
-	do {
-		step = bitboard_->findMCstep();
-	}
-	while (! bitboard_->makeStepTryCommit(step));
-  return;
 }
 
 //---------------------------------------------------------------------
@@ -477,6 +444,7 @@ string Node::recToString(int depth) const
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
+  minVisitCount = 0;
 
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
@@ -1033,7 +1001,10 @@ void Uct::doPlayout(const Board* board)
         Move move;
         //if (playBoard->quickGoalCheck(&move)){
         if (playBoard->goalCheck(&move)){
-          float value = WINNER_TO_VALUE(tree_->actNode()->getPlayer());
+          cerr << playBoard->toString();
+          cerr << move.toString()<< endl;
+          float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
+          cerr << value << endl;
           //if not complete step - add pass 
           //small workaround preventing for instance rabbits crouching along the victory line
           if (playBoard->canContinue(move)){
@@ -1041,8 +1012,9 @@ void Uct::doPlayout(const Board* board)
           }
           tree_->expandNodeLimited(tree_->actNode(), move);
           //descend to the expanded area
-          while (tree_->actNode()->hasChildren())
+          while (tree_->actNode()->hasChildren()){
             tree_->firstChildDescend();
+          }
           tree_->updateHistory(value);
           break;
         }
@@ -1090,10 +1062,10 @@ void Uct::doPlayout(const Board* board)
     Step step = tree_->actNode()->getStep();
 
     //perform the step and try commit
-    if ( playBoard->makeStepTryCommit(step) )   {
+    if (playBoard->makeStepTryCommit(step) )   {
       //commit was successful - check whether winning criteria are reached already
-      if ( playBoard->getWinner() != EMPTY ) {
-        tree_->updateHistory(playBoard->getWinner() == GOLD ? 1 : -1); 
+      if (playBoard->getWinner() != NO_PLAYER ) {
+        tree_->updateHistory(WINNER_TO_VALUE(playBoard->getWinner()));
         break;  //winner is known already in the uct tree -> no need to go deeper
       }
     }
@@ -1245,7 +1217,6 @@ void Uct::updateTT(Node* nodeList, const Board* board)
     node = node->getSibling();
   }
 }
-
 //--------------------------------------------------------------------- 
 //--------------------------------------------------------------------- 
 

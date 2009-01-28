@@ -103,26 +103,6 @@ class SimplePlayout
 };
 
 /**
- * BitBoard variant of SimplePlayout.
- */
-class SimplePlayoutBit: public SimplePlayout
-{
-  public:
-    SimplePlayoutBit(Board*, uint maxPlayoutLength, uint evalAfterLength);
-
-  private:
-    SimplePlayoutBit();
-
-    void playOne();	
-
-    virtual bool hasWinner();
-
-    Board*		bitboard_;
-};
-
-
-
-/**
  * Search Extensions class
  */
 class SearchExt

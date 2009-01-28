@@ -52,49 +52,6 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
   #define logDebug(...) logFunction(LL_DEBUG, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #endif 
 
-extern int smallPrimes[];
-extern const int smallPrimesNum; 
-
-inline int smallRandomPrime()
-{
-  return smallPrimes[rand() % smallPrimesNum];
-}
-
-inline float random01()
-{
-  return (double)rand()/((double)(RAND_MAX) + (double)(1));
-}
-
-/**
- * String to int converter.
- */
-int str2int(const string& str);
-
-/**
- * String to float converter.
- */
-float str2float(const string& str);
-
-/**
- * Spaces trim from right.
- */
-string trimRight(const string& str);
-
-/**
- * Spaces trim from right.
- */
-string trimLeft(const string& str);
-
-/**
- * Spaces trim from both sides.
- */
-string trim(const string& str);
-
-/**
- * Get stream rest.
- */
-string getStreamRest(istream& is);
-
 /**
  * Simpler file read.
  */
@@ -140,3 +97,47 @@ class FileRead
     fstream f_;
     string ignoreStart_;
 };
+
+extern int smallPrimes[];
+extern const int smallPrimesNum; 
+
+inline int smallRandomPrime()
+{
+  return smallPrimes[rand() % smallPrimesNum];
+}
+
+inline float random01()
+{
+  return (double)rand()/((double)(RAND_MAX) + (double)(1));
+}
+
+/**
+ * String to int converter.
+ */
+int str2int(const string& str);
+
+/**
+ * String to float converter.
+ */
+float str2float(const string& str);
+
+/**
+ * Spaces trim from right.
+ */
+string trimRight(const string& str);
+
+/**
+ * Spaces trim from right.
+ */
+string trimLeft(const string& str);
+
+/**
+ * Spaces trim from both sides.
+ */
+string trim(const string& str);
+
+/**
+ * Get stream rest.
+ */
+string getStreamRest(istream& is);
+
