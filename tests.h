@@ -33,7 +33,7 @@ class DebugTestSuite : public CxxTest::TestSuite
      */ 
     void xtestBitboardConsistency(void)
     {
-
+        /*
         StepArray s; 
         uint slen;
         StepArray bs; 
@@ -55,16 +55,6 @@ class DebugTestSuite : public CxxTest::TestSuite
             do {
               slen = b->generateAllSteps(b->getPlayerToMove(), s);
               bslen = bb->genSteps(bb->getPlayerToMove(), bs);
-              /*
-              for (int i = 0; i < slen; i++){
-                cerr << s[i].toString() << " ";
-              }
-                cerr << endl;
-              for (int i = 0; i < bslen; i++){
-                cerr << bs[i].toString() << " ";
-              }
-                cerr << endl;
-              */
                 
               assert(slen == bslen); 
               if (slen == 0)
@@ -101,6 +91,7 @@ class DebugTestSuite : public CxxTest::TestSuite
           delete bb;
         }
  
+        */
     } 
 
 
@@ -236,7 +227,7 @@ class DebugTestSuite : public CxxTest::TestSuite
     void testUct(void)
     {
       //tree with random player in the root
-      Tree* tree = new Tree(INDEX_TO_PLAYER(random() % 2));
+      Tree* tree = new Tree(random() % 2);
       int winValue[2] = {1, -1};
       StepArray steps;
       int stepsNum;
@@ -281,9 +272,9 @@ class DebugTestSuite : public CxxTest::TestSuite
   {
     Board* board = new Board();
     board->initNewGame();
-    thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
-    thirdRep.update(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove()) );
-    TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - PLAYER_TO_INDEX(board->getPlayerToMove())), true);
+    thirdRep.update(board->getSignature(), 1 - board->getPlayerToMove());
+    thirdRep.update(board->getSignature(), 1 - board->getPlayerToMove());
+    TS_ASSERT_EQUALS(thirdRep.isThirdRep(board->getSignature(), 1 - board->getPlayerToMove()), true);
   }
 
 
@@ -305,14 +296,12 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(RABBITS_TEST_DIR) + s1;
       Board* b = new Board();
       b->initFromPosition(fn.c_str());
-      BBoard* bb = new BBoard(*b);
-      cerr << bb->toString();
+      //BBoard* bb = new BBoard(*b);
+      //cerr << bb->toString();
       Move move;
-      assert(quick_expected == b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
-      assert(full_expected == bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE));
-      //TS_ASSERT_EQUALS(quick_expected,b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
-      //TS_ASSERT_EQUALS(full_expected, bb->goalCheck(bb->getPlayerToMove(), STEPS_IN_MOVE));
-      delete bb;
+      //assert(quick_expected == b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
+      assert(full_expected == b->goalCheck(b->getPlayerToMove(), STEPS_IN_MOVE));
+      //delete bb;
       delete b;
           
     }

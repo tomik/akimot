@@ -68,7 +68,7 @@ void SimplePlayout::playOne()
 	do {
 		step = board_->findMCstep();
 	}
-	while (! board_->makeStepTryCommitMove(step));
+	while (! board_->makeStepTryCommit(step));
 	return;
 }
 
@@ -83,7 +83,7 @@ uint SimplePlayout::getPlayoutLength()
 // section SimplePlayoutBit
 //---------------------------------------------------------------------
 
-SimplePlayoutBit::SimplePlayoutBit(BBoard* bitboard, uint maxPlayoutLength, uint evalAfterLength):
+SimplePlayoutBit::SimplePlayoutBit(Board* bitboard, uint maxPlayoutLength, uint evalAfterLength):
    SimplePlayout(NULL, maxPlayoutLength, evalAfterLength), bitboard_(bitboard)
 {
   ;
@@ -92,7 +92,7 @@ SimplePlayoutBit::SimplePlayoutBit(BBoard* bitboard, uint maxPlayoutLength, uint
 //--------------------------------------------------------------------- 
 
 bool SimplePlayoutBit::hasWinner(){
-	if ( bitboard_->getWinner() != BNO_PLAYER ) {
+	if ( bitboard_->getWinner() != NO_PLAYER ) {
     return true;  
   }
   return false;
@@ -117,7 +117,8 @@ void SimplePlayoutBit::playOne()
 
 bool SearchExt::quickGoalCheck(const Board* board, player_t player, int stepsLimit)
 {
-  return board->quickGoalCheck(player, stepsLimit);
+  return false;
+  //return board->quickGoalCheck(player, stepsLimit);
 }
 
 //---------------------------------------------------------------------
@@ -957,7 +958,7 @@ void Uct::init(const Board* board)
 
   //save root in the tt
   tt_->insertItem(board->getSignature(),
-                  PLAYER_TO_INDEX(board->getPlayerToMove()), 
+                  board->getPlayerToMove(), 
                   tree_->root());
 
 }
@@ -997,7 +998,7 @@ void Uct::refineResults(const Board* board)
   //TODO this should be done when the move is actually MADE ! 
   Board* playBoard = new Board(*board);
   playBoard->makeMove(bestMove);
-  thirdRep.update(playBoard->getSignature(), PLAYER_TO_INDEX(playBoard->getPlayerToMove()) );
+  thirdRep.update(playBoard->getSignature(), playBoard->getPlayerToMove()) ;
 }
 
 //---------------------------------------------------------------------
@@ -1030,7 +1031,8 @@ void Uct::doPlayout(const Board* board)
 
         //goalCheck => value fixation
         Move move;
-        if (playBoard->quickGoalCheck(&move)){
+        //if (playBoard->quickGoalCheck(&move)){
+        if (playBoard->goalCheck(&move)){
           float value = WINNER_TO_VALUE(tree_->actNode()->getPlayer());
           //if not complete step - add pass 
           //small workaround preventing for instance rabbits crouching along the victory line
@@ -1045,11 +1047,11 @@ void Uct::doPlayout(const Board* board)
           break;
         }
 
-        stepsNum = playBoard->generateAllStepsNoPass(playBoard->getPlayerToMove(), steps);
+        stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
         stepsNum = filterTT(steps, stepsNum, playBoard); 
         if (playBoard->canPass()){ //add pass if possible
-          steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
+         steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
         }
 
         if (stepsNum > 0) {
@@ -1088,7 +1090,7 @@ void Uct::doPlayout(const Board* board)
     Step step = tree_->actNode()->getStep();
 
     //perform the step and try commit
-    if ( playBoard->makeStepTryCommitMove(step) )   {
+    if ( playBoard->makeStepTryCommit(step) )   {
       //commit was successful - check whether winning criteria are reached already
       if ( playBoard->getWinner() != EMPTY ) {
         tree_->updateHistory(playBoard->getWinner() == GOLD ? 1 : -1); 
@@ -1212,7 +1214,7 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
   while (i < stepsNum){
     afterStepSignature = board->calcAfterStepSignature(steps[i]);
     if (tt_->hasItem(afterStepSignature, 
-                     PLAYER_TO_INDEX(board->getPlayerToMove()))){
+                     board->getPlayerToMove())){
                      //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
       //TODO change this policy     
       //if node with same position already exists in the tree new node is not added 
@@ -1237,7 +1239,7 @@ void Uct::updateTT(Node* nodeList, const Board* board)
   while (node != NULL){
     afterStepSignature = board->calcAfterStepSignature(node->getStep());
     tt_->insertItem(afterStepSignature,
-                    PLAYER_TO_INDEX(board->getPlayerToMove()), 
+                    board->getPlayerToMove(), 
                     //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(node->getStep())), 
                     node);
     node = node->getSibling();

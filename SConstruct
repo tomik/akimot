@@ -24,7 +24,7 @@ prof.Append(CCFLAGS = '-O1 -DNEDBUG -ffast-math -g -pg', LINKFLAGS = '-pg')
 std = common.Clone()
 std.Append(CCFLAGS = '')
 
-src_files_common = 'board.cpp old_board.cpp engine.cpp uct.cpp utils.cpp benchmark.cpp eval.cpp config.cpp hash.cpp aei.cpp timer.cpp'.split()
+src_files_common = 'board.cpp engine.cpp uct.cpp utils.cpp benchmark.cpp eval.cpp config.cpp hash.cpp aei.cpp timer.cpp'.split()
 src_files_build = src_files_common + ['main.cpp'] 
 src_files_test = src_files_common 
 #todo - is this portable ? determine the extension of object file ( '.o' at linux) dynamically

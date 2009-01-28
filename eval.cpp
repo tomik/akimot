@@ -6,7 +6,7 @@
 
 int Eval::evaluate(const Board* board_)
 {
-  static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
+/*  static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
   int eval[2] = {0,0};
 
   for ( uint i = 0; i < 2; i++){
@@ -18,6 +18,8 @@ int Eval::evaluate(const Board* board_)
    // cerr <<endl;
   }
   return eval[0] - eval[1];
+    */
+    return 0;
 }
 
 //--------------------------------------------------------------------- 
@@ -83,6 +85,8 @@ static const int adjacent2_trap[100]={0,0,0,0,0,0,0,0,0,0,0,
 
 int Eval::evaluateBetter(const Board* board)
 {
+    return 0;
+    /*
   // evaluation constants
   static const int piece_value[7]={0,RABBIT_VALUE,CAT_VALUE,DOG_VALUE,HORSE_VALUE,CAMEL_VALUE,ELEPHANT_VALUE};
   // variables    
@@ -216,7 +220,6 @@ int Eval::evaluateBetter(const Board* board)
     }
   }
 
-  /* 
   // Evaluate material and individual pieces.
 
   for (side=0; side<2; side++){
@@ -248,7 +251,6 @@ int Eval::evaluateBetter(const Board* board)
       }
     }
   }
-  */
 
   for (square=11; square<=88; square++)
   {  
@@ -433,6 +435,7 @@ int Eval::evaluateBetter(const Board* board)
 
   //REMOVE
   return value;
+    */
 }
   
 /**/

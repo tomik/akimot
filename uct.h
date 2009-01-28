@@ -14,8 +14,6 @@
 #include "eval.h"
 #include "hash.h"
 
-#include "old_board.h"
-
 using std::map;
 using std::queue;
 using std::sqrt;
@@ -110,7 +108,7 @@ class SimplePlayout
 class SimplePlayoutBit: public SimplePlayout
 {
   public:
-    SimplePlayoutBit(BBoard*, uint maxPlayoutLength, uint evalAfterLength);
+    SimplePlayoutBit(Board*, uint maxPlayoutLength, uint evalAfterLength);
 
   private:
     SimplePlayoutBit();
@@ -119,7 +117,7 @@ class SimplePlayoutBit: public SimplePlayout
 
     virtual bool hasWinner();
 
-    BBoard*		bitboard_;
+    Board*		bitboard_;
 };
 
 

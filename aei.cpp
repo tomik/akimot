@@ -384,11 +384,11 @@ void Aei::startSearch(const string& arg)
 
 void Aei::goalCheck()
 {
-  BBoard * bb = new BBoard(*board_);
+  Board * bb = board_; 
   Move goaldMove;
   Move silverMove;
-  bool goldGoal = bb->goalCheck(BGOLD, 4, &goaldMove);
-  bool silverGoal = bb->goalCheck(BSILVER, 4, &silverMove);
+  bool goldGoal = bb->goalCheck(GOLD, 4, &goaldMove);
+  bool silverGoal = bb->goalCheck(SILVER, 4, &silverMove);
 
   if (goldGoal){
     sendInfo(STR_INFO_GOAL_CHECK, "gold " + goaldMove.toString());

@@ -90,6 +90,7 @@ void Benchmark::benchmarkCopyBoard()
 
 void Benchmark::benchmarkQuickGoalCheck() 
 {
+    /*
   float timeTotal;
   timer.start();
 
@@ -113,6 +114,7 @@ void Benchmark::benchmarkQuickGoalCheck()
 	timeTotal = timer.elapsed(); 
   logRaw("Quick Goal Check performance: \n  %d checks\n  %3.2f seconds\n  %d cps\n", 
             i, timeTotal, int ( float(i) / timeTotal));
+    */
 }
 
 //--------------------------------------------------------------------- 
@@ -120,6 +122,7 @@ void Benchmark::benchmarkQuickGoalCheck()
 void Benchmark::benchmarkBitPlayout() 
 {
 		
+/*
   float timeTotal;
 
   playoutStatus_e  playoutStatus;
@@ -146,6 +149,7 @@ void Benchmark::benchmarkBitPlayout()
   logRaw("Bit playouts performance: \n  %d playouts\n  %3.2f seconds\n  %d pps\n  %d average playout length\n", 
             i, timeTotal, int ( float(i) / timeTotal),int(playoutAvgLen/ float (i)));
   
+*/
 }
 
 //--------------------------------------------------------------------- 
@@ -185,7 +189,7 @@ void Benchmark::benchmarkPlayout()
 void Benchmark::benchmarkUct() 
 {
   //tree with random player in the root
-  Tree* tree = new Tree(INDEX_TO_PLAYER(random() % 2));
+  Tree* tree = new Tree(random() % 2);
   int winValue[2] = {1, -1};
   StepArray steps;
   int stepsNum;
