@@ -15,7 +15,19 @@ u64 adv[8][2] = {
 		    {0xff00000000000000ULL, 0x00000000000000ffULL} 
       };
 
-#define EVAL_MAX 10000
+//static piece values rabbit 100, cat 250, ...
+const int pieceValue[7] = { 0, 100, 250, 300, 800, 1100, 1800 };
+
+//less rabbits => lesser chance for winning
+const int rabbitPenalty[8] = { -10000, -500, -400 ,-200, -150, -50, 0, 0};
+
+//penalty for being frozen per piece percentage from value of piece
+const float frozenPenaltyRatio = -0.2; 
+
+//penalty for being frozen per piece rabbit 10, cat 20, ...
+//const int frozenPenalty[7] = { 0, 10, 20, 25};
+
+#define EVAL_MAX 1500
 #define EVAL_MIN (-10000)
 
 float Eval::evaluateInPercent(const Board* b) const
@@ -33,6 +45,71 @@ float Eval::evaluateInPercent(const Board* b) const
 //--------------------------------------------------------------------- 
 
 int Eval::evaluate(const Board* b) const
+{
+  int   tot[2] = { 0, 0 };
+
+  assert(b->getStepCount() == 0);
+
+  for (int player = 0; player < 2; player++) {
+    logDDebug("Player %d", player); 
+    logDDebug("=================================="); 
+    
+    //pieces
+    u64 pieces = b->bitboard_[player][0]; 
+    u64 movable = b->calcMovable(player);
+    coord_t pos = -1;
+    logDDebug("============"); 
+
+    while ((pos = bits::lix(pieces)) != -1){
+      piece_t piece = b->getPiece(pos, player);
+      tot[player] += pieceValue[piece];
+      string s = pieceToStr(player, piece, pos);
+      logDDebug("material bonus %4d for %s", pieceValue[piece], s.c_str());
+
+    //frozen
+      if (! bits::getBit(movable, pos)){
+        tot[player] += pieceValue[piece] * frozenPenaltyRatio;
+        logDDebug("material penalty %4.2f for %s being frozen", pieceValue[piece] * frozenPenaltyRatio, s.c_str());
+      } 
+    }
+
+    //traps 
+    /*
+    u64 traps = TRAPS;   
+    coord_t trap = -1;
+    trapType_e trapTypes[2][4];
+    while ((trap = bits::lix(traps)) != -1){
+      u64 guards = bits::neighborsOne(trap) & bitboard_[player][0];
+      if (! guards)  {
+        trapTypes[player][TRAP_TO_INDEX(i)] = TT_UNSAFE;
+      }
+      //if (bitC
+      
+      //frame
+      //if (bits::neighborsOne(trap) ^ ( bitboard_[GOLD][0] || ) 
+    }
+  */
+    
+    //rabbits 
+    int rabbitsNum = bits::bitCount(b->bitboard_[player][RABBIT]);
+    logDDebug("rabbit penalty %4d for %d rabbits left", rabbitPenalty[rabbitsNum], rabbitsNum);
+    tot[player] += rabbitPenalty[rabbitsNum];
+
+    //mobility
+
+    //influence
+    
+    
+    //special shapes: pins, forks, hostages
+    
+
+  }
+
+  return tot[0] - tot[1];
+}
+//--------------------------------------------------------------------- 
+
+int Eval::evaluateDailey(const Board* b) const
 {
   int   tot[2] = { 0, 0 };
   u64   dom;                   // bit board of dominant pieces.

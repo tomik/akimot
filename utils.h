@@ -35,7 +35,7 @@ using std::ios;
 using std::pair;
 
 
-enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW};
+enum logLevel_e { LL_DDEBUG, LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW};
 
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
 
@@ -48,8 +48,14 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
 #define logRaw(...) logFunction(LL_RAW, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 #ifdef NDEBUG 
   #define logDebug(...) ((void)0)
+  #define logDDebug(...) ((void)0)
 #else
   #define logDebug(...) logFunction(LL_DEBUG, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+  #ifdef DEBUG
+    #define logDDebug(...) logFunction(LL_DDEBUG, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
+  #else
+    #define logDDebug(...) ((void)0)
+  #endif 
 #endif 
 
 /**

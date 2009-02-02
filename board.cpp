@@ -52,6 +52,17 @@ bool parsePieceChar(char pieceChar, player_t &player, piece_t& piece)
   return true;
 }
 
+//--------------------------------------------------------------------- 
+
+string pieceToStr(player_t player, piece_t piece, coord_t at)
+{
+  stringstream ss;
+  string pieceRefStr(" RCDHMErcdhme");
+  string columnRefStr("abcdefgh");
+
+  ss << pieceRefStr[piece + 6 * player] << columnRefStr[at % 8] << at / 8 + 1; 
+  return ss.str();
+}
 
 //---------------------------------------------------------------------
 //  section Step

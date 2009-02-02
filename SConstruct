@@ -18,7 +18,7 @@ common = Environment(CC='g++', CCFLAGS = '-Wall ', LINKFLAGS = '')
 opt = common.Clone()
 opt.Append(CCFLAGS = '-O3 -DNDEBUG -ffast-math -fomit-frame-pointer -frename-registers') #-march=native
 dbg = common.Clone()
-dbg.Append(CCFLAGS = '-ansi -DDEBUG_1 -DDEBUG_2 -DDEBUG_3 ')
+dbg.Append(CCFLAGS = '-ansi -DDEBUG')
 prof = common.Clone()
 prof.Append(CCFLAGS = '-O1 -DNEDBUG -ffast-math -g -pg', LINKFLAGS = '-pg') 
 std = common.Clone()

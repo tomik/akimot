@@ -28,6 +28,7 @@
 #define STR_BOARD_DUMP "boarddump"
 #define STR_TREE_DUMP "treedump"
 #define STR_GOAL_CHECK "goalcheck"
+#define STR_EVAL "eval"
 
 
 #define STR_INFO "info"  
@@ -186,6 +187,8 @@ void Aei::init()
   records_.push_back(AeiRecord(STR_TREE_DUMP, AS_MAIN, AS_SAME, AA_TREE_DUMP, AC_EXT));
   //goal check
   records_.push_back(AeiRecord(STR_GOAL_CHECK, AS_MAIN, AS_MAIN, AA_GOAL_CHECK));
+  //evaluation
+  records_.push_back(AeiRecord(STR_EVAL, AS_MAIN, AS_MAIN, AA_EVAL));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));
@@ -283,6 +286,9 @@ void Aei::handleInput(const string& line)
                   break;
     case AA_GOAL_CHECK:    
                   goalCheck(); 
+                  break;
+    case AA_EVAL:    
+                  evalActPos();
                   break;
     case AA_GO_NO_THREAD: 
                   engine_->timeManager()->resetSettings();
@@ -403,6 +409,15 @@ void Aei::goalCheck()
 }
 
 //--------------------------------------------------------------------- 
+
+void Aei::evalActPos()
+{
+  Eval* eval = new Eval();
+  stringstream ss;
+  ss << eval->evaluateInPercent(board_);
+  aeiLog("Estimated winning probability for gold:" + ss.str(), AL_INFO);
+  delete eval;
+}
 
 void Aei::searchInThread()
 {

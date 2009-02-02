@@ -52,6 +52,7 @@ typedef unsigned long long u64;
 #define HORSE       4
 #define CAMEL       5
 #define ELEPHANT    6
+#define PIECE_NUM   6
 
 #define OPP(player) (1 - player)				 //opponent
 #define BIT_ON(n) (1ULL << (n))          //creates empty board with one bit set on n
@@ -168,10 +169,30 @@ namespace bits{
 }
 
 /**
+ * Record action as parsed from the game record (file).
+ *
+ * Potential values are: placement in the beginning (e.g. RA1), 
+ * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
+ */
+enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERROR}; 
+
+/**
  * Zobrist and random numbers init;
  */
 void randomStructuresInit();
 
+/**
+* Parsing piece char (e.g. R,H,c,m, ... ) 
+* 
+* @return pair: (player, piece) belonging to given char.
+* Throws an exception when unknown pieceChar encountered.
+*/
+bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece); 
+
+/**
+ * Prints piece at position. 
+ */
+string pieceToStr(player_t player, piece_t piece, coord_t at); 
 
 class Board;
 class Eval;
@@ -320,21 +341,6 @@ class StepWithKills: public Step
 typedef list<Step> StepList;
 typedef StepList::iterator StepListIter;
 
-/**
- * Record action as parsed from the game record (file).
- *
- * Potential values are: placement in the beginning (e.g. RA1), 
- * normal step (e.g. RA1n), trap fall(e.g. Rc3x)
- */
-enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERROR}; 
-
-/**
-* Parsing piece char (e.g. R,H,c,m, ... ) 
-* 
-* @return pair: (player, piece) belonging to given char.
-* Throws an exception when unknown pieceChar encountered.
-*/
-bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece); 
 
 /**
  * Move = list of steps (up to STEP_IN_MOVE).
@@ -692,12 +698,12 @@ class Board
      */
     void calcWeaker(player_t player, u64 (&weaker)[7]) const;
 
-    inline void	setSquare(coord_t, player_t, piece_t);
-    inline void	delSquare(coord_t, player_t);											
-    inline void	delSquare(coord_t, player_t, piece_t);											
+    void	setSquare(coord_t, player_t, piece_t);
+    void	delSquare(coord_t, player_t);											
+    void	delSquare(coord_t, player_t, piece_t);											
 
-    inline piece_t	getPiece(coord_t, player_t) const;
-    inline player_t getPlayer(coord_t) const;
+    piece_t	getPiece(coord_t, player_t) const;
+    player_t getPlayer(coord_t) const;
 
     /**
      * General init - nullifies variables.
@@ -739,8 +745,6 @@ class Board
      */
 		void makeStep(const Step& step);
 
-    //TODO move evaluation methods to eval ???
-    
     /**
      * Knowledge integration into steps. 
      *

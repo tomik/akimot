@@ -18,7 +18,7 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
     //compiler dependend function - allocates memory to fullmsg
     vasprintf(&fullmsg, msg, args);
     va_end(args);
-    if (logLevel == LL_RAW)
+    if (logLevel == LL_RAW || logLevel == LL_DDEBUG)
       std::cerr << fullmsg << std::endl;
     else
       std::cerr << timestamp << " --- " << "["  << logLevelStr[logLevel]  << "] " << file << "/" << function << "/" << line <<  ":" << fullmsg << std::endl;
@@ -185,7 +185,7 @@ string getStreamRest(istream& is)
 
 string replaceAllChars(string s, char c1, char c2)
 {
-  for (int i = 0; i < s.length(); i++){
+  for (uint i = 0; i < s.length(); i++){
     if (s[i] == c1){
       s[i] = c2;
     }
