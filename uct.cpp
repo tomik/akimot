@@ -446,7 +446,6 @@ string Node::recToString(int depth) const
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
-
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
     ss << "   ";
@@ -1017,10 +1016,12 @@ void Uct::doPlayout(const Board* board)
         }
 
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
+
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-        stepsNum = filterTT(steps, stepsNum, playBoard); 
+        //stepsNum = filterTT(steps, stepsNum, playBoard); 
+
         if (playBoard->canPass()) { //add pass if possible
-         steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
+          steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
         }
 
         if (stepsNum > 0) {
@@ -1032,7 +1033,7 @@ void Uct::doPlayout(const Board* board)
           else{
             tree_->expandNode(tree_->actNode(), steps, stepsNum);
           }
-          updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+          //updateTT(tree_->actNode()->getFirstChild(), playBoard); 
         }else{
           tree_->removeNodeCascade(tree_->actNode());
           break;
@@ -1187,7 +1188,7 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
                      //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
       //TODO change this policy     
       //if node with same position already exists in the tree new node is not added 
-      steps[i] = steps[stepsNum-- - 1];
+      steps[i] = steps[--stepsNum];
       nodesPruned_++;
       continue;
     }

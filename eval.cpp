@@ -167,8 +167,6 @@ int Eval::evaluate(const Board* b) const
         piece_t framedPiece = b->getPiece(trap, player); 
         u64 mustBlock = 
           bits::neighbors(guards[OPP(player)] & b->weaker(OPP(player), framedPiece));
-        bits::print(cerr, mustBlock & all);
-        bits::print(cerr, mustBlock);
         
         if (guardsArea == bits::neighborsOne(trap) && 
            ( mustBlock == 0ULL || (mustBlock & all) == mustBlock )){

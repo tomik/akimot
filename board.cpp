@@ -1597,7 +1597,7 @@ bool Board::initFromPositionCompactString(const string& s)
         continue;
       else {
         player_t player;
-        piece_t piece;
+        piece_t piece = 0;
         if (! parsePieceChar(c, player, piece)){
           logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
           return false;
@@ -1837,6 +1837,7 @@ u64 Board::calcAfterStepSignature(const Step& step) const
   bb->makeStep(step);
   u64 sig = bb->getSignature();
   delete bb;
+  assert(! step.pieceMoved() || sig != signature_);
   return sig;
 }
 
