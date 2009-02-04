@@ -441,11 +441,12 @@ string Node::toString() const
 
 string Node::recToString(int depth) const
 {
-  const float print_visit_threshold_base    = 500;
+  const float print_visit_threshold_base    = 300;
   const float print_visit_threshold_parent  = 0.05;
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
+
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
     ss << "   ";
