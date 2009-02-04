@@ -12,7 +12,7 @@
 
 extern u64 adv[8][2];
 
-enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_DOMINANT};
+enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
 
 /**
  * Board evaluation class.
@@ -45,7 +45,9 @@ class Eval
      */
     float evaluateStep(const Board*, const Step& step) const;
 
-//  private: 
+  private: 
+    
+    static string trapTypeToStr(trapType_e trapType);
 
    // bool isBlockaded(player_t player, coord_t coord);
    // bool isDominant(player_t player, coord_t); 

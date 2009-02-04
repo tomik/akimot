@@ -19,17 +19,29 @@ u64 adv[8][2] = {
 const int pieceValue[7] = { 0, 100, 250, 300, 800, 1100, 1800 };
 
 //less rabbits => lesser chance for winning
-const int rabbitPenalty[8] = { -10000, -500, -400 ,-200, -150, -50, 0, 0};
+const int rabbitPenalty[9] = { -10000, -500, -400 ,-200, -150, -50, -20, 0, 0};
 
 //penalty for being frozen per piece percentage from value of piece
 const float frozenPenaltyRatio = -0.2; 
 
+const int domRadius = 2;
+
+//dangerous
+const int trapSoleVal = 50;  
+const int trapSafeeVal = 50;  
+const int trapActiveVal = 150;
+const int trapPotVal = 100;
+//ratio substracted from piece value if framed 
+const float framePenaltyRatio = -0.3;  
+//ratio substracted from piece value if supports framed piece (not mobile)
+const float pinnedPenaltyRatio = frozenPenaltyRatio;  
+
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
-#define EVAL_MAX 1500
-#define EVAL_MIN (-10000)
-
+#define EVAL_MAX 2000
+#define EVAL_MIN (-2000)
+ 
 float Eval::evaluateInPercent(const Board* b) const
 {
   int evaluation = evaluate(b);
@@ -46,9 +58,11 @@ float Eval::evaluateInPercent(const Board* b) const
 
 int Eval::evaluate(const Board* b) const
 {
-  int   tot[2] = { 0, 0 };
+  float  tot[2] = { 0, 0 };
 
   assert(b->getStepCount() == 0);
+  
+  u64 movable = b->calcMovable(GOLD) | b->calcMovable(SILVER);
 
   for (int player = 0; player < 2; player++) {
     logDDebug("Player %d", player); 
@@ -56,56 +70,167 @@ int Eval::evaluate(const Board* b) const
     
     //pieces
     u64 pieces = b->bitboard_[player][0]; 
-    u64 movable = b->calcMovable(player);
     coord_t pos = -1;
     logDDebug("============"); 
 
-    while ((pos = bits::lix(pieces)) != -1){
+    while ((pos = bits::lix(pieces)) != BIT_EMPTY){
       piece_t piece = b->getPiece(pos, player);
       tot[player] += pieceValue[piece];
-      string s = pieceToStr(player, piece, pos);
-      logDDebug("material bonus %4d for %s", pieceValue[piece], s.c_str());
+      
+      logDDebug("material bonus %4d for %s", pieceValue[piece], pieceToStr(player, piece, pos).c_str());
 
     //frozen
       if (! bits::getBit(movable, pos)){
         tot[player] += pieceValue[piece] * frozenPenaltyRatio;
-        logDDebug("material penalty %4.2f for %s being frozen", pieceValue[piece] * frozenPenaltyRatio, s.c_str());
+        logDDebug("material penalty %4.2f for %s being frozen", pieceValue[piece] * frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
       } 
     }
 
-    //traps 
-    /*
-    u64 traps = TRAPS;   
-    coord_t trap = -1;
-    trapType_e trapTypes[2][4];
-    while ((trap = bits::lix(traps)) != -1){
-      u64 guards = bits::neighborsOne(trap) & bitboard_[player][0];
-      if (! guards)  {
-        trapTypes[player][TRAP_TO_INDEX(i)] = TT_UNSAFE;
-      }
-      //if (bitC
-      
-      //frame
-      //if (bits::neighborsOne(trap) ^ ( bitboard_[GOLD][0] || ) 
-    }
-  */
-    
     //rabbits 
     int rabbitsNum = bits::bitCount(b->bitboard_[player][RABBIT]);
     logDDebug("rabbit penalty %4d for %d rabbits left", rabbitPenalty[rabbitsNum], rabbitsNum);
     tot[player] += rabbitPenalty[rabbitsNum];
 
-    //mobility
+    //blockade
 
     //influence
+     
+    //hostages
     
+    //special shapes: forks
     
-    //special shapes: pins, forks, hostages
-    
-
   }
 
-  return tot[0] - tot[1];
+  //traps 
+  u64 traps = TRAPS;   
+  coord_t trap = BIT_EMPTY;
+  //trapType_e trapTypes[2][4];
+  u64 guards[2];
+  int guardsNum[2] = {0, 0};
+
+  while ((trap = bits::lix(traps)) != BIT_EMPTY){
+    guards[GOLD] = bits::neighborsOne(trap) & b->bitboard_[GOLD][0];
+    guards[SILVER] = bits::neighborsOne(trap) & b->bitboard_[SILVER][0];
+
+    guardsNum[GOLD] = bits::neighborsOneNum(trap, guards[GOLD]);
+    guardsNum[SILVER] = bits::neighborsOneNum(trap, guards[SILVER]);
+    
+    u64 guardsArea = guards[GOLD] | guards[SILVER];
+    u64 victimsArea = bits::sphere(trap, 2);
+    u64 influenceArea = bits::sphere(trap, 3);
+
+    player_t guardDom = b->strongestPieceOwner(guardsArea);
+    player_t influenceDom = b->strongestPieceOwner(influenceArea & movable);
+
+    logDDebug("trap %s - dominant %d/%d guards g/s : %d/%d",
+      coordToStr(trap).c_str(), guardDom, influenceDom, 
+      guardsNum[GOLD], guardsNum[SILVER]); 
+
+    for (int player = 0; player < 2; player++) {
+      if (guardsNum[player] > 0 && guardsNum[OPP(player)] == 0){
+        tot[player] += trapSoleVal;
+        logDDebug("trap sole %d to %d player for %s trap " , 
+          trapSoleVal, player, coordToStr(trap).c_str()); 
+        //bonus for opponent pieces in victims Area
+        if (influenceDom == player && 
+            victimsArea & b->bitboard_[OPP(player)][0] & ~movable){
+          tot[player] += trapPotVal;
+          logDDebug("trap pot bonus %d to %d player for %s trap " , 
+            trapPotVal, player, coordToStr(trap).c_str()); 
+        }
+      }
+      if (guardsNum[player] > 0 && guardsNum[OPP(player) > 0]){
+        //2 guards or locally unbeatable piece => safe
+        //(guardDom == player cannot be used => absolutely strongest piece )
+        if (guardsNum[player] >= 2 || 
+            (guardDom != OPP(player) && influenceDom != OPP(player))){
+
+          //dominance in trap
+          if (guardsNum[player] >= guardsNum[OPP(player)] && guardDom == player){
+            tot[player] += trapActiveVal;
+            logDDebug("trap active %d to %d player for %s trap " , 
+                      trapActiveVal, player, coordToStr(trap).c_str()); 
+          }
+          else{
+            tot[player] += trapSafeeVal;
+            logDDebug("trap safe %d to %d player for %s trap " , 
+                      trapSafeeVal, player, coordToStr(trap).c_str()); 
+          }
+        }
+      }
+
+
+      //check frame
+      if ((BIT_ON(trap) & b->bitboard_[player][0]) && guardsNum[OPP(player)] == 3) {
+        u64 all = (b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0] );
+        //squares that must be blocked for trapped piece not to break free
+        piece_t framedPiece = b->getPiece(trap, player); 
+        u64 mustBlock = 
+          bits::neighbors(guards[OPP(player)] & b->weaker(OPP(player), framedPiece));
+        bits::print(cerr, mustBlock & all);
+        bits::print(cerr, mustBlock);
+        
+        if (guardsArea == bits::neighborsOne(trap) && 
+           ( mustBlock == 0ULL || (mustBlock & all) == mustBlock )){
+          //frame penalty
+          tot[player] += framePenaltyRatio *  pieceValue[framedPiece];
+          logDDebug("full frame penalty %4.2f to %d player for %s framed" , 
+                    framePenaltyRatio *  pieceValue[framedPiece],
+                    player, pieceToStr(player, framedPiece, trap).c_str()); 
+          //pin penalty
+          u64 u = guards[player];
+          assert(u);
+          int pinnedPos = bits::lix(u);
+          piece_t pinnedPiece = b->getPiece(pinnedPos, player);
+          assert(IS_PIECE(pinnedPiece));
+          assert(!u);
+          tot[player] += pinnedPenaltyRatio *  pieceValue[pinnedPiece];
+              logDDebug("full pin penalty %4.2f to %d player for %s pinned" , 
+                        pinnedPenaltyRatio *  pieceValue[pinnedPiece], 
+                        player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
+          int sd = b->strongerDistance(player, pinnedPiece, pinnedPos);
+          if (sd != BIT_EMPTY && sd <= 2) {
+            tot[player] += framePenaltyRatio * pieceValue[framedPiece];
+            logDDebug("extra pin penalty %4.2f to %d player for %s pinned in danger",
+                  framePenaltyRatio *  pieceValue[framedPiece],
+                  player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
+          }
+        }
+      }
+    }
+  }
+      
+/*
+      switch(guardsNum[player]){
+        case 0 :  trapTypes[player][TRAP_TO_INDEX(trap)] = TT_UNSAFE;
+                  break;
+        case 1 :  if (influenceDom == player){
+                    trapTypes[player][TRAP_TO_INDEX(trap)] = TT_SAFE;
+                  } else {
+                    trapTypes[player][TRAP_TO_INDEX(trap)] = TT_HALF_SAFE;
+                  }
+                  break;
+        default : trapTypes[player][TRAP_TO_INDEX(trap)] = TT_SAFE;
+                  if (dominant == player) {
+                    if (b->bitboard_[OPP(player)][0] & area) {
+                      trapTypes[player][TRAP_TO_INDEX(trap)] = TT_ACTIVE;
+                    }
+                  }
+      }
+
+    
+    logDDebug("trap status %s for %s trap - dominant %d/%d" , 
+            trapTypeToStr(trapTypes[player][TRAP_TO_INDEX(trap)]).c_str(), 
+            coordToStr(trap).c_str(), guardDom, influenceDom); 
+    }
+*/
+    
+    //frame
+    //if (bits::neighborsOne(trap) ^ ( bitboard_[GOLD][0] || ) 
+  
+
+  logDDebug("total for gold %d", int(tot[0] - tot[1]));
+  return int(tot[0] - tot[1]);
 }
 //--------------------------------------------------------------------- 
 
@@ -180,14 +305,14 @@ int Eval::evaluateDailey(const Board* b) const
 float Eval::evaluateStep(const Board* b, const Step& step) const
 {
 
-  return 0;
-  /*
   float eval = 0; 
 
   if (step.isPass()){
-    eval -= 0.5 * (STEPS_IN_MOVE - stepCount_);
+    eval -= 0.5 * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
+    return 0;
+  /*
 
   assert(step.pieceMoved());
   assert(IS_PLAYER(board_[step.from_]));
@@ -286,6 +411,18 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
 
   return eval;
   */
+}
+    
+string Eval::trapTypeToStr(trapType_e trapType)
+{
+  switch (trapType) {
+    case TT_UNSAFE: return string("unsafe");
+    case TT_HALF_SAFE: return string("half safe");
+    case TT_SAFE: return string("safe");
+    case TT_ACTIVE: return string("active");
+    default: assert(false);
+  }
+  return "";
 }
 
 //--------------------------------------------------------------------- 

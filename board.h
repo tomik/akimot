@@ -33,11 +33,14 @@ typedef unsigned long long u64;
 //zobrist base table for signature creating 
 
 #define IS_PLAYER(player) (player == GOLD || player == SILVER)
+#define IS_PIECE(piece) ( piece > 0 && piece <= 6)
 
 #define NORTH 8
 #define SOUTH -8
 #define EAST 1
 #define WEST -1
+
+#define BIT_EMPTY -1
 
 #define GOLD        0
 #define SILVER      1
@@ -158,6 +161,15 @@ namespace bits{
   u64 neighborsOne(coord_t coord);
 
   /**
+   * Number of neighbors.
+   *
+   * @param coord Start point.
+   * @param mask NeighborMask for coord.
+   * @return Number of bits in mask.
+   */
+  int neighborsOneNum(coord_t coord, u64 mask);
+
+  /**
    * Mask of sphere.
    */
   u64 sphere(int center, int radius);
@@ -188,6 +200,11 @@ void randomStructuresInit();
 * Throws an exception when unknown pieceChar encountered.
 */
 bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece); 
+
+/**
+ * Coord to string.
+ */
+string coordToStr(coord_t at); 
 
 /**
  * Prints piece at position. 
@@ -702,9 +719,55 @@ class Board
     void	delSquare(coord_t, player_t);											
     void	delSquare(coord_t, player_t, piece_t);											
 
+    /**
+     * Piece getter for coord.
+     */
     piece_t	getPiece(coord_t, player_t) const;
+
+    /**
+     * Player getter for coord.
+     */
     player_t getPlayer(coord_t) const;
 
+    /**
+     * Distance of stronger piece.
+     *
+     * BIT_EMPTY if no such piece exists.
+     */
+    int strongerDistance(player_t player, piece_t piece, coord_t coord) const;
+
+    /**
+     * Distance of equaly strong piece.
+     *
+     * BIT_EMPTY if no such piece exists.
+     */
+    int equalDistance(player_t player, piece_t piece, coord_t coord) const;
+
+  
+    /**
+     * Strongest(>) piece owner in area.
+     * 
+     * @return player who's piece is dominant in area, NO_PLAYER if both players 
+     * have pieces of same power there.
+     */
+    player_t strongestPieceOwner(u64 area) const;
+
+    /**
+     * Strongest player's piece in area.
+     *
+     * @return Strongest piece for given player in area.
+     */
+    player_t strongestPiece(player_t player, u64 area) const;
+
+    /**
+     * Weaker mask getter.
+     *
+     * @param player Target player.
+     * @param piece Reference piece.
+     * @return Mask of player pieces weaker than reference piece.
+     */
+    u64 weaker(player_t player, piece_t piece) const;
+  
     /**
      * General init - nullifies variables.
      *

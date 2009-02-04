@@ -221,7 +221,7 @@ float Node::ucb(float exploreCoeff) const
   //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
          + sqrt((exploreCoeff/visits_)) 
-         //+ heur_/visits_ 
+         + heur_/visits_ 
          //+ (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)
          ;
   

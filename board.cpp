@@ -54,13 +54,22 @@ bool parsePieceChar(char pieceChar, player_t &player, piece_t& piece)
 
 //--------------------------------------------------------------------- 
 
+string coordToStr(coord_t coord)
+{
+  stringstream ss;
+  string columnRefStr("abcdefgh");
+  ss << columnRefStr[coord % 8] << coord / 8 + 1; 
+  return ss.str();
+}
+
+//--------------------------------------------------------------------- 
+
 string pieceToStr(player_t player, piece_t piece, coord_t at)
 {
   stringstream ss;
   string pieceRefStr(" RCDHMErcdhme");
-  string columnRefStr("abcdefgh");
 
-  ss << pieceRefStr[piece + 6 * player] << columnRefStr[at % 8] << at / 8 + 1; 
+  ss << pieceRefStr[piece + 6 * player] << coordToStr(at);
   return ss.str();
 }
 
@@ -738,6 +747,18 @@ u64 bits::neighborsOne(coord_t coord){
 
 //---------------------------------------------------------------------
 
+int bits::neighborsOneNum(coord_t coord, u64 mask){
+  int num = 0;
+  for (int i = 0; i < 4; i++) {
+    if (mask & BIT_ON(coord + bdirection[i])){
+      num++;
+    }
+  }
+  return num; 
+}
+
+//---------------------------------------------------------------------
+
 u64 bits::str2bits(string str){
   bitset<BIT_LEN> bs(str);
   u64 b = 0ULL;
@@ -749,7 +770,6 @@ u64 bits::str2bits(string str){
 
   return b;
 }
-
 
 //---------------------------------------------------------------------
 
@@ -1377,6 +1397,83 @@ player_t Board::getPlayer(coord_t coord) const
 
 //--------------------------------------------------------------------- 
 
+int Board::strongerDistance(player_t player, piece_t piece, coord_t coord) const
+{
+  u64 stronger = 0ULL;
+  for (int i = 1; i + piece < PIECE_NUM + 1; i++){
+    stronger = bitboard_[OPP(player)][piece + i];
+    if (stronger)
+      break;
+  }
+  if (! stronger){ 
+    return BIT_EMPTY;
+  }
+  int radius = 1;
+  while (! (stronger & bits::circle(coord, radius))){
+    radius++;
+  }
+  return radius; 
+     
+}
+
+//--------------------------------------------------------------------- 
+
+int Board::equalDistance(player_t player, piece_t piece, coord_t coord) const
+{
+  u64 stronger = bitboard_[OPP(player)][piece];
+  if (! stronger){ 
+    return BIT_EMPTY;
+  }
+
+  int radius = 1;
+  while (! (stronger & bits::circle(coord, radius))){
+    radius++;
+  }
+  return radius; 
+}
+
+//--------------------------------------------------------------------- 
+
+player_t Board::strongestPieceOwner(u64 area) const
+{
+  for (int i = PIECE_NUM; i>= 0; i--){
+    u64 g =  area & bitboard_[GOLD][i];
+    u64 s =  area & bitboard_[SILVER][i];
+    if (! (g | s)){
+      continue;
+    }
+    return g ? (s ? NO_PLAYER : GOLD) : SILVER;
+  }
+  return NO_PLAYER;
+  
+}
+
+//--------------------------------------------------------------------- 
+
+piece_t Board::strongestPiece(player_t player, u64 area) const
+{
+  for (int i = PIECE_NUM; i>= 0; i--){
+    if (bitboard_[player][i]){
+      return i;
+    }
+  }
+  return NO_PIECE;
+  
+}
+
+//--------------------------------------------------------------------- 
+
+u64 Board::weaker(player_t player, piece_t piece) const
+{
+  u64 res = 0ULL;
+  for (int i = piece - 1; i > 0; i--){
+    res |= bitboard_[player][i];  
+  }
+  return res;
+}
+
+//--------------------------------------------------------------------- 
+
 uint Board::getStepCount() 
 {
   return stepCount_;
@@ -1530,7 +1627,7 @@ void Board::findMCmoveAndMake()
   intList p; 
   
   //area selection
-  #define RADIUS 3
+  #define RADIUS 4
   u64 area = 0ULL;
   for (int i = 0; i < 2; i++){
     int start = rand() % BIT_LEN; 
