@@ -1681,7 +1681,7 @@ bool Board::checkKillForward(coord_t from, coord_t to, KillInfo* killInfo) const
   }
 
   //2) piece is standing in the trap and his last supporter goes away
-  trapped = bits::neighborsOne(from) & TRAPS && bitboard_[player][0];
+  trapped = bits::neighborsOne(from) & TRAPS  & bitboard_[player][0];
   if (trapped ){
     int trappedCoord = bits::lix(trapped);
     assert(trappedCoord != -1 && bits::lix(trapped) == -1);
