@@ -616,7 +616,7 @@ bool OB_Board::findRandomStep(Step& step) const
     tryLocal = true;
   }
 
-  for ( int i = 0; i < cfg.randomStepTries(); i++){ 
+  for ( int i = 0; i < 5; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
 
     if (tryLocal and random01() > 0.2){

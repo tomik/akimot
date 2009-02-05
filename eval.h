@@ -23,6 +23,8 @@ enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
 class Eval
 {
 	public:
+    Eval();
+
     /**
      * Evaluation.
      */
@@ -48,6 +50,8 @@ class Eval
   private: 
     
     static string trapTypeToStr(trapType_e trapType);
+
+    EvalTT * evalTT_;
 
    // bool isBlockaded(player_t player, coord_t coord);
    // bool isDominant(player_t player, coord_t); 

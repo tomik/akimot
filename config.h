@@ -63,7 +63,7 @@ class Cfg
     bool checkConfiguration();
     
     inline bool localPlayout() { return localPlayout_; }
-    inline int randomStepTries() { return randomStepTries_; }
+    inline bool useBestEval() { return useBestEval_; }
     inline float fpu() { return fpu_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline float exploreRate() { return exploreRate_; }
@@ -80,8 +80,8 @@ class Cfg
 
     /**Locality in playout switch.*/
     bool localPlayout_;
-    /**How many times random step is tried.*/
-    int  randomStepTries_;
+    /**Is top evaluation function used*/ 
+    bool  useBestEval_;
     /**FPU value*/
     float fpu_;
     /**Use knowledge in uct tree.*/

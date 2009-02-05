@@ -166,3 +166,5 @@ class Node;
  *    pointer to the node in the tree"
  */
 typedef HashTableBoard<Node *> TT;
+
+typedef HashTable<float> EvalTT;

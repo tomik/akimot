@@ -41,16 +41,43 @@ const float pinnedPenaltyRatio = frozenPenaltyRatio;
 
 #define EVAL_MAX 2000
 #define EVAL_MIN (-2000)
+
+#define EVAL_MAX_DAILEY 2000
+#define EVAL_MIN_DAILEY (-2000)
+
+//--------------------------------------------------------------------- 
+
+Eval::Eval() 
+{
+  evalTT_ = new EvalTT();
+}
+
+//--------------------------------------------------------------------- 
  
 float Eval::evaluateInPercent(const Board* b) const
 {
-  int evaluation = evaluate(b);
+  /*
+  if (evalTT_->hasItem(b->getSignature())){
+    float p = 0; 
+    evalTT_->loadItem(b->getSignature(), p); 
+    return p;
+  }
+  */
 
-  float p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
-  if (p < 0)
-    return 0;
-  if (p > 1)
-    return 1;
+  int evaluation;
+  float p; 
+
+  if (cfg.useBestEval()){
+    evaluation = evaluate(b);
+    p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
+  }else{ 
+    evaluation = evaluateDailey(b);
+    p = (evaluation - EVAL_MIN_DAILEY) / float(EVAL_MAX_DAILEY - EVAL_MIN_DAILEY);
+  }
+  p = p < 0 ? 0 : (p > 1 ? 1 : p);
+
+  //evalTT_->insertItem(b->getSignature(), p);
+
   return p;
 }
 
@@ -59,6 +86,11 @@ float Eval::evaluateInPercent(const Board* b) const
 int Eval::evaluate(const Board* b) const
 {
   float  tot[2] = { 0, 0 };
+
+  logDDebug("========================="); 
+  logDDebug("Tomik's Arimaa Evaluation"); 
+  logDDebug("========================="); 
+  logDDebug(""); 
 
   assert(b->getStepCount() == 0);
   
