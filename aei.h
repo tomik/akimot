@@ -29,7 +29,7 @@ enum aeiState_e {AS_ALL, AS_SAME, AS_OPEN, AS_MAIN, AS_GAME, AS_SEARCH, AS_PONDE
 enum aeiAction_e {AA_OPEN, AA_READY, AA_QUIT, AA_SET_POSITION, 
                   AA_SET_POSITION_FILE, AA_SET_OPTION, AA_NEW_GAME, AA_SET_VARIABLE, 
                   AA_GO, AA_GO_NO_THREAD, AA_STOP, AA_MAKE_MOVE, AA_MAKE_MOVE_REC, 
-                  AA_BOARD_DUMP, AA_TREE_DUMP, AA_GOAL_CHECK, AA_EVAL};
+                  AA_BOARD_DUMP, AA_TREE_DUMP, AA_GOAL_CHECK, AA_TRAP_CHECK, AA_EVAL};
 enum aeiLogLevel_e {AL_ERROR, AL_WARNING, AL_INFO, AL_DEBUG};
 
 /**
@@ -132,6 +132,11 @@ class Aei
      * Performs static goal check on the current position. 
      */
     void goalCheck();
+
+    /**
+     * Performs static trap check on the current position. 
+     */
+    void trapCheck();
 
     /**
      * Evaluates actual position. 

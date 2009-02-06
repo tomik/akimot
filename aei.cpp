@@ -1,4 +1,3 @@
-
 #include "aei.h"
 //--------------------------------------------------------------------- 
 // section Strings used in communication
@@ -28,6 +27,7 @@
 #define STR_BOARD_DUMP "boarddump"
 #define STR_TREE_DUMP "treedump"
 #define STR_GOAL_CHECK "goalcheck"
+#define STR_TRAP_CHECK "trapcheck"
 #define STR_EVAL "eval"
 
 
@@ -39,6 +39,7 @@
 #define STR_INFO_STATS "stat"
 #define STR_INFO_NODES "nodes"
 #define STR_INFO_GOAL_CHECK "goalcheck"
+#define STR_INFO_TRAP_CHECK "trapcheck"
 
 
 #define STR_TC_MOVE "tcmove"
@@ -187,6 +188,8 @@ void Aei::init()
   records_.push_back(AeiRecord(STR_TREE_DUMP, AS_MAIN, AS_SAME, AA_TREE_DUMP, AC_EXT));
   //goal check
   records_.push_back(AeiRecord(STR_GOAL_CHECK, AS_MAIN, AS_MAIN, AA_GOAL_CHECK));
+  //trap check
+  records_.push_back(AeiRecord(STR_TRAP_CHECK, AS_MAIN, AS_MAIN, AA_TRAP_CHECK));
   //evaluation
   records_.push_back(AeiRecord(STR_EVAL, AS_MAIN, AS_MAIN, AA_EVAL));
 
@@ -286,6 +289,9 @@ void Aei::handleInput(const string& line)
                   break;
     case AA_GOAL_CHECK:    
                   goalCheck(); 
+                  break;
+    case AA_TRAP_CHECK:    
+                  trapCheck(); 
                   break;
     case AA_EVAL:    
                   evalActPos();
@@ -390,7 +396,7 @@ void Aei::startSearch(const string& arg)
 
 void Aei::goalCheck()
 {
-  Board * bb = board_; 
+  Board * bb = new Board(*board_);
   Move goaldMove;
   Move silverMove;
   bool goldGoal = bb->goalCheck(GOLD, 4, &goaldMove);
@@ -405,6 +411,28 @@ void Aei::goalCheck()
   delete bb; 
   if (! goldGoal && ! silverGoal ){
     sendInfo(STR_INFO_GOAL_CHECK, "none");
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void Aei::trapCheck()
+{
+  Board * bb = new Board(*board_);
+  //MoveList goaldMove;
+  //MoveList silverMove;
+  bool goldGoal = bb->trapCheck(GOLD, NULL);
+  bool silverGoal = bb->trapCheck(SILVER, NULL);
+
+  if (goldGoal){
+    sendInfo(STR_INFO_TRAP_CHECK, "gold can be trapped"); 
+  }
+  if (silverGoal){
+    sendInfo(STR_INFO_TRAP_CHECK, "silver can be trapped"); 
+  }
+  delete bb; 
+  if (! goldGoal && ! silverGoal ){
+    sendInfo(STR_INFO_TRAP_CHECK, "none");
   }
 }
 

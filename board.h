@@ -144,6 +144,11 @@ namespace bits{
   bool getBit(const u64& b, int n);
 
   /**
+   * Simple is trap check.
+   */
+  bool isTrap(coord_t coord);
+
+  /**
    * Fancy print. 
    */
   ostream& print(ostream& o, const u64& b);
@@ -441,6 +446,8 @@ class Move
     bool opening_;
 };
 
+typedef list<Step> MoveList;
+typedef MoveList::iterator MoveListIter;
 
 //steps
 typedef Step  StepArray[MAX_STEPS];
@@ -505,7 +512,6 @@ class Board
      * Equality operator.
      *
      * Check signatures and moveCount.
-     * Right now doesn't check pieceArrays and other stuff.
      */
 		bool operator== (const Board& board) const;
 
@@ -636,6 +642,21 @@ class Board
     bool goalCheck(Move* move=NULL);
 
     /**
+     * Trap check.
+     * 
+     * Pruned full width search.
+     *
+     * @param moves - List of moves performing trap kill.
+     * @return True if any trap kill possible, false otherwise.
+     */
+    bool trapCheck( player_t player, coord_t trap, int limit, MoveList* moves);
+
+    bool trapCheck(player_t player, MoveList* moves);
+
+    bool trapCheck(coord_t pos, piece_t piece, player_t player, coord_t trap,
+                        int limit, int used, Move* move);
+
+    /**
      * String representation.
      */
 		string toString() const;
@@ -670,6 +691,8 @@ class Board
      */
     player_t getPlayerToMoveAfterStep(const Step& step) const;
 
+    void *operator new( unsigned int size);
+    void operator delete(void* p);
 
   private: 
 
@@ -684,14 +707,22 @@ class Board
 
     /**
      * Step generation for one.
-     * //TODO optimize/simplify
      *
-     * Wrapper around previous function when not used from generate all. 
+     * Wrapper around genStepsOneTuned[PushPull| Single]
      */
-    void genStepsForOne(coord_t coord, player_t player,
+    void genStepsOne(coord_t coord, player_t player,
                         StepArray& steps, int& stepsNum) const;
+
     /**
-     * Step generation for one piece. 
+     * Step generation for one.
+     *
+     * Wrapper around genStepsOneTunedPushPull 
+     */
+    void genStepsOnePushPull(coord_t coord, player_t player,
+                        StepArray& steps, int& stepsNum) const;
+
+    /**
+     * Single Step generation for one piece. 
      *
      * @param coord  Steps are generated for piece at this coord.
      * @param player Player to generate steps for. 
@@ -699,7 +730,19 @@ class Board
      * @param steps  Steps are stored in this array.
      * @param stepsnum Size of step array.
      */
-    void genStepsForOneTuned(coord_t coord, player_t player, piece_t piece, 
+    void genStepsOneTunedSingle(coord_t coord, player_t player, piece_t piece, 
+                              StepArray& steps, int& stepsNum) const;
+
+    /**
+     * Push Pull Step generation for one piece. 
+     *
+     * @param coord  Steps are generated for piece at this coord.
+     * @param player Player to generate steps for. 
+     * @param piece  Piece ( for time save). 
+     * @param steps  Steps are stored in this array.
+     * @param stepsnum Size of step array.
+     */
+    void genStepsOneTunedPushPull(coord_t coord, player_t player, piece_t piece, 
                               StepArray& steps, int& stepsNum, u64 victims) const;
 
     /**
@@ -735,6 +778,13 @@ class Board
      * BIT_EMPTY if no such piece exists.
      */
     int strongerDistance(player_t player, piece_t piece, coord_t coord) const;
+
+    /**
+     * Check whether there is stronger piece within distance. 
+     *
+     */
+    bool strongerWithinDistance(player_t player, piece_t piece, 
+                          coord_t coord, int distance) const;
 
     /**
      * Distance of equaly strong piece.
@@ -779,7 +829,7 @@ class Board
     /**
      * After load from position actions. 
      *
-     * Signature gest created. PieceArray is filled.
+     * Signature gest created. 
      */
     void afterPositionLoad();
 

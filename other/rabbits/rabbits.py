@@ -66,7 +66,7 @@ if __name__ == '__main__':
         print "Usage: %s rabbits_pos_file" % sys.argv[0]
         sys.exit(1)
 
-    engine_cmd = './akimot -c default.cfg'
+    engine_cmd = './akimot -c default.cfg -l'
     engine = EngineController(StdioEngine(engine_cmd, log))
 
     for pos, move in map(lambda x: x.split('#'), open(rabbits_pos_fn, 'r').readlines()):

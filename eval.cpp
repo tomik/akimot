@@ -64,6 +64,12 @@ float Eval::evaluateInPercent(const Board* b) const
   }
   */
 
+  //Board* bb = new Board();
+  //bb->goalCheck();
+  //delete bb;
+  return random01();
+  
+
   int evaluation;
   float p; 
 
