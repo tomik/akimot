@@ -1044,7 +1044,9 @@ void Uct::doPlayout(const Board* board)
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
         int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
 
-        stepsNum = filterTT(steps, stepsNum, playBoard, level); 
+        if (cfg.uct_tt()){
+          stepsNum = filterTT(steps, stepsNum, playBoard, level); 
+        }
 
         if (playBoard->canPass()) { //add pass if possible
           steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
@@ -1059,7 +1061,9 @@ void Uct::doPlayout(const Board* board)
           else{
             tree_->expandNode(tree_->actNode(), steps, stepsNum);
           }
-          updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+          if (cfg.uct_tt()){
+            updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+          }
         }else{
           tree_->removeNodeCascade(tree_->actNode());
           break;

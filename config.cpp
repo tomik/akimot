@@ -25,7 +25,8 @@ CfgItem::CfgItem(const char* name, cfgItemType_e type, void* item, const char* d
 Cfg::Cfg()
 {
   items_.push_back(CfgItem("local_playout", IT_BOOL, (void*)&localPlayout_,"1"));
-  items_.push_back(CfgItem("use_best_eval", IT_BOOL, (void*)&useBestEval_,"2"));
+  items_.push_back(CfgItem("use_best_eval", IT_BOOL, (void*)&useBestEval_,"1"));
+  items_.push_back(CfgItem("uct_transposition_tables", IT_BOOL, (void*)&uct_tt_,"1"));
   items_.push_back(CfgItem("fpu", IT_FLOAT, (void*)&fpu_,"1.1"));
   items_.push_back(CfgItem("knowledge_in_tree", IT_BOOL, (void*)&knowledgeInTree_,"1"));
   items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_,"0.2"));

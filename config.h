@@ -64,6 +64,7 @@ class Cfg
     
     inline bool localPlayout() { return localPlayout_; }
     inline bool useBestEval() { return useBestEval_; }
+    inline bool uct_tt() { return uct_tt_; }
     inline float fpu() { return fpu_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline float exploreRate() { return exploreRate_; }
@@ -82,6 +83,8 @@ class Cfg
     bool localPlayout_;
     /**Is top evaluation function used*/ 
     bool  useBestEval_;
+    /** Uct transpotion tables. */
+    bool uct_tt_;
     /**FPU value*/
     float fpu_;
     /**Use knowledge in uct tree.*/
