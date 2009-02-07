@@ -127,7 +127,7 @@ Node::Node()
 
 //---------------------------------------------------------------------
 
-Node::Node(TWstep* twStep, float heur)
+Node::Node(TWstep* twStep, int level, float heur)
 {
   assert(IS_PLAYER(twStep->step.getPlayer()));
   nodeType_ = ( twStep->step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
@@ -137,8 +137,9 @@ Node::Node(TWstep* twStep, float heur)
   bestCached_ = NULL;
   visits_     = 0;
   value_      = 0; 
-  heur_ = heur;
-  twStep_ = twStep;
+  heur_       = heur;
+  twStep_     = twStep;
+  level_      = level;
 }
 
 //---------------------------------------------------------------------
@@ -427,11 +428,18 @@ nodeType_e Node::getNodeType() const
 
 //---------------------------------------------------------------------
 
+int Node::getLevel() const
+{
+  return level_;
+}
+
+//--------------------------------------------------------------------- 
+
 string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " -> " 
+  ss << getStep().toString() << "(" << getLevel() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " -> " 
     << (father_ != NULL ? ucb(EXPLORE_RATE * log(father_->visits_)) : 1 )
     << endl;
   return ss.str();
@@ -524,7 +532,7 @@ Tree::Tree(Tree* trees[], int treesNum)
 Tree::Tree(player_t firstPlayer)
 {
   init();
-  history[historyTop] = new Node(&(twSteps_[Step(STEP_NULL, firstPlayer)]));
+  history[historyTop] = new Node(&(twSteps_[Step(STEP_NULL, firstPlayer)]), 0);
   nodesNum_ = 1;
 }
 
@@ -547,13 +555,24 @@ void Tree::init()
   nodesNum_ = 0;
 }
 
+//--------------------------------------------------------------------- 
+
+int Tree::calcNodeLevel(Node* father, const Step& step) 
+{
+  return father->getLevel() + father->getPlayer() == step.getPlayer() ? 0 : 1;  
+}
+
 //---------------------------------------------------------------------
 
 void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs)
 {
   Node* newChild;
+  assert(len);
+  assert(node);
+  int level = len ? calcNodeLevel(node, steps[0]) : 0;
   for (uint i = 0; i < len; i++){
-    newChild = new Node(&(twSteps_[steps[i]]), heurs ? (*heurs)[i] : 0 );  
+    newChild = new Node(&(twSteps_[steps[i]]), level,  
+                          heurs ? (*heurs)[i] : 0);  
     node->addChild(newChild);
     nodesNum_++;
   }
@@ -567,8 +586,11 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
   
   Node* newChild;
   StepList stepList = move.getStepList();
+  assert(! stepList.empty());
+  assert(node);
+  int level = ! stepList.empty() ? calcNodeLevel(node, *stepList.begin()) : 0;
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
-    newChild = new Node(&twSteps_[*it]);
+    newChild = new Node(&twSteps_[*it], level);
     node->addChild(newChild);
     node = newChild;
    // nodesNum_++;
@@ -721,7 +743,9 @@ Node* Tree::mergeTrees(EqNode* eqNode, Node* father,
 
   //TODO bindings to foreign TWsteps are made - tree should create 
   //it's own twsteps and make bindings to them.
-  Node * node = new Node(eqNode->node->getTWstep());
+  int level = father ? calcNodeLevel(father, eqNode->node->getTWstep()->step) : 0;
+  Node * node = new Node(eqNode->node->getTWstep(), level);
+                         
   nodesNum++;
   node->setFather(father);
   node->setVisits(visits);
@@ -1018,7 +1042,9 @@ void Uct::doPlayout(const Board* board)
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
 
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-        //stepsNum = filterTT(steps, stepsNum, playBoard); 
+        int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
+
+        stepsNum = filterTT(steps, stepsNum, playBoard, level); 
 
         if (playBoard->canPass()) { //add pass if possible
           steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
@@ -1033,7 +1059,7 @@ void Uct::doPlayout(const Board* board)
           else{
             tree_->expandNode(tree_->actNode(), steps, stepsNum);
           }
-          //updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+          updateTT(tree_->actNode()->getFirstChild(), playBoard); 
         }else{
           tree_->removeNodeCascade(tree_->actNode());
           break;
@@ -1176,7 +1202,7 @@ double Uct::decidePlayoutWinner(const Board* playBoard) const
 
 //--------------------------------------------------------------------- 
 
-int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
+int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board, int level)
 {
   uint i = 0;
   u64 afterStepSignature;
@@ -1184,8 +1210,8 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board)
   while (i < stepsNum){
     afterStepSignature = board->calcAfterStepSignature(steps[i]);
     if (tt_->hasItem(afterStepSignature, 
-                     board->getPlayerToMove())){
-                     //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(steps[i])))){
+                     board->getPlayerToMove(), 
+                     level)){
       //TODO change this policy     
       //if node with same position already exists in the tree new node is not added 
       steps[i] = steps[--stepsNum];
@@ -1205,13 +1231,12 @@ void Uct::updateTT(Node* nodeList, const Board* board)
   assert(nodeList != NULL); 
   Node* node = nodeList; 
   u64 afterStepSignature;
-
   while (node != NULL){
     afterStepSignature = board->calcAfterStepSignature(node->getStep());
     tt_->insertItem(afterStepSignature,
                     board->getPlayerToMove(), 
-                    //PLAYER_TO_INDEX(board->getPlayerToMoveAfterStep(node->getStep())), 
-                    node);
+                    node, 
+                    node->getLevel());
     node = node->getSibling();
   }
 }

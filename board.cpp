@@ -14,6 +14,9 @@
 ThirdRep*  Board::thirdRep_;
 Eval*  Board::eval_;
 
+Bpool bpool;
+StepArray stepArray;
+
 // switch to know when to init static variables in class Board
 bool Board::classInit = false;
 
@@ -1021,7 +1024,7 @@ int Board::genSteps(player_t player, StepArray& steps) const
    
 //--------------------------------------------------------------------- 
 
-bool Board::goalCheck(player_t player, int stepLimit, Move * move) 
+bool Board::goalCheck(player_t player, int stepLimit, Move * move) const
 {
   
   u64 rabbits = bitboard_[player][RABBIT];
@@ -1045,7 +1048,7 @@ bool Board::goalCheck(player_t player, int stepLimit, Move * move)
 
 //--------------------------------------------------------------------- 
 
-bool Board::goalCheck(Move * move) 
+bool Board::goalCheck(Move * move) const
 {
   return goalCheck(toMove_, STEPS_IN_MOVE - stepCount_, move);
 }
@@ -1124,6 +1127,9 @@ bool Board::trapCheck(coord_t vpos, piece_t piece, player_t player, coord_t trap
     return false;
   }
 
+  //optimize ... ? 
+  StepArray steps; 
+
   //optimize reserve + 2 is too much waste 
   int distLimit = reserve + 2;
 
@@ -1138,25 +1144,25 @@ bool Board::trapCheck(coord_t vpos, piece_t piece, player_t player, coord_t trap
       int len = 0;
       if (! reserve) {
         //must act
-        genStepsOnePushPull(bit, OPP(player), stepArray, len);
+        genStepsOnePushPull(bit, OPP(player), steps, len);
       }else {
-        genStepsOne(bit, OPP(player), stepArray, len);
+        genStepsOne(bit, OPP(player), steps, len);
       }
 
       for (int j = 0; j < len; j++){
-        //cerr << "making step " << stepArray[j].toString() << endl;
+        //cerr << "making step " << steps[j].toString() << endl;
         Board* bb = new Board(*this);
-        bb->makeStep(stepArray[j]);
+        bb->makeStep(steps[j]);
 
         int newvpos = vpos;
-        if (stepArray[j].oppFrom_ == vpos){
-          newvpos = stepArray[j].oppTo_;
+        if (steps[j].oppFrom_ == vpos){
+          newvpos = steps[j].oppTo_;
         }
 
         if (bb->trapCheck(newvpos, piece, player, trap, limit, 
-                         used + stepArray[j].count(), move)){
+                         used + steps[j].count(), move)){
          delete(bb);
-         move->prependStep(stepArray[j]);
+         move->prependStep(steps[j]);
          return true;
         }
         delete(bb);
@@ -1168,7 +1174,7 @@ bool Board::trapCheck(coord_t vpos, piece_t piece, player_t player, coord_t trap
 
 //--------------------------------------------------------------------- 
 
-int Board::reachability(int from, int to, player_t player, int limit, int used, Move * move) 
+int Board::reachability(int from, int to, player_t player, int limit, int used, Move * move) const
 {
 
   int reserve = limit - used - SQUARE_DISTANCE(from, to);
@@ -1200,6 +1206,7 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
   //cerr.width(2 * (used+1));
   //cerr << ' ';
   //cerr << "used " << used << " reserve " << reserve << endl;
+  StepArray steps;
 
   for (int i = 0; i <= distLimit; i ++){
     u64 iFarAway = bitboard_[player][0] & bits::circle(from, i);
@@ -1214,16 +1221,16 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
       assert(IS_PLAYER(getPlayer(bit)));
       assert(player == GOLD || player == SILVER);
       int len = 0; 
-      genStepsOne(bit, player, stepArray, len);
+      genStepsOne(bit, player, steps, len);
 
       for (int j = 0; j < len; j++){
        // cerr.width(2 * (used+1));
        // cerr << ' ';
-       // cerr << "trying " << stepArray[j].toString() << endl;
+       // cerr << "trying " << steps[j].toString() << endl;
 
         int newfrom = from;
-        if (stepArray[j].from_ == from){
-          newfrom = stepArray[j].to_;
+        if (steps[j].from_ == from){
+          newfrom = steps[j].to_;
         }
         //moving another piece => must have reserve
         if (from == newfrom && ! reserve){
@@ -1232,14 +1239,14 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
         }
         //new board - makestep - recurse 
         Board* bb = new Board(*this);
-        bb->makeStep(stepArray[j]);
+        bb->makeStep(steps[j]);
         int r = bb->reachability(newfrom, to, player, limit, 
-                                  used + stepArray[j].count(), move);
+                                  used + steps[j].count(), move);
         delete(bb);
         if (r != -1){
-          //assert(stepArray[j].player_ == 0 || stepArray[j].player_ == 1);
+          //assert(steps[j].player_ == 0 || steps[j].player_ == 1);
           if (move != NULL){
-            move->prependStep(stepArray[j]);
+            move->prependStep(steps[j]);
           }
           return r;
         }
@@ -1253,14 +1260,14 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
 //--------------------------------------------------------------------- 
 
 void Board::genStepsOne(coord_t coord, player_t player, 
-                            StepArray& steps, int& stepsNum) const
-{
+                            StepArray& steps, int& stepsNum) const { 
   if (bits::getBit(calcMovable(player), coord)){
     u64 victims[7];
     calcWeaker(player, victims);
 
     assert(getPlayer(coord) == player); 
     piece_t piece = getPiece(coord, player);
+    //calling two functions here instead of one might make it (much) slower 
     genStepsOneTunedSingle(coord, player, piece, steps, stepsNum);
     genStepsOneTunedPushPull(coord, player, piece, steps, stepsNum, victims[piece]);
   }
@@ -1626,6 +1633,13 @@ uint Board::getStepCount()
 }
 
 //--------------------------------------------------------------------- 
+
+bool Board::isMoveBeginning() const 
+{
+  return stepCount_ == 0;
+}
+
+//--------------------------------------------------------------------- 
 // FROM OLD
 //--------------------------------------------------------------------- 
 
@@ -1673,15 +1687,21 @@ bool Board::operator== ( const Board& board) const
 
 //---------------------------------------------------------------------
 
-void* Board::operator new(unsigned int size) {
+void* Board::operator new(size_t size) {
+  if (! bpool.empty()) {
+    Board* b = bpool.top();
+    bpool.pop();
+    return b;
+  } 
   return malloc(size);
 }
 
 //--------------------------------------------------------------------- 
 
 void Board::operator delete(void* p) {
-  Board* b = static_cast<Board*>(p);
-  free(b);
+  bpool.push(static_cast<Board*> (p));
+  //Board* b = static_cast<Board*>(p);
+  //free(b);
 }
 
 //---------------------------------------------------------------------

@@ -11,6 +11,9 @@ typedef map<u64, int>   PositionMap;
 //random initialization for hash-like structures
 u64 getRandomU64();
 
+//corressponds to maximum depth of UCT tree (in levels ~ moves) 
+#define MAX_LEVELS 50
+
 template<typename T> class HashTable
 {
   protected:
@@ -82,6 +85,9 @@ template<typename T> class HashTableBoard : public HashTable<T>
     {
       playerSignature_[0] = getRandomU64();
       playerSignature_[1] = getRandomU64(); 
+      for (int i = 0; i < MAX_LEVELS; i++){
+        levelSignature_[i] = getRandomU64();
+      }
     }
 
     //--------------------------------------------------------------------- 
@@ -89,10 +95,11 @@ template<typename T> class HashTableBoard : public HashTable<T>
     /**
      * Wrapper around HashTable::hasItem.
      */
-    bool hasItem(u64 key, uint playerIndex)
+    bool hasItem(u64 key, uint playerIndex, uint level=0)
     {
       assert(playerIndex == 0 || playerIndex == 1);
       key ^= playerSignature_[playerIndex];
+      key ^= levelSignature_[level % MAX_LEVELS]; 
       return HashTable<T>::hasItem(key);
     }
 
@@ -101,10 +108,11 @@ template<typename T> class HashTableBoard : public HashTable<T>
     /**
      * Wrapper around HashTable::insertItem.
      */
-    void insertItem(u64 key, uint playerIndex, T item)
+    void insertItem(u64 key, uint playerIndex, T item, uint level=0)
     {
       assert(playerIndex == 0 || playerIndex == 1);
       key ^= playerSignature_[playerIndex];
+      key ^= levelSignature_[level % MAX_LEVELS]; 
       HashTable<T>::insertItem(key, item);
     }
 
@@ -112,17 +120,20 @@ template<typename T> class HashTableBoard : public HashTable<T>
 
     /**
      * Wrapper around HashTable::loadItem.
+                    node->getLevel(),
      */
-    bool loadItem(u64 key, uint playerIndex, T& item)
+    bool loadItem(u64 key, uint playerIndex, T& item, uint level=0)
     {
       assert(playerIndex == 0 || playerIndex == 1);
       key ^= playerSignature_[playerIndex];
+      key ^= levelSignature_[level % MAX_LEVELS]; 
 
       return HashTable<T>::loadItem(key, item);
     }
 
   protected:
     u64 playerSignature_[2];
+    u64 levelSignature_[MAX_LEVELS];
 
 };
 
@@ -134,6 +145,12 @@ template<typename T> class HashTableBoard : public HashTable<T>
 class ThirdRep: public HashTableBoard<int>
 {
 	public:
+    ThirdRep(): HashTableBoard<int>()
+    {
+      playerSignature_[0] = getRandomU64();
+      playerSignature_[1] = getRandomU64(); 
+    }
+
     void print() { 
       cerr << playerSignature_[0] << " | " << playerSignature_[1] << "|" << isEmpty() << endl; 
     }
@@ -148,6 +165,8 @@ class ThirdRep: public HashTableBoard<int>
      * Checks whether position is third repetition.
      */
     bool  isThirdRep(u64 key, uint playerIndex ); 
+  protected:
+    u64 playerSignature_[2];
 }; 
 
 extern ThirdRep thirdRep;

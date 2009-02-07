@@ -456,6 +456,11 @@ typedef float  HeurArray[MAX_STEPS];
 
 typedef list<int> intList;
 
+typedef stack<Board*> Bpool;
+
+extern Bpool bpool;
+extern StepArray stepArray; 
+
 class Board
 {
 
@@ -491,7 +496,7 @@ class Board
      * @return true if initialization went right 
      * otherwise false
      */
-    bool  initFromPositionCompactString(const string& s); 
+    bool initFromPositionCompactString(const string& s); 
 
     /**
      * Step generation for Monte Carlo playouts.
@@ -622,7 +627,13 @@ class Board
      */
     Step lastStep() const;
 
-	uint getStepCount();
+	  uint getStepCount();
+
+    /**
+     * Checks is in the move beginning. 
+     */
+    bool isMoveBeginning() const;
+
 
     void updateWinner();
 
@@ -631,7 +642,7 @@ class Board
      *
      * Done through limited full width search. 
      */
-    bool goalCheck(player_t player, int stepLimit, Move* move=NULL);
+    bool goalCheck(player_t player, int stepLimit, Move* move=NULL) const;
 
     /**
      * Goal check.
@@ -639,7 +650,7 @@ class Board
      * Wrapper around previous with player, stepLimit set 
      * according to actual player to move.
      */
-    bool goalCheck(Move* move=NULL);
+    bool goalCheck(Move* move=NULL) const;
 
     /**
      * Trap check.
@@ -691,7 +702,7 @@ class Board
      */
     player_t getPlayerToMoveAfterStep(const Step& step) const;
 
-    void *operator new( unsigned int size);
+    void *operator new(size_t size);
     void operator delete(void* p);
 
   private: 
@@ -703,7 +714,7 @@ class Board
      * Used in goalCheck. 
      */
     int reachability(int from, int to, player_t player, 
-                    int limit, int used, Move * move);
+                    int limit, int used, Move * move) const;
 
     /**
      * Step generation for one.
@@ -730,7 +741,7 @@ class Board
      * @param steps  Steps are stored in this array.
      * @param stepsnum Size of step array.
      */
-    void genStepsOneTunedSingle(coord_t coord, player_t player, piece_t piece, 
+    inline void genStepsOneTunedSingle(coord_t coord, player_t player, piece_t piece, 
                               StepArray& steps, int& stepsNum) const;
 
     /**
@@ -742,7 +753,7 @@ class Board
      * @param steps  Steps are stored in this array.
      * @param stepsnum Size of step array.
      */
-    void genStepsOneTunedPushPull(coord_t coord, player_t player, piece_t piece, 
+    inline void genStepsOneTunedPushPull(coord_t coord, player_t player, piece_t piece, 
                               StepArray& steps, int& stepsNum, u64 victims) const;
 
     /**
@@ -885,24 +896,31 @@ class Board
      */
     bool stepIsThirdRepetition(const Step& ) const;
 
-	uint getStepCount() const;
+    /**
+     * Step count getter. 
+     */
+	  uint getStepCount() const;
+
+    /**
+     * Pre move signature getter.
+     */
     u64 getPreMoveSignature() const;
 
     u64 bitboard_[2][7];
 
-    StepArray     stepArray;
-  
     static bool       classInit;
     static ThirdRep*  thirdRep_;
     static Eval*      eval_;
 
     //signature of position from when the current move started
     u64 signature_;            
+
     //position signature - for hash tables, corectness checks, etc. 
     u64 preMoveSignature_;     
 
     /**Last made step.*/
     Step lastStep_;
+
 		// move consists of up to 4 steps ( push/pull  counting for 2 ),
     uint  moveCount_;
 

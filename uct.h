@@ -147,7 +147,7 @@ class Node
     /**
      * Constructor with step and heuristic 
      */
-    Node(TWstep*, float heur=0);
+    Node(TWstep*, int level, float heur=0);
 
     /**
      * Finds child with highest UCB1 value.
@@ -223,6 +223,7 @@ class Node
     float getValue() const;
     void setValue(float value);
     nodeType_e getNodeType() const;
+    int getLevel() const;
 
     string toString() const; 
 
@@ -246,6 +247,7 @@ class Node
     Node*       firstChild_;  
     Node*       father_;
     nodeType_e  nodeType_;
+    int         level_;
 };
 
 /**Tree equivalent node.*/
@@ -442,6 +444,16 @@ class Tree
      */
     void init();
 
+    /**
+     * Level calculation.
+     *
+     * @param father Node father
+     * @param step Step representid in node.
+     *
+     * @return Level(move num) belonging to node.
+     */
+    static int calcNodeLevel(Node* father, const Step& step);
+
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
     /**Expanded nodes.*/
@@ -573,7 +585,7 @@ class Uct
      * 
      * @return Number of steps in steps array after update.
      */
-    int filterTT(StepArray& steps, uint stepsNum, const Board* board);
+    int filterTT(StepArray& steps, uint stepsNum, const Board* board, int level);
 
     /**
      * Updates Transposition tables after nodes were added. 

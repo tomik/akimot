@@ -22,7 +22,7 @@ const int pieceValue[7] = { 0, 100, 250, 300, 800, 1100, 1800 };
 const int rabbitPenalty[9] = { -10000, -500, -400 ,-200, -150, -50, -20, 0, 0};
 
 //penalty for being frozen per piece percentage from value of piece
-const float frozenPenaltyRatio = -0.2; 
+const float frozenPenaltyRatio = -0.1; 
 
 const int domRadius = 2;
 
@@ -64,12 +64,12 @@ float Eval::evaluateInPercent(const Board* b) const
   }
   */
 
-  //Board* bb = new Board();
-  //bb->goalCheck();
-  //delete bb;
-  return random01();
+/*  if (b->goalCheck()) {
+    return 1 - b->getPlayerToMove();
+  }
+*/
+  //return random01();
   
-
   int evaluation;
   float p; 
 
