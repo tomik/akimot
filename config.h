@@ -14,10 +14,14 @@ using std::list;
 #define CFG_SEP "="
 #define CFG_COMMENT "#"
 #define DEFAULT_CFG "default.cfg"
+#define SINGLE_VALUE -1
 
 class Cfg;
 
-enum cfgItemType_e { IT_STRING, IT_BOOL, IT_INT, IT_FLOAT };
+enum itemType_e { IT_STR, IT_BOOL, IT_INT, IT_FLOAT, IT_INT_AR, IT_FLOAT_AR };
+
+bool fillItemFromString(void* item, itemType_e type, string s, int index=SINGLE_VALUE);
+string getItemAsString(void* item, itemType_e type, int index=SINGLE_VALUE);
 
 /**
  * Configuration item.
@@ -25,10 +29,10 @@ enum cfgItemType_e { IT_STRING, IT_BOOL, IT_INT, IT_FLOAT };
 class CfgItem
 {
   public: 
-    CfgItem(const char* name, cfgItemType_e type, void* item, const char * defaultValue_);
+    CfgItem(const char* name, itemType_e type, void* item, const char * defaultValue_);
   private:
     string name_;
-    cfgItemType_e type_;
+    itemType_e type_;
     void * item_;
     bool set_;
     string defaultValue_;
@@ -75,6 +79,7 @@ class Cfg
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
     inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
     inline int searchThreadsNum() { return searchThreadsNum_; }
+    inline string evalCfg() { return evalCfg_; }
 
   private:
     CfgItemList items_;
@@ -105,6 +110,8 @@ class Cfg
     uint knowledgeTournamentSize_;
     /**Number of threads for search.*/
     int searchThreadsNum_;
+    /**Filename to take the evaluation configuration from.*/
+    string evalCfg_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

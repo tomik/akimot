@@ -35,7 +35,7 @@ using std::ios;
 using std::pair;
 
 
-enum logLevel_e { LL_DDEBUG, LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW};
+enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW, LL_DDEBUG };
 
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
 
@@ -68,6 +68,11 @@ class FileRead
      * Constructor with filename. 
      */
     FileRead(string fn);
+
+    /**
+     * Reads whole file as string.
+     */
+    string read();
 
     /**
      * Line read.

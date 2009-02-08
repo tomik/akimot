@@ -14,6 +14,93 @@ extern u64 adv[8][2];
 
 enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
 
+class Eval;
+class Values;
+
+class ValueItem { 
+  public: 
+    ValueItem() {};
+    ValueItem(string name, itemType_e type, void* item, int num);
+
+    bool isSingleValue() const;
+
+  private:
+    string name_;
+    itemType_e type_;
+    void* item_;
+    int num_;
+    friend class Values;
+};
+
+typedef list <ValueItem> ValueList;
+
+class Values 
+{
+  public:
+    /**
+     * Loads values from file. 
+     *
+     * Values are loaded according to valuesList.
+     */
+    Values(string fn);
+
+    /**
+     * Dump to string.
+     */
+    string toString() const;
+    
+  private: 
+    /**
+     * Load from file.
+     */
+    bool loadFromString(string);
+
+    /**
+     * Mirroring. 
+     *
+     * Horizontally for second (symetrical) half of the board.
+     * Vertically for second player. 
+     */
+    void mirrorPiecePositions();
+
+    /**
+     * Token -> item mapping. 
+     *
+     * Goes through tokens and tries to find given one.
+     * @return True if found, false otherwise.
+     */
+    bool getItemForToken(string token, ValueItem& valueItem) const;
+
+    Values(){};
+
+    ValueList values;
+    friend class Eval;
+
+    //static piece values  
+    int pieceValue[PIECE_NUM + 1];
+
+    //penalties for few rabbits 0 .. 8 
+    int rabbitPenalty[RABBITS_NUM + 1]; 
+
+    //penalty for being frozen per piece percentage from value of piece
+    float frozenPenaltyRatio;
+
+    //traps
+    int trapSoleVal;  
+    int trapSafeVal;  
+    int trapActiveVal;
+    int trapPotVal;
+
+    //ratio substracted from piece value if framed 
+    float framePenaltyRatio;  
+
+    //ratio substracted from piece value if supports framed piece (not mobile)
+    float pinnedPenaltyRatio;  
+
+    int piecePos[2][PIECE_NUM + 1][BIT_LEN];
+
+};
+
 /**
  * Board evaluation class.
  * 
@@ -53,6 +140,5 @@ class Eval
 
     EvalTT * evalTT_;
 
-   // bool isBlockaded(player_t player, coord_t coord);
-   // bool isDominant(player_t player, coord_t); 
+    Values * vals_;
 };

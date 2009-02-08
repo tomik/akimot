@@ -11,7 +11,6 @@
 #include <queue>
 #include <set>
 
-#include "eval.h"
 #include "hash.h"
 
 using std::map;

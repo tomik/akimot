@@ -6,6 +6,7 @@
 
 #include "engine.h"
 #include "uct.h"
+#include "eval.h"
 
 //---------------------------------------------------------------------
 //  section SimplePlayout

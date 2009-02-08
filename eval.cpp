@@ -1,5 +1,178 @@
 #include "eval.h"
 
+extern string implicit_eval_cfg;
+
+//---------------------------------------------------------------------
+//  section ValueItem
+//---------------------------------------------------------------------- 
+
+ValueItem::ValueItem(string name, itemType_e type, void* item, int num) : 
+  name_(name), type_(type), item_(item), num_(num)
+{
+}
+
+//--------------------------------------------------------------------- 
+
+bool ValueItem::isSingleValue() const
+{
+  return num_ == SINGLE_VALUE;
+}
+
+//---------------------------------------------------------------------
+//  section Values
+//---------------------------------------------------------------------- 
+
+Values::Values(string fn) { 
+  
+  values.clear();
+  values.push_back(ValueItem("piece_values", IT_INT_AR, (void*)&pieceValue, PIECE_NUM + 1));
+  values.push_back(ValueItem("rabbit_penalty", IT_INT_AR, (void*)&rabbitPenalty, RABBITS_NUM + 1));
+  values.push_back(ValueItem("frozen_penalty_ratio", IT_FLOAT, (void*)&frozenPenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_sole_val", IT_INT, (void*)&trapSoleVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_safe_val", IT_INT, (void*)&trapSafeVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_active_val", IT_INT, (void*)&trapActiveVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
+  values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[SILVER][RABBIT], BIT_LEN));
+
+
+  FileRead* f = new FileRead(fn);
+  f->ignoreLines(CFG_COMMENT);
+  if ((! f->good()) || (! loadFromString(replaceAllChars(f->read(), '=', ' ')))) {
+    logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
+    loadFromString(implicit_eval_cfg);
+  }
+  mirrorPiecePositions();
+
+}
+
+void Values::mirrorPiecePositions()
+{
+
+  //mirror piecePos
+  for (int i = 0; i < PIECE_NUM + 1; i++){
+    for (int r = 0; r < 8; r++ ){
+      for (int c = 0; c < 8; c++ ){
+        if (c >= 4 ) {
+          piecePos[SILVER][i][r * 8 + c] = 
+            piecePos[SILVER][i][r * 8 +  (7 - c)];
+        }
+      }
+    }
+    for (int r = 0; r < 8; r++ ){
+      for (int c = 0; c < 8; c++ ){
+        piecePos[GOLD][i][(7 - r) * 8 + c] = piecePos[SILVER][i][r * 8 + c];
+      }
+    }
+  }
+
+/*
+  for (int i = 0; i < PIECE_NUM + 1; i++){
+    for (int k = 0; k < 2; k++ ){
+      for (int r = 0; r < 8; r++ ){
+        for (int c = 0; c < 8; c++ ){
+          cerr.width(4);
+          cerr << piecePos[k][i][r * 8 + c];
+        }
+        cerr << endl;
+      } 
+       cerr << endl;
+    }
+     cerr << endl;
+  }
+*/
+
+}
+
+//--------------------------------------------------------------------- 
+
+bool Values::loadFromString(string config) { 
+  
+  stringstream ss;
+  ss.str(config);
+  string value;
+  string s;
+  ValueItem vi; 
+   
+  while (true) {
+    ss >> s;
+
+    if (! ss.good()) {
+      break;
+    } 
+    if (! getItemForToken(s, vi)) {
+      logWarning("Unknown token %s ... skipping rest of cfg file", s.c_str());
+      break;
+    }
+
+    int max = vi.isSingleValue() ? 1 : vi.num_;
+    for (int i = 0; i < max; i++){
+      ss >> value;
+      if (! fillItemFromString( vi.item_, vi.type_, value, 
+                                vi.isSingleValue() ? -1 : i)){
+          assert(false);
+          logError("Unknown option type.");
+          return false; 
+      }
+    
+      if (! ss.good()) {
+        logError("Incomplete evaluation confinguration.");
+        return false;
+      }
+    }
+  }
+  return true;
+
+}
+
+//--------------------------------------------------------------------- 
+
+string Values::toString() const 
+{
+  stringstream ss; 
+
+  for (ValueList::const_iterator it = values.begin(); it != values.end(); it++){
+    ss << (*it).name_ << " = ";
+    if ((*it).isSingleValue()) {
+      ss.width(6);
+      ss << getItemAsString((*it).item_, (*it).type_, (*it).num_); 
+    } else { 
+
+      for (int i = 0; i < (*it).num_; i++){
+        if ( (*it).num_ == BIT_LEN && i % 8 == 0 ){
+          ss << endl;
+        }
+        ss.width(6);
+        ss << getItemAsString((*it).item_, (*it).type_, i); 
+      }
+    }
+    ss << endl << endl;
+  }
+
+  return ss.str();
+}
+
+//--------------------------------------------------------------------- 
+
+bool Values::getItemForToken(string token, ValueItem& valueItem) const
+{ 
+
+  for (ValueList::const_iterator it = values.begin(); it != values.end(); it++){
+    
+    if ((*it).name_ == token) {
+      valueItem = (*it);
+      return true;
+    }
+  }
+  return false;
+}
+
 //---------------------------------------------------------------------
 //  section Eval
 //---------------------------------------------------------------------- 
@@ -15,27 +188,6 @@ u64 adv[8][2] = {
 		    {0xff00000000000000ULL, 0x00000000000000ffULL} 
       };
 
-//static piece values rabbit 100, cat 250, ...
-const int pieceValue[7] = { 0, 100, 250, 300, 800, 1100, 1800 };
-
-//less rabbits => lesser chance for winning
-const int rabbitPenalty[9] = { -10000, -500, -400 ,-200, -150, -50, -20, 0, 0};
-
-//penalty for being frozen per piece percentage from value of piece
-const float frozenPenaltyRatio = -0.1; 
-
-const int domRadius = 2;
-
-//dangerous
-const int trapSoleVal = 50;  
-const int trapSafeeVal = 50;  
-const int trapActiveVal = 150;
-const int trapPotVal = 100;
-//ratio substracted from piece value if framed 
-const float framePenaltyRatio = -0.3;  
-//ratio substracted from piece value if supports framed piece (not mobile)
-const float pinnedPenaltyRatio = frozenPenaltyRatio;  
-
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
@@ -50,6 +202,8 @@ const float pinnedPenaltyRatio = frozenPenaltyRatio;
 Eval::Eval() 
 {
   evalTT_ = new EvalTT();
+  vals_ = new Values(cfg.evalCfg());
+  
 }
 
 //--------------------------------------------------------------------- 
@@ -72,6 +226,7 @@ float Eval::evaluateInPercent(const Board* b) const
   
   int evaluation;
   float p; 
+  //cerr << vals_->toString();
 
   if (cfg.useBestEval()){
     evaluation = evaluate(b);
@@ -113,21 +268,24 @@ int Eval::evaluate(const Board* b) const
 
     while ((pos = bits::lix(pieces)) != BIT_EMPTY){
       piece_t piece = b->getPiece(pos, player);
-      tot[player] += pieceValue[piece];
+      tot[player] += vals_->pieceValue[piece];
       
-      logDDebug("material bonus %4d for %s", pieceValue[piece], pieceToStr(player, piece, pos).c_str());
+      logDDebug("material bonus %4d for %s", vals_->pieceValue[piece], pieceToStr(player, piece, pos).c_str());
+
+      tot[player] += vals_->piecePos[player][piece][pos];
+      logDDebug("material bonus %4d for %s", vals_->piecePos[player][piece][pos], pieceToStr(player, piece, pos).c_str());
 
     //frozen
       if (! bits::getBit(movable, pos)){
-        tot[player] += pieceValue[piece] * frozenPenaltyRatio;
-        logDDebug("material penalty %4.2f for %s being frozen", pieceValue[piece] * frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
+        tot[player] += vals_->pieceValue[piece] * vals_->frozenPenaltyRatio;
+        logDDebug("material penalty %4.2f for %s being frozen", vals_->pieceValue[piece] * vals_->frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
       } 
     }
 
     //rabbits 
     int rabbitsNum = bits::bitCount(b->bitboard_[player][RABBIT]);
-    logDDebug("rabbit penalty %4d for %d rabbits left", rabbitPenalty[rabbitsNum], rabbitsNum);
-    tot[player] += rabbitPenalty[rabbitsNum];
+    logDDebug("rabbit penalty %4d for %d rabbits left", vals_->rabbitPenalty[rabbitsNum], rabbitsNum);
+    tot[player] += vals_->rabbitPenalty[rabbitsNum];
 
     //blockade
 
@@ -166,15 +324,15 @@ int Eval::evaluate(const Board* b) const
 
     for (int player = 0; player < 2; player++) {
       if (guardsNum[player] > 0 && guardsNum[OPP(player)] == 0){
-        tot[player] += trapSoleVal;
+        tot[player] += vals_->trapSoleVal;
         logDDebug("trap sole %d to %d player for %s trap " , 
-          trapSoleVal, player, coordToStr(trap).c_str()); 
+          vals_->trapSoleVal, player, coordToStr(trap).c_str()); 
         //bonus for opponent pieces in victims Area
         if (influenceDom == player && 
             victimsArea & b->bitboard_[OPP(player)][0] & ~movable){
-          tot[player] += trapPotVal;
+          tot[player] += vals_->trapPotVal;
           logDDebug("trap pot bonus %d to %d player for %s trap " , 
-            trapPotVal, player, coordToStr(trap).c_str()); 
+            vals_->trapPotVal, player, coordToStr(trap).c_str()); 
         }
       }
       if (guardsNum[player] > 0 && guardsNum[OPP(player) > 0]){
@@ -185,14 +343,14 @@ int Eval::evaluate(const Board* b) const
 
           //dominance in trap
           if (guardsNum[player] >= guardsNum[OPP(player)] && guardDom == player){
-            tot[player] += trapActiveVal;
+            tot[player] += vals_->trapActiveVal;
             logDDebug("trap active %d to %d player for %s trap " , 
-                      trapActiveVal, player, coordToStr(trap).c_str()); 
+                      vals_->trapActiveVal, player, coordToStr(trap).c_str()); 
           }
           else{
-            tot[player] += trapSafeeVal;
+            tot[player] += vals_->trapSafeVal;
             logDDebug("trap safe %d to %d player for %s trap " , 
-                      trapSafeeVal, player, coordToStr(trap).c_str()); 
+                      vals_->trapSafeeVal, player, coordToStr(trap).c_str()); 
           }
         }
       }
@@ -209,7 +367,7 @@ int Eval::evaluate(const Board* b) const
         if (guardsArea == bits::neighborsOne(trap) && 
            ( mustBlock == 0ULL || (mustBlock & all) == mustBlock )){
           //frame penalty
-          tot[player] += framePenaltyRatio *  pieceValue[framedPiece];
+          tot[player] += vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece];
           logDDebug("full frame penalty %4.2f to %d player for %s framed" , 
                     framePenaltyRatio *  pieceValue[framedPiece],
                     player, pieceToStr(player, framedPiece, trap).c_str()); 
@@ -220,15 +378,15 @@ int Eval::evaluate(const Board* b) const
           piece_t pinnedPiece = b->getPiece(pinnedPos, player);
           assert(IS_PIECE(pinnedPiece));
           assert(!u);
-          tot[player] += pinnedPenaltyRatio *  pieceValue[pinnedPiece];
+          tot[player] += vals_->pinnedPenaltyRatio *  vals_->pieceValue[pinnedPiece];
               logDDebug("full pin penalty %4.2f to %d player for %s pinned" , 
-                        pinnedPenaltyRatio *  pieceValue[pinnedPiece], 
+                        vals_->pinnedPenaltyRatio *  vals_->pieceValue[pinnedPiece], 
                         player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
           int sd = b->strongerDistance(player, pinnedPiece, pinnedPos);
           if (sd != BIT_EMPTY && sd <= 2) {
-            tot[player] += framePenaltyRatio * pieceValue[framedPiece];
+            tot[player] += vals_->framePenaltyRatio * vals_->pieceValue[framedPiece];
             logDDebug("extra pin penalty %4.2f to %d player for %s pinned in danger",
-                  framePenaltyRatio *  pieceValue[framedPiece],
+                  vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece],
                   player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
           }
         }
@@ -236,35 +394,6 @@ int Eval::evaluate(const Board* b) const
     }
   }
       
-/*
-      switch(guardsNum[player]){
-        case 0 :  trapTypes[player][TRAP_TO_INDEX(trap)] = TT_UNSAFE;
-                  break;
-        case 1 :  if (influenceDom == player){
-                    trapTypes[player][TRAP_TO_INDEX(trap)] = TT_SAFE;
-                  } else {
-                    trapTypes[player][TRAP_TO_INDEX(trap)] = TT_HALF_SAFE;
-                  }
-                  break;
-        default : trapTypes[player][TRAP_TO_INDEX(trap)] = TT_SAFE;
-                  if (dominant == player) {
-                    if (b->bitboard_[OPP(player)][0] & area) {
-                      trapTypes[player][TRAP_TO_INDEX(trap)] = TT_ACTIVE;
-                    }
-                  }
-      }
-
-    
-    logDDebug("trap status %s for %s trap - dominant %d/%d" , 
-            trapTypeToStr(trapTypes[player][TRAP_TO_INDEX(trap)]).c_str(), 
-            coordToStr(trap).c_str(), guardDom, influenceDom); 
-    }
-*/
-    
-    //frame
-    //if (bits::neighborsOne(trap) ^ ( bitboard_[GOLD][0] || ) 
-  
-
   logDDebug("total for gold %d", int(tot[0] - tot[1]));
   return int(tot[0] - tot[1]);
 }
@@ -464,3 +593,101 @@ string Eval::trapTypeToStr(trapType_e trapType)
 //--------------------------------------------------------------------- 
 //--------------------------------------------------------------------- 
 
+//implicit evaluation 
+string implicit_eval_cfg   = " \
+ \
+ piece_values   0 100 250 300 800 1100 1800\
+ \
+ frozen_penalty_ratio   -0.1\
+ \
+ rabbit_penalty   -10000 -500 -400 -200 -150 -50 -20 0 0\
+ \
+ trap_sole_val   50\
+ \
+ trap_safe_val   50\
+ \
+ trap_active_val   150\
+ \
+ trap_pot_val   100\
+ \
+ frame_penalty_ratio   -0.3\
+ \
+ pinned_penalty_ratio   -0.2\
+ \
+ elephant_position  \
+ \
+     0    1    1    2   0    0    0    0\
+     1    2    2    3   0    0    0    0\
+     2    4   -4   10   0    0    0    0\
+     3    8   12   12   0    0    0    0\
+     3    8   10   10   0    0    0    0\
+     2    4   -4   10   0    0    0    0\
+     1    2    2    3   0    0    0    0\
+     0    1    1    2   0    0    0    0\
+ \
+ camel_position  \
+ \
+    -2   -1    0    1   0    0    0    0\
+    -1    0    1    2   0    0    0    0\
+     0    1   -5    3   0    0    0    0\
+     1    2    3    4   0    0    0    0\
+     2    3    4    5   0    0    0    0\
+     1    2    3    4   0    0    0    0\
+     0    1    2    3   0    0    0    0\
+    -1    0    1    2   0    0    0    0\
+ \
+ horse_position  \
+ \
+    -2   -1    0    1   0    0    0    0\
+    -1    0    1    2   0    0    0    0\
+     0    1   -5    3   0    0    0    0\
+     1    2    3    4   0    0    0    0\
+     2    3    4    5   0    0    0    0\
+     1    2    3    4   0    0    0    0\
+     0    1    2    3   0    0    0    0\
+    -1    0    1    2   0    0    0    0\
+ \
+ dog_position  \
+ \
+    -4   -6   -6   -6   0    0    0    0\
+    -7   -8  -10   -9   0    0    0    0\
+    -9  -10  -12  -11   0    0    0    0\
+    -6   -8   -9   -9   0    0    0    0\
+    -3   -5   -6   -6   0    0    0    0\
+    -1   -1   -2   -3   0    0    0    0\
+     1    2    4    2   0    0    0    0\
+     0    1    1    1   0    0    0    0\
+ \
+ cat_position  \
+ \
+    -4   -6   -6   -6   0    0    0    0\
+    -7   -8  -10   -9   0    0    0    0\
+    -9  -10  -12  -11   0    0    0    0\
+    -6   -8   -9   -9   0    0    0    0\
+    -3   -5   -6   -6   0    0    0    0\
+    -1   -1   -2   -3   0    0    0    0\
+     1    2    4    2   0    0    0    0\
+     0    1    1    1   0    0    0    0\
+ \
+ rabbit_position  \
+ \
+     0    0    0    0   0    0    0    0\
+   -14  -16   -8  -16   0    0    0    0\
+   -16  -10  -16  -10   0    0    0    0\
+    -8  -12  -12  -12   0    0    0    0\
+    -5   -8   -8   -8   0    0    0    0\
+    -3   -5   -6   -6   0    0    0    0\
+    -1   -2   -1   -4   0    0    0    0\
+     0    0    0    0   0    0    0    0\
+ \
+ rabbit_late_position  \
+ \
+     0    0    0    0   0    0    0    0\
+    25   25   25   25   0    0    0    0\
+    20   20   20   20   0    0    0    0\
+    16   15   14   14   0    0    0    0\
+     8    7    6    6   0    0    0    0\
+     4    3    2    2   0    0    0    0\
+     2    1    1    1   0    0    0    0\
+     0    0    0    0   0    0    0    0\
+ ";

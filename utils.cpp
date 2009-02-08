@@ -1,6 +1,6 @@
 #include "utils.h"
 
-string logLevelStr[10] = { "debug", "warning", "error", "info"};
+string logLevelStr[10] = { "debug", "warning", "error", "info", "", "ddebug" };
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
 int smallPrimes[] = {17, 23, 29, 31, 37, 41, 43, 47, 53, 59};
@@ -39,6 +39,17 @@ FileRead::FileRead(string fn){
 
 FileRead::FileRead(){
   assert(false);
+}
+
+//--------------------------------------------------------------------- 
+
+string FileRead::read() { 
+  string line;
+  string s = "";
+  while (getLine(line)){
+    s += line + '\n';
+  }
+  return s;
 }
 
 //--------------------------------------------------------------------- 

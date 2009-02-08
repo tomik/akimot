@@ -20,8 +20,8 @@ int main(int argc, char *argv[])
   }
 
   if (! cfg.checkConfiguration()){
-    logError("Incomplete configuration.");
-    exit(1);
+    logWarning("Incomplete configuration.");
+    //exit(1);
   }
 
   //getMove protocol

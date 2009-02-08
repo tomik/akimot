@@ -8,11 +8,76 @@
 
 #include "config.h"
 
+string getItemAsString(void* item, itemType_e type, int index)
+{ 
+  stringstream ss;
+
+  switch (type){
+    case IT_STR : 
+      ss << *(string*)(item);
+      break;
+    case IT_BOOL : 
+      ss << *(bool*)(item); 
+      break;
+    case IT_INT : 
+      ss << *(int *)(item);
+      break;
+    case IT_FLOAT : 
+      ss << *(float *)(item);
+      break;
+    case IT_FLOAT_AR: 
+      assert(index >= 0);
+      ss << (*(float **)(item))[index]; 
+      break;
+    case IT_INT_AR:   
+      assert(index >= 0);
+      ss <<  ((int *)(item))[index];
+      break;
+    default:
+      assert(false);
+      break;
+  }
+
+  return ss.str();
+
+}
+
+bool fillItemFromString(void* item, itemType_e type, string value, int index){ 
+  //TODO ... exception to check types ? 
+  switch (type){
+    case IT_STR : 
+      *(string*)(item) = value;
+      break;
+    case IT_BOOL : 
+      *(bool*)(item) = bool(str2int(value));
+      break;
+    case IT_INT : 
+      *(int *)(item) = str2int(value);
+      break;
+    case IT_FLOAT : 
+      *(float *)(item) = str2float(value);
+      break;
+    case IT_FLOAT_AR: 
+      assert(index >= 0);
+      (*(float **)(item))[index] = str2float(value);
+      break;
+    case IT_INT_AR:   
+      assert(index >= 0);
+      ((int *)(item))[index] = str2int(value);
+      break;
+    default:
+      return false;
+      break;
+  }
+  return true;
+  
+}
+
 //---------------------------------------------------------------------
 //  section CfgItem 
 //--------------------------------------------------------------------- 
 
-CfgItem::CfgItem(const char* name, cfgItemType_e type, void* item, const char* defaultValue)
+CfgItem::CfgItem(const char* name, itemType_e type, void* item, const char* defaultValue)
   : name_(string(name)), type_(type), item_(item), defaultValue_(defaultValue)
 {
   set_ = false;
@@ -37,6 +102,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
+  items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));
 }
 
 //--------------------------------------------------------------------- 
@@ -52,21 +118,10 @@ void Cfg::loadFromFile(string fn)
     for (CfgItemListIter it = items_.begin(); it != items_.end(); it++){
       if (it->name_ == name) {
         it->set_ = true;
-        switch (it->type_){
-          case IT_BOOL : 
-            *(bool*)(it->item_) = bool(str2int(value));
-            break;
-          case IT_INT : 
-            *(int *)(it->item_) = str2int(value);
-            break;
-          case IT_FLOAT : 
-            *(float *)(it->item_) = str2float(value);
-            break;
-          default:
+        if (! fillItemFromString(it->item_, it->type_, value)){
             assert(false);
             logError("Unknown option type.");
             exit(1);
-            break;
         }
         found = true; 
       } 
@@ -82,11 +137,14 @@ void Cfg::loadFromFile(string fn)
 
 bool Cfg::checkConfiguration()
 {
+  bool res = true;
   for (CfgItemListIter it = items_.begin(); it != items_.end(); it++){
-    if (! it->set_)
-      return false;
+    if (! it->set_){
+      logWarning("Missing configuration item %s.", it->name_.c_str());
+      res = false;
+    }
   }
-  return true;
+  return res;
 }
 
 //---------------------------------------------------------------------

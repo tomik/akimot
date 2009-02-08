@@ -64,6 +64,8 @@ typedef unsigned long long u64;
 #define SQUARE_NUM 64
 #define SIDE_SIZE 8
 
+#define RABBITS_NUM 8
+
 #define STEP_PASS     0
 #define STEP_SINGLE   1
 #define STEP_PUSH     2
