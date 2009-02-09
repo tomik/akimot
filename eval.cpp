@@ -34,12 +34,24 @@ Values::Values(string fn) {
   values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
   values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
-  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[SILVER][ELEPHANT], BIT_LEN));
-  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[SILVER][CAMEL], BIT_LEN));
-  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[SILVER][HORSE], BIT_LEN));
-  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[SILVER][DOG], BIT_LEN));
-  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[SILVER][CAT], BIT_LEN));
-  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[SILVER][RABBIT], BIT_LEN));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][RABBIT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][RABBIT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_late_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][RABBIT], BIT_LEN));
 
 
   FileRead* f = new FileRead(fn);
@@ -52,33 +64,49 @@ Values::Values(string fn) {
 
 }
 
+void Values::baseMirrorIndexes(int& player, int& index) 
+{
+  int c = index % 8; 
+  int r = index / 8;
+
+  if (c >= 4) {
+    c = 7 - c;
+  }
+
+  if (player == GOLD) {
+    r = 7 - r; 
+    player = SILVER;
+  }
+
+  index = 8 * r + c;
+  
+}
+
 void Values::mirrorPiecePositions()
 {
 
-  //mirror piecePos
-  for (int i = 0; i < PIECE_NUM + 1; i++){
-    for (int r = 0; r < 8; r++ ){
-      for (int c = 0; c < 8; c++ ){
-        if (c >= 4 ) {
-          piecePos[SILVER][i][r * 8 + c] = 
-            piecePos[SILVER][i][r * 8 +  (7 - c)];
+  for (int gs = 0; gs < GS_NUM; gs++){
+    for (int i = 0; i < 2; i++){
+      for (int j = 0; j < PIECE_NUM + 1; j++){
+        for (int k = 0; k < BIT_LEN; k++ ){
+          int basepl = i; 
+          int baseindex = k;
+          baseMirrorIndexes(basepl, baseindex);
+          piecePos[gs][i][j][k] = piecePos[gs][basepl][j][baseindex];
         }
       }
     }
-    for (int r = 0; r < 8; r++ ){
-      for (int c = 0; c < 8; c++ ){
-        piecePos[GOLD][i][(7 - r) * 8 + c] = piecePos[SILVER][i][r * 8 + c];
-      }
-    }
   }
+}
 
 /*
+
   for (int i = 0; i < PIECE_NUM + 1; i++){
     for (int k = 0; k < 2; k++ ){
       for (int r = 0; r < 8; r++ ){
         for (int c = 0; c < 8; c++ ){
           cerr.width(4);
-          cerr << piecePos[k][i][r * 8 + c];
+          cerr << piecePos[GS_BEGIN][k][i][r * 8 + c];
         }
         cerr << endl;
       } 
@@ -86,9 +114,9 @@ void Values::mirrorPiecePositions()
     }
      cerr << endl;
   }
-*/
 
 }
+*/
 
 //--------------------------------------------------------------------- 
 
@@ -257,6 +285,11 @@ int Eval::evaluate(const Board* b) const
   
   u64 movable = b->calcMovable(GOLD) | b->calcMovable(SILVER);
 
+  //determine game stage
+  int piecesNum = bits::bitCount(b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0]);
+  gameStage_e gs = piecesNum > 28 ? GS_BEGIN : (piecesNum > 20 ? GS_MIDDLE : GS_LATE );
+
+
   for (int player = 0; player < 2; player++) {
     logDDebug("Player %d", player); 
     logDDebug("=================================="); 
@@ -272,8 +305,8 @@ int Eval::evaluate(const Board* b) const
       
       logDDebug("material bonus %4d for %s", vals_->pieceValue[piece], pieceToStr(player, piece, pos).c_str());
 
-      tot[player] += vals_->piecePos[player][piece][pos];
-      logDDebug("material bonus %4d for %s", vals_->piecePos[player][piece][pos], pieceToStr(player, piece, pos).c_str());
+      tot[player] += vals_->piecePos[gs][player][piece][pos];
+      logDDebug("material bonus %4d for %s", vals_->piecePos[gs][player][piece][pos], pieceToStr(player, piece, pos).c_str());
 
     //frozen
       if (! bits::getBit(movable, pos)){
