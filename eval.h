@@ -10,6 +10,11 @@
 //TODO change ! 
 #define TRAP_TO_INDEX(trap) (trap < 32 ? (trap == 18 ? 0 : 1) : trap ==  42 ? 2 : 3)
 
+//game stages num
+#define GS_NUM 3 
+
+enum gameStage_e {GS_BEGIN, GS_MIDDLE, GS_LATE};
+
 extern u64 adv[8][2];
 
 enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
@@ -63,6 +68,8 @@ class Values
      */
     void mirrorPiecePositions();
 
+    static void baseMirrorIndexes(int & player, int & coord);
+
     /**
      * Token -> item mapping. 
      *
@@ -97,7 +104,8 @@ class Values
     //ratio substracted from piece value if supports framed piece (not mobile)
     float pinnedPenaltyRatio;  
 
-    int piecePos[2][PIECE_NUM + 1][BIT_LEN];
+    //int piecePos[2][PIECE_NUM + 1][BIT_LEN];
+    int piecePos[GS_NUM][2][PIECE_NUM + 1][BIT_LEN];
 
 };
 
