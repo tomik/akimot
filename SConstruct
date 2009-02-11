@@ -1,13 +1,15 @@
 #!/usr/bin/python 
 
-import paths
-CXX_TEST_PATH = paths.CXX_TEST_PATH
-CXX_INCLUDE_DIR = paths.CXX_INCLUDE_DIR
-AKIMOT_AEI_DIR = paths.AKIMOT_AEI_DIR 
-AKIMOT_ATS_DIR = paths.AKIMOT_ATS_DIR
-AKIMOT_MATCH_DIR = paths.AKIMOT_MATCH_DIR 
-RABBITS_TEST_DIR = paths.RABBITS_TEST_DIR
-alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR), ('rt', RABBITS_TEST_DIR)] 
+from paths import AKIMOT, CXX_TEST_PATH, CXX_INCLUDE_DIR
+AKIMOT_AEI_DIR = AKIMOT + 'other/aei/akimot'
+AKIMOT_ATS_DIR = AKIMOT + 'other/ats/akimot'
+AKIMOT_MATCH_DIR = AKIMOT + 'other/match/bot_akimot'
+RABBITS_TEST_DIR = AKIMOT + 'other/rabbits'
+TAGUI_TEST_DIR = AKIMOT + 'other/tagui'
+
+CXX_TEST_PATH = CXX_TEST_PATH
+CXX_INCLUDE_DIR = CXX_INCLUDE_DIR
+alias_dirs = [('aei',AKIMOT_AEI_DIR), ('ats', AKIMOT_ATS_DIR), ('match', AKIMOT_MATCH_DIR), ('rt', RABBITS_TEST_DIR), ('tg', TAGUI_TEST_DIR)]
 
 AKIMOT_LIBS = ['pthread']
 

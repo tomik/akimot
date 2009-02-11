@@ -9,6 +9,7 @@ from window_main import Ui_window_main
 
 sys.path.append('..')
 
+from aei.aei import StdioEngine, EngineController 
 from aei import board 
 
 BSIZE = 64
@@ -34,21 +35,34 @@ class Tagui(QtGui.QMainWindow):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_window_main()
         self.ui.setupUi(self)
+        self.log = self.ui.log
+        self.record = self.ui.record
+        self.record.last_row = self.record.currentRow()
 
         self.connect(self.ui.button_load, QtCore.SIGNAL('clicked()'), self.load_record)
         self.connect(self.ui.button_back, QtCore.SIGNAL('clicked()'), self.go_back)
         self.connect(self.ui.button_forward, QtCore.SIGNAL('clicked()'), self.go_forward)
-        self.connect(self.ui.record, QtCore.SIGNAL('currentRowChanged(int)'), self.record_row_changed)
+        self.connect(self.record, QtCore.SIGNAL('currentRowChanged(int)'), self.record_row_changed)
         self.mover = QtCore.QTimeLine(MOVE_INTERVAL)
         self.mover.setCurveShape(self.mover.LinearCurve)
         self.connect(self.mover, QtCore.SIGNAL("frameChanged(int)"), self.draw_pos_framed)
+        self.connect(self.ui.button_search, QtCore.SIGNAL("clicked()"), self.start_search)
+        self.connect(self.ui.slider_time_per_move, QtCore.SIGNAL("valueChanged(int)"), self.time_per_move_changed)
 
         self.create_board()
-        self.log = self.ui.log
         self.log.active = False
         self.log.setReadOnly(True)
-        self.ui.record.addItems(open('record_1').readlines())
-        self.load_log('record_1')
+
+        #just debug
+        #self.record.addItem('record')
+        #self.record.addItems(open('record_1').readlines())
+        #self.load_log('record_1')
+        #self.record.setCurrentRow(0)
+
+        engine_cmd = './akimot -c default.cfg -l'
+        self.engine = EngineController(StdioEngine(engine_cmd, None))
+        self.time_per_move_changed(self.ui.slider_time_per_move.value())
+        self.pos, _ = self.get_pos(0)
 
     def create_board(self):
 
@@ -83,10 +97,12 @@ class Tagui(QtGui.QMainWindow):
         if isfile(fn):
             self.load_log(fn)
 
-            self.ui.record.clear()
+            self.record.clear()
+            self.record.addItem('record')
             self.clear_board()
-            self.ui.record.addItems(open(fn).readlines())
-            self.ui.record.setSelectionMode(self.ui.record.SingleSelection)
+            self.record.addItems(open(fn).readlines())
+            self.record.setSelectionMode(self.record.SingleSelection)
+            self.record.setCurrentRow(0)
 
     def process_log_lines(self, lines):
         segments = []
@@ -106,7 +122,6 @@ class Tagui(QtGui.QMainWindow):
         
         return res
         
-
     def load_log(self, fn):
         fn = str(fn)
         dir = '/'.join(fn.split('/')[:-1])
@@ -115,44 +130,63 @@ class Tagui(QtGui.QMainWindow):
         name = fn.split('/')[-1]
         num = name.split('_')[-1]
         log_fn = "%slog_%s" % (dir, num)
-        print fn
-        print log_fn
         if isfile(log_fn):
             self.log.active = True
             self.log.clear()
             self.log.segments = self.process_log_lines(open(log_fn).readlines())
     
     def go_back(self):
-        current = self.ui.record.currentRow() 
-        assert current > 0, "cannot go back"
-        self.ui.record.setCurrentRow(current - 1)
+        row = self.record.currentRow() 
+        assert row > 0, "cannot go back"
+        self.record.setCurrentRow(row - 1)
         
     def go_forward(self):
-        current = self.ui.record.currentRow() 
-        assert current < self.ui.record.count() - 1, "cannot go forward"
-        self.ui.record.setCurrentRow(current + 1)
+        row = self.record.currentRow() 
+        assert row < self.record.count() - 1, "cannot go forward"
+        self.record.blockSignals(True) 
+        row += 1
+        self.record.setCurrentRow(row)
+        self.record.blockSignals(False) 
+        self.animate_move(row)
+        self.record_update()
 
-    def record_row_changed(self, row):
-        items = map(lambda x: str(x.text()).strip(), [self.ui.record.item(index) for index in xrange(0, row + 1)])
-        pos, last = self.record_to_pos(items)
-        self.animate_move(pos, last)
-        self.log.setText(self.log.segments[(row)/2])
-        #self.draw_pos(pos)
+    def record_row_changed(self):
+        row = self.record.currentRow()
+        if row - self.record.last_row == 1: 
+            self.animate_move(row)
+            self.record_update()
+            return
+        self.pos, last = self.get_pos(row)
+        self.draw_pos(self.pos)
+        self.record_update()
+
+    def record_update(self):
+        row = self.record.currentRow()
+        self.record.last_row = row
+        if row > 0:
+            try:
+                self.log.setText(self.log.segments[(row - 1)/2])
+            except IndexError: 
+                pass
         self.ui.button_back.setEnabled(True)
         self.ui.button_forward.setEnabled(True)
         if row == 0: 
             self.ui.button_back.setEnabled(False)
-        if row >= self.ui.record.count() - 1:
+        if row >= self.record.count() - 1:
             self.ui.button_forward.setEnabled(False)
 
     def make_empty_pos(self):
         bitboards = list([list(x) for x in board.BLANK_BOARD])
         return board.Position(board.COL_GOLD, 4, bitboards)
 
-    def record_to_pos(self, moves):
+    def get_pos(self, row, separate_last_move=False):
+        moves = map(lambda x: str(x.text()).strip(), [self.record.item(index) for index in xrange(1, row + 1)])
         pos = self.make_empty_pos()
-        if moves == []:
+        if row == 0: #moves == ['record'] or moves == []:
             return pos, []
+
+        if not separate_last_move:
+            moves.append(' ')
 
         moves = map(lambda x: x[x.find(' ') + 1:], moves)
         for m in moves[:-1]: 
@@ -171,7 +205,6 @@ class Tagui(QtGui.QMainWindow):
     def draw_empty(self, index):
         self.squares[index].setPixmap(self.empty_square_pic)
             
-
     def draw_pos_framed(self, frame):
         if frame == 0:
             return
@@ -183,20 +216,20 @@ class Tagui(QtGui.QMainWindow):
         if from_in != ERROR: #not an init
             self.draw_empty(from_in)
         #put new
-        if to_in == ERROR: 
+        if to_in == ERROR: #trapped
             self.draw_empty(from_in)
-        else:
+        else: #ok
             self.draw_square(step_color, PIECES_NUM[step_piece], to_in)   
 
-    def animate_move(self, pos, last_move):
+    def animate_move(self, move_num):
+
+        self.pos, last_move = self.get_pos(move_num, separate_last_move=True)
         if not last_move: 
-            self.draw_pos(pos)
+            self.draw_pos(self.pos)
             return 
         steps = board.parse_move(last_move)
-        #steps = [step for step in steps if step[1][0] != 0] 
 
-        self.pos = pos
-        self.draw_pos(pos)
+        self.draw_pos(self.pos)
         self.steps = steps
         self.mover.stop()
         self.mover.setCurrentTime(0)
@@ -209,9 +242,36 @@ class Tagui(QtGui.QMainWindow):
             self.draw_square(player, c.lower(), index)
         pass
 
+    def time_per_move_changed(self, ttm):
+        self.engine.ttm = ttm
+        self.ui.label_time_per_move.setText(str(ttm))
+
+    def start_search(self):
+        self.engine.newgame()
+        self.engine.setoption('tcmove', '%s' % self.engine.ttm )
+        self.engine.setposition(self.pos)
+        self.engine.go() 
+
+        self.log.clear()
+        self.log.setText('Search results ...\n')
+
+        while True:
+            resp = self.engine.get_response()
+            if resp.type == "bestmove":
+                resp.message = resp.move
+            self.log.append(resp.message)
+            if resp.type == "log":
+                if resp.message.split(' ')[-1] == "over":
+                    break
+
+    def __del__(self): 
+        self.engine.quit()
+        self.engine.cleanup()
+
 
 app = QtGui.QApplication(sys.argv)
 icon = Tagui()
 icon.show()
 app.exec_()
+
 

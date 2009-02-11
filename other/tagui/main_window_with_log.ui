@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1174</width>
+    <width>1173</width>
     <height>863</height>
    </rect>
   </property>
@@ -17,9 +17,9 @@
     <property name="geometry" >
      <rect>
       <x>40</x>
-      <y>680</y>
+      <y>690</y>
       <width>541</width>
-      <height>131</height>
+      <height>121</height>
      </rect>
     </property>
     <property name="batchSize" >
@@ -33,7 +33,7 @@
     <property name="geometry" >
      <rect>
       <x>590</x>
-      <y>690</y>
+      <y>740</y>
       <width>106</width>
       <height>28</height>
      </rect>
@@ -46,7 +46,7 @@
     <property name="geometry" >
      <rect>
       <x>590</x>
-      <y>730</y>
+      <y>780</y>
       <width>106</width>
       <height>28</height>
      </rect>
@@ -81,7 +81,7 @@
     <property name="geometry" >
      <rect>
       <x>590</x>
-      <y>770</y>
+      <y>700</y>
       <width>106</width>
       <height>28</height>
      </rect>
@@ -96,7 +96,7 @@
       <x>710</x>
       <y>20</y>
       <width>441</width>
-      <height>791</height>
+      <height>741</height>
      </rect>
     </property>
     <property name="font" >
@@ -105,13 +105,77 @@
      </font>
     </property>
    </widget>
+   <widget class="QPushButton" name="button_search" >
+    <property name="geometry" >
+     <rect>
+      <x>730</x>
+      <y>770</y>
+      <width>106</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>search</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="button_eval" >
+    <property name="geometry" >
+     <rect>
+      <x>850</x>
+      <y>770</y>
+      <width>106</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>eval</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="slider_time_per_move" >
+    <property name="geometry" >
+     <rect>
+      <x>970</x>
+      <y>770</y>
+      <width>160</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="minimum" >
+     <number>1</number>
+    </property>
+    <property name="maximum" >
+     <number>10</number>
+    </property>
+    <property name="singleStep" >
+     <number>1</number>
+    </property>
+    <property name="sliderPosition" >
+     <number>3</number>
+    </property>
+    <property name="orientation" >
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_time_per_move" >
+    <property name="geometry" >
+     <rect>
+      <x>1140</x>
+      <y>770</y>
+      <width>21</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>3</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar" >
    <property name="geometry" >
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1174</width>
+     <width>1173</width>
      <height>27</height>
     </rect>
    </property>

@@ -62,6 +62,8 @@
 #define STR_LOG_DEBUG "log Debug: "
 #define STR_LOG_INFO "log Info: "
 
+#define STR_OVER "over"
+
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
 
 #define STR_INVALID_COMMAND "Invalid command"
@@ -514,6 +516,7 @@ void Aei::sendSearchInfo()
   if (! engine_->getPonder()){
     send(string(STR_BEST_MOVE) + " " + engine_->getBestMove());
   }   
+  aeiLog(STR_OVER, AL_INFO);
 }
 
 //--------------------------------------------------------------------- 
