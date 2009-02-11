@@ -37,10 +37,12 @@ int main(int argc, char *argv[])
       cout << "Couldn't read position from file.\n";
       return 1;
     } 
+    cerr << "=====" << endl;
     cerr << board.toString();
     engine->doSearch(&board);
     cout << engine->getBestMove() << endl;
     cerr << engine->getStats();
+    cerr << engine->getAdditionalInfo();
     return 0;
   } 
 

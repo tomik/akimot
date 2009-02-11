@@ -69,7 +69,9 @@ sub playGame{
       mkdir "$rdir";
   }
 
-  if ($showMoves){ print "random seed is $seed\n"; }
+  if ($showMoves){ 
+                  #print "random seed is $seed\n"; 
+                  ;}
 
   PositionMakeNewBoard("$rdir/position$$");
   $ml = "";
