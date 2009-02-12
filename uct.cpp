@@ -560,7 +560,7 @@ void Tree::init()
 
 int Tree::calcNodeLevel(Node* father, const Step& step) 
 {
-  return father->getLevel() + father->getPlayer() == step.getPlayer() ? 0 : 1;  
+  return father->getLevel() + (father->getPlayer() == step.getPlayer() ? 0 : 1);  
 }
 
 //---------------------------------------------------------------------
@@ -571,6 +571,9 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
   assert(len);
   assert(node);
   int level = len ? calcNodeLevel(node, steps[0]) : 0;
+  if (steps[0].getPlayer() != steps[len-1].getPlayer()){
+    cerr << "problem" << endl;
+  }
   for (uint i = 0; i < len; i++){
     newChild = new Node(&(twSteps_[steps[i]]), level,  
                           heurs ? (*heurs)[i] : 0);  
