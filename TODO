@@ -2,17 +2,13 @@
 # [urgency, category] item 
 
 === Actual ===
-[3, bench] add more positions to benchmark ! 
-[2, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
+[5, eval] make values init global 
 [4, hash] position hashing - add moveIndex - now earlier move kills later move
-[4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
-[3, eval] mapping evaluation -> win percentage is dummy -> improve
-[3, board] get frozenboard back to work
-[3, board] optimize step comparison
 [3, uct] change treeWideSteps from map to hashtable ! 
 [3, hash] undumiffy hash table (don't use map, but real hashtable)
-[5, board] pieceArray lazy delete ! 
-[5, board] randomness too slow in choosestepwithknowledge
+[3, eval] mapping evaluation -> win percentage is dummy -> improve
+[3, board] randomness too slow in choosestepwithknowledge
+[3, board] optimize step comparison
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
@@ -26,17 +22,26 @@
   [10.12][5,*] smoothen headers (privatexpublic, comments)
   [12.12][5, board] create class for Move ( list of steps )
   [14.12][5, board] refactor quickGoalCheck and backtrackFlagBoard
+         [2, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
+
+  === Won't do ===
+  [4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
+  [5, board] pieceArray lazy delete ! 
+  [3, board] get frozenboard back to work
+  [3, bench] add more positions to benchmark ! 
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 
 [1, uct]  history has a fixed size - change to dynamic + reallocation
-[3,board] refactor board loading - use fromcompactstring
-[1, *] add init to repository
   === Done  ===
   [28.11][3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
   [29.11][3, uct] time control should be part of engine not uct 
   [29.11][3. board] makestep should be private
   [02.01][3, board] what is testpiecearray doing ? deleted
+         [3,board] refactor board loading - use fromcompactstring
+
+  === Won't do ===
+  [1, *] add init to repository
 
 === Long Term Ideas === 
 [uct] check and optimize ( pointers vs. objects, ... ) 

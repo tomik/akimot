@@ -939,7 +939,7 @@ Uct::Uct(const Board* board)
 
 void Uct::init(const Board* board)
 {
-  eval_  = new Eval();
+  eval_  = new Eval(board);
   searchExt_ = new SearchExt();
   tree_  = new Tree(board->getPlayerToMove());
   tt_ = new TT();

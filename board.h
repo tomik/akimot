@@ -101,6 +101,7 @@ namespace bits{
   #define MSB         0x8000000000000000ULL
   #define TRAPS       0x0000240000240000ULL
   #define FPARITY     0x5555555555555555ULL
+  #define IS_TRAP(coord) (BIT_ON(coord) & TRAPS)
   extern u64 zobrist[2][7][64];     
 
   /**
@@ -111,7 +112,7 @@ namespace bits{
    */
   void initZobrist();
 
-  extern u64   winRank[2]; 
+  extern u64 winRank[2]; 
   extern u64 stepOffset_[2][7][64]; 
   /**
    * Step offset builder. 
@@ -318,6 +319,7 @@ class Step
     coord_t      oppTo_;
 
     friend class Board;
+    friend class Eval;
     friend class OB_Board;
   
   private: 

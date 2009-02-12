@@ -97,16 +97,16 @@ void Values::mirrorPiecePositions()
       }
     }
   }
-}
+
 
 /*
-
   for (int i = 0; i < PIECE_NUM + 1; i++){
+    cerr << "piece " << i << endl;
     for (int k = 0; k < 2; k++ ){
       for (int r = 0; r < 8; r++ ){
         for (int c = 0; c < 8; c++ ){
           cerr.width(4);
-          cerr << piecePos[GS_BEGIN][k][i][r * 8 + c];
+          cerr << piecePos[GS_LATE][k][i][r * 8 + c];
         }
         cerr << endl;
       } 
@@ -114,49 +114,51 @@ void Values::mirrorPiecePositions()
     }
      cerr << endl;
   }
+*/
 
 }
-*/
+
 
 //--------------------------------------------------------------------- 
 
 bool Values::loadFromString(string config) { 
   
   stringstream ss;
-  ss.str(config);
   string value;
   string s;
   ValueItem vi; 
    
-  while (true) {
-    ss >> s;
+  for (ValueList::const_iterator it = values.begin(); it != values.end(); it++){
+    bool found = false;
+    ss.str(config);
+    while (ss.good() && ! found) {
+      ss >> s;
 
-    if (! ss.good()) {
-      break;
-    } 
-    if (! getItemForToken(s, vi)) {
-      logWarning("Unknown token %s ... skipping rest of cfg file", s.c_str());
-      break;
+      if (s == it->name_){ 
+        vi = *it;
+        int max = vi.isSingleValue() ? 1 : vi.num_;
+        for (int i = 0; i < max; i++){
+          ss >> value;
+          if (! fillItemFromString( vi.item_, vi.type_, value, 
+                                    vi.isSingleValue() ? -1 : i)){
+              assert(false);
+              logError("Unknown option type.");
+              return false; 
+          }
+        
+          if (! ss.good()) {
+            logError("Incomplete evaluation confinguration.");
+            return false;
+          }
+        }
+        found = true;
+      }
     }
-
-    int max = vi.isSingleValue() ? 1 : vi.num_;
-    for (int i = 0; i < max; i++){
-      ss >> value;
-      if (! fillItemFromString( vi.item_, vi.type_, value, 
-                                vi.isSingleValue() ? -1 : i)){
-          assert(false);
-          logError("Unknown option type.");
-          return false; 
-      }
-    
-      if (! ss.good()) {
-        logError("Incomplete evaluation confinguration.");
-        return false;
-      }
+    if (! found){
+      logWarning("Unknown token %s ... ", s.c_str());
     }
   }
   return true;
-
 }
 
 //--------------------------------------------------------------------- 
@@ -219,8 +221,8 @@ u64 adv[8][2] = {
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
-#define EVAL_MAX 2000
-#define EVAL_MIN (-2000)
+#define EVAL_MAX 1900
+#define EVAL_MIN (-1900)
 
 #define EVAL_MAX_DAILEY 2000
 #define EVAL_MIN_DAILEY (-2000)
@@ -231,7 +233,18 @@ Eval::Eval()
 {
   evalTT_ = new EvalTT();
   vals_ = new Values(cfg.evalCfg());
+  base_eval = 0;
   
+}
+
+//--------------------------------------------------------------------- 
+
+Eval::Eval(const Board* board) 
+{
+  evalTT_ = new EvalTT();
+  vals_ = new Values(cfg.evalCfg());
+  base_eval = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  //cerr << base_eval << endl;
 }
 
 //--------------------------------------------------------------------- 
@@ -257,10 +270,10 @@ float Eval::evaluateInPercent(const Board* b) const
   //cerr << vals_->toString();
 
   if (cfg.useBestEval()){
-    evaluation = evaluate(b);
+    evaluation = evaluate(b); // - base_eval;
     p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
   }else{ 
-    evaluation = evaluateDailey(b);
+    evaluation = evaluateDailey(b); // - base_eval;
     p = (evaluation - EVAL_MIN_DAILEY) / float(EVAL_MAX_DAILEY - EVAL_MIN_DAILEY);
   }
   p = p < 0 ? 0 : (p > 1 ? 1 : p);
@@ -289,6 +302,7 @@ int Eval::evaluate(const Board* b) const
   int piecesNum = bits::bitCount(b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0]);
   gameStage_e gs = piecesNum > 28 ? GS_BEGIN : (piecesNum > 20 ? GS_MIDDLE : GS_LATE );
 
+  logDDebug("Game stage is : %d    [0 - begin, 1 - middle, 2 - end]", gs);
 
   for (int player = 0; player < 2; player++) {
     logDDebug("Player %d", player); 
@@ -306,7 +320,7 @@ int Eval::evaluate(const Board* b) const
       logDDebug("material bonus %4d for %s", vals_->pieceValue[piece], pieceToStr(player, piece, pos).c_str());
 
       tot[player] += vals_->piecePos[gs][player][piece][pos];
-      logDDebug("material bonus %4d for %s", vals_->piecePos[gs][player][piece][pos], pieceToStr(player, piece, pos).c_str());
+      logDDebug("positional bonus %4d for %s", vals_->piecePos[gs][player][piece][pos], pieceToStr(player, piece, pos).c_str());
 
     //frozen
       if (! bits::getBit(movable, pos)){
@@ -383,7 +397,7 @@ int Eval::evaluate(const Board* b) const
           else{
             tot[player] += vals_->trapSafeVal;
             logDDebug("trap safe %d to %d player for %s trap " , 
-                      vals_->trapSafeeVal, player, coordToStr(trap).c_str()); 
+                      vals_->trapSafeVal, player, coordToStr(trap).c_str()); 
           }
         }
       }
@@ -402,7 +416,7 @@ int Eval::evaluate(const Board* b) const
           //frame penalty
           tot[player] += vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece];
           logDDebug("full frame penalty %4.2f to %d player for %s framed" , 
-                    framePenaltyRatio *  pieceValue[framedPiece],
+                    vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece],
                     player, pieceToStr(player, framedPiece, trap).c_str()); 
           //pin penalty
           u64 u = guards[player];
@@ -509,18 +523,18 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     eval -= 0.5 * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
-    return 0;
-  /*
 
   assert(step.pieceMoved());
-  assert(IS_PLAYER(board_[step.from_]));
+  //assert(IS_PLAYER(b[step.from_]));
   
   //we don't like inverse steps 
   //TODO ... inverse step is reasonable when something dies in the trap
+  /*
   if (step.inversed(lastStep_)){
     eval -= 5;
     return eval;
   }
+  */
 
   if (step.piece_ == ELEPHANT ) {
     eval += 0.1;
@@ -528,8 +542,8 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
 
   if (step.isPushPull()){
     //push opponent to the goal :( not impossible ? )
-    if (step.oppPiece_ == PIECE_RABBIT && 
-        ROW(step.oppTo_) == rabbitWinRow[PLAYER_TO_INDEX(OPP(step.player_))]){
+    if (step.oppPiece_ == RABBIT && 
+        BIT_ON(step.oppTo_) & bits::winRank[(step.player_)]) {
       eval -= 10;
     }
     //otherwise push/pulls are encouraged
@@ -539,12 +553,12 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   } 
   
   //check self-kill
-  if (checkKillForward(step.from_, step.to_)){
+  if (b->checkKillForward(step.from_, step.to_)){
     //allow self-kills to allow rabbits move to the goal
     //in the opponent's part of the board
-    if (step.piece_ == PIECE_RABBIT && ! IS_TRAP(step.to_) && 
-        ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
-        (toMove_ == SILVER && ROW(step.from_) <= 5))){
+    if (step.piece_ == RABBIT && ! IS_TRAP(step.to_) && 
+        ((step.player_ == GOLD && ROW(step.from_) >= 4) ||
+        (step.player_ == SILVER && ROW(step.from_) <= 5))){
       eval -= 1;
     }
     else{
@@ -559,13 +573,14 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
 
     //check opp-kill
-    if (step.isPushPull() && checkKillForward(step.oppFrom_, step.oppTo_)){
+    if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
       eval += 5;   
     }
   }
 
+  /*
   //rabbit movements 
-  if (step.piece_ == PIECE_RABBIT){
+  if (step.piece_ == RABBIT){
     //moves in opponent's part of the board are encouraged
     if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
         (toMove_ == SILVER && ROW(step.from_) <= 5)){
@@ -606,9 +621,9 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     int d = SQUARE_DISTANCE(lastStep_.to_, step.from_);
     eval += d <= 3 ? (3 - d) * 0.5 : 0;
   }
+  */
 
   return eval;
-  */
 }
     
 string Eval::trapTypeToStr(trapType_e trapType)

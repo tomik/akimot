@@ -121,6 +121,11 @@ class Eval
     Eval();
 
     /**
+     * Inits base evaluation as well.
+     */
+    Eval(const Board* board);
+
+    /**
      * Evaluation.
      */
     int evaluate(const Board*) const;
@@ -149,4 +154,7 @@ class Eval
     EvalTT * evalTT_;
 
     Values * vals_;
+
+    /**Base evaluation ... for relative evaluation.*/
+    float base_eval;
 };
