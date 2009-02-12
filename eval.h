@@ -101,6 +101,8 @@ class Values
     //ratio substracted from piece value if framed 
     float framePenaltyRatio;  
 
+    int camelHostagePenalty;
+
     //ratio substracted from piece value if supports framed piece (not mobile)
     float pinnedPenaltyRatio;  
 
@@ -124,6 +126,11 @@ class Eval
      * Inits base evaluation as well.
      */
     Eval(const Board* board);
+    
+    /**
+     * Common init
+     */
+    void init();
 
     /**
      * Evaluation.
@@ -156,5 +163,7 @@ class Eval
     Values * vals_;
 
     /**Base evaluation ... for relative evaluation.*/
-    float base_eval;
+    float base_eval_;
+    float eval_min_;
+    float eval_max_;
 };

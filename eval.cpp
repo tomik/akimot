@@ -34,6 +34,7 @@ Values::Values(string fn) {
   values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
   values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("camel_hostage_penalty", IT_INT, (void*)&camelHostagePenalty, SINGLE_VALUE));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][ELEPHANT], BIT_LEN));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][ELEPHANT], BIT_LEN));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][ELEPHANT], BIT_LEN));
@@ -221,8 +222,8 @@ u64 adv[8][2] = {
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
-#define EVAL_MAX 1900
-#define EVAL_MIN (-1900)
+#define EVAL_MAX 1000
+#define EVAL_MIN (-1000)
 
 #define EVAL_MAX_DAILEY 2000
 #define EVAL_MIN_DAILEY (-2000)
@@ -231,20 +232,28 @@ u64 adv[8][2] = {
 
 Eval::Eval() 
 {
-  evalTT_ = new EvalTT();
-  vals_ = new Values(cfg.evalCfg());
-  base_eval = 0;
-  
+ init(); 
 }
 
 //--------------------------------------------------------------------- 
 
 Eval::Eval(const Board* board) 
 {
+  init();
+  base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+ // float e = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  
+}
+
+//--------------------------------------------------------------------- 
+
+void Eval::init() 
+{
   evalTT_ = new EvalTT();
   vals_ = new Values(cfg.evalCfg());
-  base_eval = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
-  //cerr << base_eval << endl;
+  base_eval_ = 0;
+  eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
+  eval_min_ = cfg.useBestEval() ? EVAL_MIN : EVAL_MIN_DAILEY;
 }
 
 //--------------------------------------------------------------------- 
@@ -269,13 +278,9 @@ float Eval::evaluateInPercent(const Board* b) const
   float p; 
   //cerr << vals_->toString();
 
-  if (cfg.useBestEval()){
-    evaluation = evaluate(b); // - base_eval;
-    p = (evaluation - EVAL_MIN) / float(EVAL_MAX - EVAL_MIN);
-  }else{ 
-    evaluation = evaluateDailey(b); // - base_eval;
-    p = (evaluation - EVAL_MIN_DAILEY) / float(EVAL_MAX_DAILEY - EVAL_MIN_DAILEY);
-  }
+  evaluation  =cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
+  evaluation -= base_eval_;
+  p = (evaluation - eval_min_) / float(eval_max_ - eval_min_);
   p = p < 0 ? 0 : (p > 1 ? 1 : p);
 
   //evalTT_->insertItem(b->getSignature(), p);
@@ -297,6 +302,7 @@ int Eval::evaluate(const Board* b) const
   assert(b->getStepCount() == 0);
   
   u64 movable = b->calcMovable(GOLD) | b->calcMovable(SILVER);
+  u64 all = (b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0] );
 
   //determine game stage
   int piecesNum = bits::bitCount(b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0]);
@@ -327,6 +333,28 @@ int Eval::evaluate(const Board* b) const
         tot[player] += vals_->pieceValue[piece] * vals_->frozenPenaltyRatio;
         logDDebug("material penalty %4.2f for %s being frozen", vals_->pieceValue[piece] * vals_->frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
       } 
+
+
+      //hostage situation TODO IMPROVE
+      if (piece == CAMEL && ! bits::getBit(movable, pos)) {
+        //get trap in distance 2 
+        u64 m = bits::circle(pos, 2) & TRAPS;
+        int trap = bits::lix(m);
+        if (trap != BIT_EMPTY) {
+          u64 guards[2];
+          int guardsNum[2] = {0, 0};
+          guards[GOLD] = bits::neighborsOne(trap) & b->bitboard_[GOLD][0];
+          guards[SILVER] = bits::neighborsOne(trap) & b->bitboard_[SILVER][0];
+          guardsNum[GOLD] = bits::neighborsOneNum(trap, guards[GOLD]);
+          guardsNum[SILVER] = bits::neighborsOneNum(trap, guards[SILVER]);
+          if (guardsNum[player] < 2){
+            tot[player] += vals_->camelHostagePenalty;
+            logDDebug("hostage penalty %4d for %s being hostage", 
+               vals_->camelHostagePenalty, pieceToStr(player, piece, pos).c_str());
+          }
+        }
+              
+      }
     }
 
     //rabbits 
@@ -405,7 +433,6 @@ int Eval::evaluate(const Board* b) const
 
       //check frame
       if ((BIT_ON(trap) & b->bitboard_[player][0]) && guardsNum[OPP(player)] == 3) {
-        u64 all = (b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0] );
         //squares that must be blocked for trapped piece not to break free
         piece_t framedPiece = b->getPiece(trap, player); 
         u64 mustBlock = 
@@ -567,10 +594,11 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   }
   else{
 
-    //push opp to trap is good 
+  /*  //push opp to trap is good 
     if (step.isPushPull() && IS_TRAP(step.oppTo_)){
       eval += 3;
     }
+  */
 
     //check opp-kill
     if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
