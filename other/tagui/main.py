@@ -163,11 +163,11 @@ class Tagui(QtGui.QMainWindow):
     def record_update(self):
         row = self.record.currentRow()
         self.record.last_row = row
-        if row > 0:
-            try:
-                self.log.setText(self.log.segments[(row - 1)/2])
-            except IndexError: 
-                pass
+        #if row > 0:
+        try:
+            self.log.setText(self.log.segments[(row)/2])
+        except IndexError: 
+            pass
         self.ui.button_back.setEnabled(True)
         self.ui.button_forward.setEnabled(True)
         if row == 0: 
