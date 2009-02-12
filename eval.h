@@ -98,6 +98,8 @@ class Values
     int trapActiveVal;
     int trapPotVal;
 
+    int activeTrapBlockedPenalty;
+
     //ratio substracted from piece value if framed 
     float framePenaltyRatio;  
 

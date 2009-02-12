@@ -1,3 +1,5 @@
 record*
 log*
 *.cfg
+games/*
+*.tgz

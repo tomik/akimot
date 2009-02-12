@@ -1,0 +1,1 @@
+gcc -static -g -O3 board.c getMove.c search.c eval.c hash.c -o fairy

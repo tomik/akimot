@@ -1847,6 +1847,7 @@ void Board::findMCmoveAndMake()
     }
     //cerr << toString();
     //cerr << step.toString() << endl;
+    //
   } while ( ! makeStepTryCommit(step));
 
 }
