@@ -1,6 +1,8 @@
 #include "eval.h"
 
 extern string implicit_eval_cfg;
+bool Eval::globalInit = false;
+Values globValues;  
 
 //---------------------------------------------------------------------
 //  section ValueItem
@@ -251,8 +253,12 @@ Eval::Eval(const Board* board)
 
 void Eval::init() 
 {
+  if (! globalInit){
+    globalInit = true;
+    globValues = Values(cfg.evalCfg());
+  }
   evalTT_ = new EvalTT();
-  vals_ = new Values(cfg.evalCfg());
+  vals_ = new Values(globValues);
   base_eval_ = 0;
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
   eval_min_ = cfg.useBestEval() ? EVAL_MIN : EVAL_MIN_DAILEY;
@@ -270,17 +276,17 @@ float Eval::evaluateInPercent(const Board* b) const
   }
   */
 
-/*  if (b->goalCheck()) {
+  if (cfg.extensionsInEval() && b->goalCheck(b->getPlayerToMove(), 3)) {
     return 1 - b->getPlayerToMove();
   }
-*/
+
   //return random01();
   
   int evaluation;
   float p; 
   //cerr << vals_->toString();
 
-  evaluation  =cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
+  evaluation = cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
   evaluation -= base_eval_;
   p = (evaluation - eval_min_) / float(eval_max_ - eval_min_);
   p = p < 0 ? 0 : (p > 1 ? 1 : p);

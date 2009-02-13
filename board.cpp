@@ -1176,6 +1176,9 @@ bool Board::trapCheck(coord_t vpos, piece_t piece, player_t player, coord_t trap
 
 int Board::reachability(int from, int to, player_t player, int limit, int used, Move * move) const
 {
+  u64 movable = calcMovable(player);
+  u64 victims[7];
+  calcWeaker(player, victims);
 
   int reserve = limit - used - SQUARE_DISTANCE(from, to);
   //distance limit for pieces lookup
@@ -1207,21 +1210,28 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
   //cerr << ' ';
   //cerr << "used " << used << " reserve " << reserve << endl;
   StepArray steps;
+  //u64 passive = bits::BIT_ON(from);
 
   for (int i = 0; i <= distLimit; i ++){
     u64 iFarAway = bitboard_[player][0] & bits::circle(from, i);
-    //unguarded trap in neighborhood -> increase the distLimit 
-    //TODO distinguish piece
-   // u64 trapHelpers = bits::stepOffset_[player][RABBIT][from] & TRAPS 
                       
-
+    u64 active = iFarAway & movable;
+  /*
+    u64 passive = passive & ~movable;
+    for (int j = 0; j < i + 1; j ++){
+      passive |= neighbors(passive);
+    }
+    */
     int bit;
-    while ( (bit = bits::lix(iFarAway)) != -1){
+    while ( (bit = bits::lix(active)) != -1){
       //cerr << "piece at " << bit << " is " << i << " far away" << endl;
       assert(IS_PLAYER(getPlayer(bit)));
       assert(player == GOLD || player == SILVER);
       int len = 0; 
-      genStepsOne(bit, player, steps, len);
+      //genStepsOne(bit, player, steps, len);
+      piece_t piece = getPiece(bit, player);
+      genStepsOneTunedSingle(bit, player, piece, steps, len);
+      genStepsOneTunedPushPull(bit, player, piece, steps, len, victims[piece]);
 
       for (int j = 0; j < len; j++){
        // cerr.width(2 * (used+1));
@@ -1259,6 +1269,19 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
 
 //--------------------------------------------------------------------- 
 
+bool Board::contextMovePlayable(const ContextMove& contextMove) const
+{
+  for (int j = 0; j < PIECE_NUM + 1; j++){
+    if ((contextMove.mask_ & (bitboard_[0][j] | bitboard_[1][j]))
+         != contextMove.context_[j]){
+      return false;
+    }
+  }
+  return true;
+}
+
+//--------------------------------------------------------------------- 
+
 void Board::genStepsOne(coord_t coord, player_t player, 
                             StepArray& steps, int& stepsNum) const { 
   if (bits::getBit(calcMovable(player), coord)){
@@ -1267,7 +1290,7 @@ void Board::genStepsOne(coord_t coord, player_t player,
 
     assert(getPlayer(coord) == player); 
     piece_t piece = getPiece(coord, player);
-    //calling two functions here instead of one might make it (much) slower 
+    //TODO calling two functions here instead of one might make it (much) slower 
     genStepsOneTunedSingle(coord, player, piece, steps, stepsNum);
     genStepsOneTunedPushPull(coord, player, piece, steps, stepsNum, victims[piece]);
   }

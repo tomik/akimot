@@ -1,12 +1,12 @@
 2w
  +-----------------+
-8|   r r   r   r r |
-7| r d d       c   |
-6|       R R     R |
-5|   H C     E c   |
-4|             D   |
-3| h D c e         |
-2| R     M     C   |
+8|   r r   r   r   |
+7| r d d       c R |
+6|                 |
+5|   H C       h D |
+4|                 |
+3| h D c e     d C |
+2| R     M         |
 1| R R           R |
  +-----------------+
    a b c d e f g h

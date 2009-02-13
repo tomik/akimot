@@ -465,6 +465,17 @@ typedef stack<Board*> Bpool;
 extern Bpool bpool;
 extern StepArray stepArray; 
 
+class ContextMove { 
+  
+  public:  
+    friend class Board;
+  private: 
+    u64 context_[7];
+    u64 mask_;
+    Move move_;
+};
+    
+
 class Board
 {
 
@@ -712,6 +723,7 @@ class Board
   private: 
 
 
+
     /**
      * Reachability check.
      *
@@ -719,6 +731,11 @@ class Board
      */
     int reachability(int from, int to, player_t player, 
                     int limit, int used, Move * move) const;
+
+    /**
+     * Checks context move playability.
+     */
+    bool contextMovePlayable(const ContextMove& contextMove) const;
 
     /**
      * Step generation for one.
