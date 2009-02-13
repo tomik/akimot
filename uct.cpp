@@ -1012,7 +1012,7 @@ void Uct::doPlayout(const Board* board)
   
   tree_->historyReset();     //point tree's actNode to the root 
 
-  //cerr << "Playout : " << endl; 
+  //cerr << endl << "Playout : " ;
   do { 
    /*cerr << "   " << tree_->actNode()->toString();
     Node* n=tree_->actNode()->getFirstChild();
@@ -1093,6 +1093,7 @@ void Uct::doPlayout(const Board* board)
 
     Step step = tree_->actNode()->getStep();
 
+    //cerr << step.toString() << " ";
     //perform the step and try commit
     if (playBoard->makeStepTryCommit(step) )   {
       //commit was successful - check whether winning criteria are reached already

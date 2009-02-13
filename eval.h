@@ -49,6 +49,8 @@ class Values
      */
     Values(string fn);
 
+    Values(){};
+
     /**
      * Dump to string.
      */
@@ -78,7 +80,6 @@ class Values
      */
     bool getItemForToken(string token, ValueItem& valueItem) const;
 
-    Values(){};
 
     ValueList values;
     friend class Eval;
@@ -98,6 +99,8 @@ class Values
     int trapActiveVal;
     int trapPotVal;
 
+    int activeTrapBlockedPenalty;
+
     //ratio substracted from piece value if framed 
     float framePenaltyRatio;  
 
@@ -110,6 +113,8 @@ class Values
     int piecePos[GS_NUM][2][PIECE_NUM + 1][BIT_LEN];
 
 };
+
+extern Values globValues;  
 
 /**
  * Board evaluation class.
@@ -166,4 +171,6 @@ class Eval
     float base_eval_;
     float eval_min_;
     float eval_max_;
+
+    static bool globalInit;
 };

@@ -28,6 +28,8 @@ a           ./bot_akimot	akimot -c default.cfg -g
 a1		      ./bot_akimot		akimot -c 1.cfg -g 
 a2		      ./bot_akimot		akimot -c 2.cfg -g 
 
+fairy       ./bot_fairy  fairy 
+
 # pure random bot
 r0		./bot_r0		r0 -b -r [seed]
 

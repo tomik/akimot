@@ -1,6 +1,8 @@
 #include "eval.h"
 
 extern string implicit_eval_cfg;
+bool Eval::globalInit = false;
+Values globValues;  
 
 //---------------------------------------------------------------------
 //  section ValueItem
@@ -32,6 +34,7 @@ Values::Values(string fn) {
   values.push_back(ValueItem("trap_safe_val", IT_INT, (void*)&trapSafeVal, SINGLE_VALUE));
   values.push_back(ValueItem("trap_active_val", IT_INT, (void*)&trapActiveVal, SINGLE_VALUE));
   values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
+  values.push_back(ValueItem("active_trap_blocked_penalty", IT_INT, (void*)&activeTrapBlockedPenalty, SINGLE_VALUE));
   values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("camel_hostage_penalty", IT_INT, (void*)&camelHostagePenalty, SINGLE_VALUE));
@@ -156,7 +159,8 @@ bool Values::loadFromString(string config) {
       }
     }
     if (! found){
-      logWarning("Unknown token %s ... ", s.c_str());
+      logError("Item not found %s ... ", it->name_.c_str());
+      return false;
     }
   }
   return true;
@@ -249,8 +253,12 @@ Eval::Eval(const Board* board)
 
 void Eval::init() 
 {
+  if (! globalInit){
+    globalInit = true;
+    globValues = Values(cfg.evalCfg());
+  }
   evalTT_ = new EvalTT();
-  vals_ = new Values(cfg.evalCfg());
+  vals_ = new Values(globValues);
   base_eval_ = 0;
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
   eval_min_ = cfg.useBestEval() ? EVAL_MIN : EVAL_MIN_DAILEY;
@@ -268,17 +276,17 @@ float Eval::evaluateInPercent(const Board* b) const
   }
   */
 
-/*  if (b->goalCheck()) {
+  if (cfg.extensionsInEval() && b->goalCheck(b->getPlayerToMove(), 3)) {
     return 1 - b->getPlayerToMove();
   }
-*/
+
   //return random01();
   
   float evaluation;
   float p; 
   //cerr << vals_->toString();
 
-  evaluation  =cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
+  evaluation = cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
   evaluation -= base_eval_;
   p = (evaluation - eval_min_) / float(eval_max_ - eval_min_);
   p = p < 0 ? 0 : (p > 1 ? 1 : p);
@@ -334,8 +342,7 @@ int Eval::evaluate(const Board* b) const
         logDDebug("material penalty %4.2f for %s being frozen", vals_->pieceValue[piece] * vals_->frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
       } 
 
-
-      //hostage situation TODO IMPROVE
+    //hostage situation TODO IMPROVE
       if (piece == CAMEL && ! bits::getBit(movable, pos)) {
         //get trap in distance 2 
         u64 m = bits::circle(pos, 2) & TRAPS;
@@ -347,14 +354,17 @@ int Eval::evaluate(const Board* b) const
           guards[SILVER] = bits::neighborsOne(trap) & b->bitboard_[SILVER][0];
           guardsNum[GOLD] = bits::neighborsOneNum(trap, guards[GOLD]);
           guardsNum[SILVER] = bits::neighborsOneNum(trap, guards[SILVER]);
-          if (guardsNum[player] < 2){
+          //little guards && empty trap
+          if (guardsNum[player] < 2 && ! bits::getBit(all, pos)){
             tot[player] += vals_->camelHostagePenalty;
             logDDebug("hostage penalty %4d for %s being hostage", 
                vals_->camelHostagePenalty, pieceToStr(player, piece, pos).c_str());
           }
         }
-              
       }
+     
+
+    //distance to stronger
     }
 
     //rabbits 
@@ -421,6 +431,13 @@ int Eval::evaluate(const Board* b) const
             tot[player] += vals_->trapActiveVal;
             logDDebug("trap active %d to %d player for %s trap " , 
                       vals_->trapActiveVal, player, coordToStr(trap).c_str()); 
+
+            //active, but trap is full
+            if (bits::getBit(b->bitboard_[player][0], trap)) {
+              tot[player] += vals_->activeTrapBlockedPenalty;
+              logDDebug("active trap blocked penalty %d to %d player for %s trap " , 
+                       vals_->activeTrapBlockedPenalty, player, coordToStr(trap).c_str()); 
+            }
           }
           else{
             tot[player] += vals_->trapSafeVal;
@@ -684,11 +701,15 @@ string implicit_eval_cfg   = " \
  \
  trap_active_val   150\
  \
+ active_trap_blocked_penalty -40\
+ \
  trap_pot_val   100\
  \
  frame_penalty_ratio   -0.3\
  \
  pinned_penalty_ratio   -0.2\
+ \
+ camel_hostage_penalty -250\
  \
  elephant_position  \
  \

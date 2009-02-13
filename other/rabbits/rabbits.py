@@ -39,14 +39,17 @@ def do_test(engine, pos_str, move):
               result  = lmsg[1]
               extra = ' '.join(lmsg[2:])
               break
-    
-    goal_pos = pos.do_move(board.parse_move(extra))
+
 
     wrong = {}
-    if not goal_pos.is_goal():
-        wrong['goal'] = True
     if result not in  ['gold', 'silver']:
         wrong['result'] = True
+    else:
+        goal_pos = pos.do_move(board.parse_move(extra))
+
+        if not goal_pos.is_goal():
+            wrong['goal'] = True
+
     
     if (len(wrong) > 0):
         print "========================="
