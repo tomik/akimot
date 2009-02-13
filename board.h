@@ -679,8 +679,8 @@ class Board
 
     bool trapCheck(player_t player, MoveList* moves);
 
-    bool trapCheck(coord_t pos, piece_t piece, player_t player, coord_t trap,
-                        int limit, int used, Move* move);
+    bool trapCheck( coord_t pos, piece_t piece, player_t player, 
+                   coord_t trap, int limit, int used, Move* move);
 
     /**
      * String representation.
@@ -746,26 +746,6 @@ class Board
                         StepArray& steps, int& stepsNum) const;
 
     /**
-     * Step generation for one.
-     *
-     * Wrapper around genStepsOneTunedPushPull 
-     */
-    void genStepsOnePushPull(coord_t coord, player_t player,
-                        StepArray& steps, int& stepsNum) const;
-
-    /**
-     * Single Step generation for one piece. 
-     *
-     * @param coord  Steps are generated for piece at this coord.
-     * @param player Player to generate steps for. 
-     * @param piece  Piece ( for time save). 
-     * @param steps  Steps are stored in this array.
-     * @param stepsnum Size of step array.
-     */
-    inline void genStepsOneTunedSingle(coord_t coord, player_t player, piece_t piece, 
-                              StepArray& steps, int& stepsNum) const;
-
-    /**
      * Push Pull Step generation for one piece. 
      *
      * @param coord  Steps are generated for piece at this coord.
@@ -774,7 +754,7 @@ class Board
      * @param steps  Steps are stored in this array.
      * @param stepsnum Size of step array.
      */
-    inline void genStepsOneTunedPushPull(coord_t coord, player_t player, piece_t piece, 
+    inline void genStepsOneTuned(coord_t coord, player_t player, piece_t piece, 
                               StepArray& steps, int& stepsNum, u64 victims) const;
 
     /**

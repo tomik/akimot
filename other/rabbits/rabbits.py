@@ -30,7 +30,7 @@ def do_test(engine, pos_str, move):
     engine.setposition(pos)
     engine.engine.send('goalcheck\n')
 
-    res = ''
+    result = ''
     while True:
         resp = engine.get_response()
         if resp.type == "info":
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     engine_cmd = './akimot -c default.cfg -l'
     engine = EngineController(StdioEngine(engine_cmd, log))
 
-    for pos, move in map(lambda x: x.split('#'), open(rabbits_pos_fn, 'r').readlines()):
+    for pos, move in map(lambda x: x.split('#'), (open(rabbits_pos_fn, 'r').readlines())):
         do_test(engine, pos.strip(), move.strip())
 
     engine.quit()
