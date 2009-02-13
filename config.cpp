@@ -95,6 +95,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("uct_transposition_tables", IT_BOOL, (void*)&uct_tt_,"1"));
   items_.push_back(CfgItem("fpu", IT_FLOAT, (void*)&fpu_,"1.1"));
   items_.push_back(CfgItem("knowledge_in_tree", IT_BOOL, (void*)&knowledgeInTree_,"1"));
+  items_.push_back(CfgItem("history_heuristic", IT_BOOL, (void*)&historyHeuristic_,"1"));
   items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_,"0.2"));
   items_.push_back(CfgItem("playout_len", IT_INT, (void*)&playoutLen_,"3"));
   items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_,"20"));

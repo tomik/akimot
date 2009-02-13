@@ -23,16 +23,7 @@ using std::make_pair;
 #define UCT_MAX_DEPTH 50
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
 
-#define MATURE_LEVEL (cfg.matureLevel())
-#define EXPLORE_RATE (cfg.exploreRate())
-#define FPU (cfg.fpu())
-
-//#define EVAL_AFTER_LENGTH 3
-//#define EXPLORE_RATE 0.2
-//#define MATURE_LEVEL 20
-//#define FPU 1
-
-#define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 1 : -1 )
+#define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 2 : -1 )
 #define WINNER_TO_VALUE(winner) (winner == GOLD ? 1 : -1 )
 
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 

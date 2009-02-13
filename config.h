@@ -72,6 +72,7 @@ class Cfg
     inline bool uct_tt() { return uct_tt_; }
     inline float fpu() { return fpu_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
+    inline bool historyHeuristic() { return historyHeuristic_;}
     inline float exploreRate() { return exploreRate_; }
     inline int playoutLen() { return playoutLen_; }
     inline int matureLevel() { return matureLevel_; }
@@ -97,6 +98,8 @@ class Cfg
     float fpu_;
     /**Use knowledge in uct tree.*/
     bool knowledgeInTree_;
+    /**Use tw steps as history heuristic.*/
+    bool historyHeuristic_;
     /**Uct explore rate.*/
     float exploreRate_;
     /**Lenght of playout before evaluation.*/

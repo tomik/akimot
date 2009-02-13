@@ -140,6 +140,11 @@ Node::Node(TWstep* twStep, int level, float heur)
   value_      = 0; 
   heur_       = heur;
   twStep_     = twStep;
+  if (cfg.historyHeuristic()) {
+    value_ = twStep->value;
+    visits_ = twStep->visits < cfg.matureLevel()/2 ? 
+              twStep->visits : cfg.matureLevel() ;
+  }
   level_      = level;
 }
 
@@ -157,7 +162,7 @@ Node* Node::findUctChild()
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
 
-  float exploreCoeff = EXPLORE_RATE * log(visits_);
+  float exploreCoeff = cfg.exploreRate() * log(visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
@@ -311,7 +316,7 @@ void Node::updateTWstep(float sample)
 
 bool Node::isMature() const
 {
-  return visits_ > MATURE_LEVEL;
+  return visits_ > cfg.matureLevel();
 }
 
 //---------------------------------------------------------------------
@@ -441,7 +446,7 @@ string Node::toString() const
   stringstream ss;
 
   ss << getStep().toString() << "(" << getLevel() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " -> " 
-    << (father_ != NULL ? ucb(EXPLORE_RATE * log(father_->visits_)) : 1 )
+    << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
     << endl;
   return ss.str();
 }
@@ -1078,9 +1083,10 @@ void Uct::doPlayout(const Board* board)
 
       //"random" playout TODO ... check
       SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, 
-          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
-          EVAL_AFTER_LENGTH + 1:
-          EVAL_AFTER_LENGTH 
+          cfg.playoutLen()
+          //tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          //EVAL_AFTER_LENGTH + 3:
+          //EVAL_AFTER_LENGTH 
           );
       playoutStatus = simplePlayout.doPlayout();
       //playoutStatus = PLAYOUT_EVAL;
