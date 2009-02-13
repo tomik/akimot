@@ -226,8 +226,8 @@ u64 adv[8][2] = {
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
-#define EVAL_MAX 1000
-#define EVAL_MIN (-1000)
+#define EVAL_MAX 1900
+#define EVAL_MIN (-1899)
 
 #define EVAL_MAX_DAILEY 2000
 #define EVAL_MIN_DAILEY (-2000)
