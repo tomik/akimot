@@ -282,7 +282,7 @@ float Eval::evaluateInPercent(const Board* b) const
 
   //return random01();
   
-  int evaluation;
+  float evaluation;
   float p; 
   //cerr << vals_->toString();
 

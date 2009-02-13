@@ -22,11 +22,9 @@
 bomb2004CC	/home/arimaa/web/arimaa/bots/bot_Bomb2004CC	getMove
 bomb2005CC	/home/arimaa/web/arimaa/bots/bot_Bomb2005CC	getMove
 
-akimot  		./bot_akimot	akimot -c default.cfg -g
-akimot_old  		./bot_akimot	akimot_old -c default.cfg -g
-a           ./bot_akimot	akimot -c default.cfg -g
-a1		      ./bot_akimot		akimot -c 1.cfg -g 
-a2		      ./bot_akimot		akimot -c 2.cfg -g 
+akimot  		./bot_akimot  	akimot -c akimot.cfg -g
+a1		      ./bot_akimot		akimot -c a1.cfg -g 
+a2		      ./bot_akimot		akimot -c a2.cfg -g 
 
 fairy       ./bot_fairy  fairy 
 
