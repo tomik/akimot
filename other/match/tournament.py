@@ -32,7 +32,7 @@ def runTournament(bots, matches, comment):
     list = open("%s/%s" % (match_dir, dir_list),"a")
     list.write("%s --- played at %s : %s\n" % (top, timestamp, setup_msg.replace("\n"," ")))
 
-    for fn in [bot_1, bot_2, "%s_eval" % bot_1, "%s_eval" % bot_2]:
+    for fn in [bot_1, bot_2]:
       fn = "bot_akimot/%s.cfg" % fn 
       try:
         shutil.copy(fn, dir)

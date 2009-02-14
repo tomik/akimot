@@ -1,8 +1,6 @@
 #include "eval.h"
 
 extern string implicit_eval_cfg;
-bool Eval::globalInit = false;
-Values globValues;  
 
 //---------------------------------------------------------------------
 //  section ValueItem
@@ -24,8 +22,23 @@ bool ValueItem::isSingleValue() const
 //  section Values
 //---------------------------------------------------------------------- 
 
-Values::Values(string fn) { 
-  
+Values::Values(){
+  init();
+  loadFromString(implicit_eval_cfg);
+  mirrorPiecePositions();
+}
+
+//--------------------------------------------------------------------- 
+
+Values::Values(string config) { 
+  init();
+  loadFromString(config);
+  mirrorPiecePositions();
+}
+
+//--------------------------------------------------------------------- 
+
+void Values::init(){ 
   values.clear();
   values.push_back(ValueItem("piece_values", IT_INT_AR, (void*)&pieceValue, PIECE_NUM + 1));
   values.push_back(ValueItem("rabbit_penalty", IT_INT_AR, (void*)&rabbitPenalty, RABBITS_NUM + 1));
@@ -57,16 +70,8 @@ Values::Values(string fn) {
   values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][RABBIT], BIT_LEN));
   values.push_back(ValueItem("rabbit_late_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][RABBIT], BIT_LEN));
 
-
-  FileRead* f = new FileRead(fn);
-  f->ignoreLines(CFG_COMMENT);
-  if ((! f->good()) || (! loadFromString(replaceAllChars(f->read(), '=', ' ')))) {
-    logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
-    loadFromString(implicit_eval_cfg);
-  }
-  mirrorPiecePositions();
-
 }
+
 
 void Values::baseMirrorIndexes(int& player, int& index) 
 {
@@ -127,10 +132,26 @@ void Values::mirrorPiecePositions()
 
 bool Values::loadFromString(string config) { 
   
-  stringstream ss;
+  //remove = 
+  config = replaceAllChars(config, CFG_SEP, ' ');
+  stringstream sss;
+  sss.str(config);
+  //strip comments
+  string noComments;
+  string line;
+  while (getline(sss, line)){
+    if (trimLeft(line).find('#', 0) != 0){
+      noComments += line + '\n';
+    }
+  }
+  config = noComments;
+
+  //proceed
+  //cerr << config;
   string value;
   string s;
   ValueItem vi; 
+  stringstream ss; 
    
   for (ValueList::const_iterator it = values.begin(); it != values.end(); it++){
     bool found = false;
@@ -253,12 +274,8 @@ Eval::Eval(const Board* board)
 
 void Eval::init() 
 {
-  if (! globalInit){
-    globalInit = true;
-    globValues = Values(cfg.evalCfg());
-  }
   evalTT_ = new EvalTT();
-  vals_ = new Values(globValues);
+  vals_ = new Values(*cfg.evaluationValues());
   base_eval_ = 0;
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
   eval_min_ = cfg.useBestEval() ? EVAL_MIN : EVAL_MIN_DAILEY;

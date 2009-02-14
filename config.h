@@ -11,7 +11,7 @@
 
 using std::list;
 
-#define CFG_SEP "="
+#define CFG_SEP '='
 #define CFG_COMMENT "#"
 #define DEFAULT_CFG "default.cfg"
 #define SINGLE_VALUE -1
@@ -42,6 +42,8 @@ class CfgItem
 
 typedef list<CfgItem > CfgItemList;
 typedef CfgItemList::iterator CfgItemListIter;
+
+class Values; 
 
 /**
  * Program configuration. 
@@ -83,6 +85,8 @@ class Cfg
     inline int searchThreadsNum() { return searchThreadsNum_; }
     inline string evalCfg() { return evalCfg_; }
 
+    inline Values* evaluationValues() {return vals_;}
+
   private:
     CfgItemList items_;
 
@@ -118,6 +122,8 @@ class Cfg
     int searchThreadsNum_;
     /**Filename to take the evaluation configuration from.*/
     string evalCfg_;
+
+    Values * vals_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

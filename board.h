@@ -675,12 +675,12 @@ class Board
      * @param moves - List of moves performing trap kill.
      * @return True if any trap kill possible, false otherwise.
      */
-    bool trapCheck( player_t player, coord_t trap, int limit, MoveList* moves);
+    bool trapCheck( player_t player, coord_t trap, int limit, MoveList* moves) const;
 
-    bool trapCheck(player_t player, MoveList* moves);
+    bool trapCheck(player_t player, MoveList* moves) const;
 
     bool trapCheck( coord_t pos, piece_t piece, player_t player, 
-                   coord_t trap, int limit, int used, Move* move);
+                   coord_t trap, int limit, int used, Move* move) const;
 
     /**
      * String representation.
@@ -794,8 +794,10 @@ class Board
     /**
      * Check whether there is stronger piece within distance. 
      *
+     * @return returns mask with these pieces.
+     *
      */
-    bool strongerWithinDistance(player_t player, piece_t piece, 
+    u64 strongerWithinDistance(player_t player, piece_t piece, 
                           coord_t coord, int distance) const;
 
     /**

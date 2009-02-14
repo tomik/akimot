@@ -8,6 +8,9 @@
 
 #include "config.h"
 
+//for values
+#include "eval.h"
+
 string getItemAsString(void* item, itemType_e type, int index)
 { 
   stringstream ss;
@@ -104,7 +107,8 @@ Cfg::Cfg()
   items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
-  items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));
+  //items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));
+  vals_ = NULL;
 }
 
 //--------------------------------------------------------------------- 
@@ -114,7 +118,24 @@ void Cfg::loadFromFile(string fn)
   FileRead* f = new FileRead(fn);
   string name, value;
   f->ignoreLines(CFG_COMMENT);
-  while (f->getLineAsPair(name, value, CFG_SEP)){
+  stringstream ss; 
+  if (! f->good()){
+    logError("Cannot open configuration file.");
+    exit(1);
+  } 
+  ss.str(replaceAllChars(f->read(), CFG_SEP, ' '));
+  while (ss.good()){
+    ss >> name;
+    if (name[0] == '[' && name[name.length() - 1] == ']'){
+      //it is a section
+      //till eof read to evaluation 
+      if (name == "[evaluation_values]"){
+        vals_ = new Values(getStreamRest(ss));
+        break;
+      }
+      continue;
+    }
+    ss >> value; 
     //cerr << name << " : " << value << endl; 
     bool found = false;
     for (CfgItemListIter it = items_.begin(); it != items_.end(); it++){
@@ -132,6 +153,11 @@ void Cfg::loadFromFile(string fn)
       logError("Unknown option %s.", name.c_str());
       exit(1);
     }
+  }
+
+  if (! vals_) {
+    logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
+    vals_ = new Values();
   }
 }
 

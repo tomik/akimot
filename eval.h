@@ -43,13 +43,21 @@ class Values
 {
   public:
     /**
-     * Loads values from file. 
+     * Loads values from given string. 
      *
      * Values are loaded according to valuesList.
      */
-    Values(string fn);
+    Values(string config);
 
-    Values(){};
+    /**
+     * Init from implicit values.
+     */
+    Values();
+
+    /**
+     * Actual init called from constructors;
+     */
+    void init();
 
     /**
      * Dump to string.
@@ -114,8 +122,6 @@ class Values
 
 };
 
-extern Values globValues;  
-
 /**
  * Board evaluation class.
  * 
@@ -172,5 +178,4 @@ class Eval
     float eval_min_;
     float eval_max_;
 
-    static bool globalInit;
 };
