@@ -1066,15 +1066,17 @@ bool Board::trapCheck(player_t player, coord_t trap, int limit, MoveList* moves)
   int vpos;
   bool found = false;
   while ( (vpos = bits::lix(victims)) != -1){
-    cerr << "trapCheck " << 
+    /*cerr << "trapCheck " << 
      pieceToStr(player, getPiece(vpos, player), vpos) << 
     " -> " << coordToStr(trap);    
     cerr << " trap " << SQUARE_DISTANCE(vpos, trap) << "far away" << endl;
     cerr << "=================" << endl;
+  */
 
     if(trapCheck(vpos, getPiece(vpos, player), player, trap, limit, 0, &move)){
       found = true;
       cerr << "FOUND KILL : " << endl << moveToStringWithKills(move) << endl;
+      moves->push_back(move);
     }
   }
   
@@ -1089,7 +1091,7 @@ bool Board::trapCheck(player_t player, MoveList* moves) const
   u64 t = TRAPS;
   coord_t trap;
   while ((trap = bits::lix(t)) != BIT_EMPTY){
-    trapCheck(player, trap, STEPS_IN_MOVE, NULL);
+    trapCheck(player, trap, STEPS_IN_MOVE, moves);
   }
   return false;
 }
@@ -1116,19 +1118,20 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
   int d = SQUARE_DISTANCE(vpos, trap);
   int reserve = (limit - used) - 2 * (d + guardsNum);
 
-  cerr << "--------------------- " << endl;
+  /*cerr << "--------------------- " << endl;
   cerr.width(2 * used);
   cerr << "+" << "checking " 
       << pieceToStr(player, getPiece(vpos, player), vpos) << " -> " 
       << coordToStr(trap) << " guadsnum " << guardsNum << " reserve " << reserve << endl;
+  */
   if (reserve < 0){
-    cerr << "reserve cutoff " << endl;
+    //cerr << "reserve cutoff " << endl;
     return false;
   }
   
   u64 stronger = strongerWithinDistance(player, piece, vpos, reserve + 1);
   if (! stronger) { 
-    cerr << "stronger cutoff " << endl;
+    //cerr << "stronger cutoff " << endl;
     return false;
   }
 
@@ -1144,7 +1147,7 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
   calcWeaker(OPP(player), victims);
 
   u64 active = movable;
-/*
+
   if (vpos == trap) {
     //guard elimination 
     //this is dependant max on 4 steps right now !  
@@ -1162,23 +1165,23 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
   }else { 
    active &= bits::sphere(vpos, distLimit);
   }
-  */
-  active &= bits::sphere(vpos, distLimit);
-  active &= stronger; 
 
-  cerr << "potential figures " << endl; 
-  bits::print(cerr, active);
+  active &= bits::sphere(vpos, distLimit);
+//active &= stronger; 
+
+  //cerr << "potential figures " << endl; 
+  //bits::print(cerr, active);
 
   int bit;
   while ( (bit = bits::lix(active)) != BIT_EMPTY) {
 
     int len = 0;
     //must act
-    cerr << bit << endl; 
-    bits::print(cerr, bitboard_[OPP(player)][0]);
-    bits::print(cerr, bitboard_[player][0]);
+    //cerr << bit << endl; 
+    //bits::print(cerr, bitboard_[OPP(player)][0]);
+    //bits::print(cerr, bitboard_[player][0]);
     piece_t p = getPiece(bit, OPP(player));
-    cerr << p;
+    //cerr << p;
 
     genStepsOneTuned(bit, OPP(player), p, steps, len, victims[p]);
 
@@ -1186,7 +1189,7 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
       if (! reserve && ! steps[j].isPushPull()) {
         continue;
       }
-      cerr << "making step " << steps[j].toString() << endl;
+      //cerr << "making step " << steps[j].toString() << endl;
       Board* bb = new Board(*this);
       bb->makeStep(steps[j]);
 

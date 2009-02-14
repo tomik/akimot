@@ -450,7 +450,7 @@ class Move
     bool opening_;
 };
 
-typedef list<Step> MoveList;
+typedef list<Move> MoveList;
 typedef MoveList::iterator MoveListIter;
 
 //steps
