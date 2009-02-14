@@ -10,6 +10,11 @@ LOG_FILE = "log"
 
 MODES=['standalone', 'master', 'slave', 'test']
 
+def setup_all(opt):
+    try:
+        os.mkdir(opt.game_dir)
+    except: 
+        pass
 
 def default_game_dir():
     try:
@@ -26,10 +31,6 @@ def default_game_dir():
     return game_dir
 
 def setup(bots, opt):
-    try:
-        os.mkdir(opt.game_dir)
-    except: 
-        pass
 
     #copy configuration files
     for fn in [bots[0], bots[1]]:
@@ -102,6 +103,7 @@ if __name__ == "__main__":
     options.timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     options.setup_msg = "%s x %s \n%s matches\n%s" % (bots[0], bots[1], options.games_num, options.comment)
 
+    setup_all(options)
     if options.mode == 'standalone': 
         setup(bots, options)
         run(bots, options)
@@ -111,8 +113,10 @@ if __name__ == "__main__":
     elif options.mode == 'master': 
         from psshlib import work, MS_CREW
         setup(bots, options)
-        JOB = 'python %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], options.game_dir) 
-        jobs = [JOB % i for i in xrange(options.start_from, options.games_num + 1)] 
+        JOB = 'cd $MATCH; python %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], options.game_dir) 
+        STATUS_JOB = 'cd $MATCH; python %s --mode standalone --game_dir %s --start_from %%d' % (sys.argv[0], options.game_dir) 
+        jobs= [STATUS_JOB % (options.games_num + 1)]
+        jobs += [JOB % i for i in xrange(options.start_from, options.games_num )] 
         for j in jobs:
             print j
         work(MS_CREW, 3, jobs);
@@ -127,5 +131,3 @@ if __name__ == "__main__":
         work(MS_CREW, 10, jobs);
 
         
-
-    
