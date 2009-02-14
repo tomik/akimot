@@ -8,7 +8,7 @@ RECORD_FILE = "record"
 DIR_LIST = "list.txt"
 LOG_FILE = "log"
 
-MODES=['standalone', 'master', 'slave', 'test']
+MODES=['standalone', 'finish_only', 'master', 'slave', 'test']
 
 def setup_all(opt):
     try:
@@ -30,8 +30,30 @@ def default_game_dir():
     game_dir = "%s/%s" % (MATCH_DIR, inner_dir)
     return game_dir
 
-def setup(bots, opt):
 
+def get_result(record):
+    lines = open(record,"r").readlines()
+    if lines[-1].startswith('w '): 
+        return 'w'
+    elif lines[-1].startswith('b' ): 
+        return 'b' 
+    return ' '
+
+
+def run(bots, opt):
+    results = []
+    for i in xrange(opt.start_from, opt.start_from + opt.games_num):
+        print "running %d/%d score so far: %d x %d" % (i - opt.start_from + 1, opt.games_num, results.count('w'), results.count('b'))
+        record = "%s/%s_%d" % (opt.game_dir, RECORD_FILE, i)
+        log = "%s/%s_%d" % (opt.game_dir, LOG_FILE, i) 
+        cmdline = "./match %s %s 1>%s 2>%s" % (bots[0], bots[1], record, log)
+
+        if os.system(cmdline) == 2:
+            print "\nInterrupted ..."
+            break
+        results.append(get_result(record))
+
+def finish(opt):
     #copy configuration files
     for fn in [bots[0], bots[1]]:
       fn = "bot_akimot/%s.cfg" % fn 
@@ -46,30 +68,6 @@ def setup(bots, opt):
     f.write(opt.setup_msg)
     f.close()
 
-
-def get_result(record):
-    lines = open(record,"r").readlines()
-    if lines[-1].startswith('w '): 
-        return 'w'
-    elif lines[-1].startswith('b' ): 
-        return 'b' 
-    return ' '
-
-
-def run(bots, opt):
-    results = []
-    for i in xrange(opt.start_from, opt.games_num + 1):
-        print "running %d/%d score so far: %d x %d" % (i, opt.games_num, results.count('w'), results.count('b'))
-        record = "%s/%s_%d" % (opt.game_dir, RECORD_FILE, i)
-        log = "%s/%s_%d" % (opt.game_dir, LOG_FILE, i) 
-        cmdline = "./match %s %s 1>%s 2>%s" % (bots[0], bots[1], record, log)
-
-        if os.system(cmdline) == 2:
-            print "\nInterrupted ..."
-            break
-        results.append(get_result(record))
-
-def finish(opt):
     records = filter(lambda x: x.startswith(RECORD_FILE), os.listdir(opt.game_dir))
     results = [get_result("%s/%s" % (opt.game_dir, r)) for r in records]  
 
@@ -105,29 +103,27 @@ if __name__ == "__main__":
 
     setup_all(options)
     if options.mode == 'standalone': 
-        setup(bots, options)
+        #setup(bots, options)
         run(bots, options)
         finish(options)
     elif options.mode == 'slave': 
         run(bots, options)
+    elif options.mode == 'finish_only': 
+        finish(options)
     elif options.mode == 'master': 
         from psshlib import work, MS_CREW
-        setup(bots, options)
-        JOB = 'cd $MATCH; python %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], options.game_dir) 
-        STATUS_JOB = 'cd $MATCH; python %s --mode standalone --game_dir %s --start_from %%d' % (sys.argv[0], options.game_dir) 
-        jobs= [STATUS_JOB % (options.games_num + 1)]
-        jobs += [JOB % i for i in xrange(options.start_from, options.games_num )] 
-        for j in jobs:
-            print j
+        JOB = 'cd $MATCH;python %s %s %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], bots[0], bots[1], options.game_dir) 
+        jobs = [JOB % i for i in xrange(options.start_from, options.start_from + options.games_num )] 
         work(MS_CREW, 3, jobs);
-        finish(options)
+        job = 'cd $MATCH;python %s %s %s --mode finish_only --game_dir %s -n %d' % (sys.argv[0], bots[0], bots[1], options.game_dir, options.games_num) 
+        work(MS_CREW, 1, [job]);
     elif options.mode == 'test': 
         from psshlib import work, MS_CREW
         print "MS WORK TEST"
 
         jobs = []
-        for i in xrange(30):
-            jobs.append('echo "%d"' % i)
-        work(MS_CREW, 10, jobs);
+        for i in xrange(2):
+            jobs.append('cd $MATCH; touch x' )
+        work(MS_CREW, 5, jobs);
 
         
