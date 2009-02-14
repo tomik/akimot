@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import shutil
 
 match_dir = "matches"
 record_file = "record"
@@ -17,21 +18,33 @@ def runTournament(bots, matches, comment):
     except: 
         pass
 
-    timestamp = time.strftime("%m%d%H%M%S")
-    dir = "%s/%s" % (match_dir, timestamp)
+    #determine file name
+    files = map(int, filter(lambda x: x.isdigit(), os.listdir(match_dir)))
+    files.append(0)
+    top = max(files) + 1
+
+    dir = "%s/%s" % (match_dir, top)
     os.mkdir(dir)
 
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     setup_msg = "%s x %s \n%s matches\n%s" % (bot_1, bot_2, matches, comment)
 
     list = open("%s/%s" % (match_dir, dir_list),"a")
-    list.write("%s --- %s\n" % (timestamp, setup_msg.replace("\n"," ")))
-    list.close()
+    list.write("%s --- played at %s : %s\n" % (top, timestamp, setup_msg.replace("\n"," ")))
+
+    for fn in [bot_1, bot_2, "%s_eval" % bot_1, "%s_eval" % bot_2]:
+      fn = "bot_akimot/%s.cfg" % fn 
+      try:
+        shutil.copy(fn, dir)
+      except: 
+        pass
 
     f = open("%s/%s" % (dir,"setup"),"w")
     f.write(setup_msg)
     f.close()
 
     bot_1_win = 0
+    bot_2_win = 0
 
     for i in xrange(matches):
         print "Match %d/%d" % (i+1, matches)
@@ -44,8 +57,13 @@ def runTournament(bots, matches, comment):
         lines = open(record,"r").readlines()
         if lines[-1][0] == 'w': 
             bot_1_win += 1 
+        else:
+          if lines[-1][0] == 'b': 
+            bot_2_win += 1 
 
-    print "%d/%d" % (bot_1_win, matches)
+    print "%d x %d" % (bot_1_win, bot_2_win)
+    list.write("        result: %d - %d\n" % (bot_1_win, bot_2_win))
+    list.close()
 
 
 if __name__ == "__main__":
@@ -66,7 +84,7 @@ if __name__ == "__main__":
     bot_2 = args[1]
 
     if options.comment is None:
-        options.comment = "%s vs. %s" % (bot_1, bot_2)
+        options.comment = ""
     
     runTournament([bot_1, bot_2], options.matches, options.comment)
     
