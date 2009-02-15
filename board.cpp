@@ -17,6 +17,14 @@ Eval*  Board::eval_;
 Bpool bpool;
 StepArray stepArray;
 
+//#define DEBUG_TRAPCHECK_ON
+
+#ifdef DEBUG_TRAPCHECK_ON
+  #define DEBUG_TRAPCHECK(x) x
+#else
+  #define DEBUG_TRAPCHECK(x) ((void) 0) 
+#endif
+
 // switch to know when to init static variables in class Board
 bool Board::classInit = false;
 
@@ -511,14 +519,14 @@ Move::Move(string moveStr)
 
 void Move::appendStep(Step step)
 {
-  stepList_.push_back(Step(step));
+  stepList_.push_back(step);
 }
 
 //--------------------------------------------------------------------- 
 
 void Move::prependStep(Step step)
 {
-  stepList_.push_front(Step(step));
+  stepList_.push_front(step);
 }
 
 //--------------------------------------------------------------------- 
@@ -966,10 +974,10 @@ void Board::makeStep(const Step& step){
 
       if (dieHard){
         int trap = bits::lix(dieHard);             
-        if ( trap != -1){
+        if ( trap != BIT_EMPTY){
           delSquare(trap, player);
           //no more than one dead per player
-          assert(bits::lix(dieHard) == -1); 
+          assert(bits::lix(dieHard) == BIT_EMPTY); 
         }
       }
     } 
@@ -1046,9 +1054,6 @@ bool Board::goalCheck(player_t player, int stepLimit, Move * move) const
     u64 goals = bits::winRank[player] & bits::sphere(from, stepLimit);
     int to;
     while ( (to = bits::lix(goals)) != -1){
-      //cerr << "rabbit run" << from << "->" << to;
-      //cerr << "goal " << SQUARE_DISTANCE(from, to) << "far away" << endl;
-      //cerr << "=================" << endl;
       if (reachability(from, to, player, stepLimit, 0, move) != -1){
         return true;
       }
@@ -1067,28 +1072,35 @@ bool Board::goalCheck(Move * move) const
 
 //---------------------------------------------------------------------
 
-bool Board::trapCheck(player_t player, coord_t trap, int limit, MoveList* moves) const
+bool Board::trapCheck(player_t player, coord_t trap, int limit, MoveList* moves, SoldierList* soldiers) const
 {
   assert(bits::isTrap(trap));
 
   u64 victims = bitboard_[player][0] & 
                 bits::sphere(trap, limit/2); 
-  Move move;
-  int vpos;
+  int pos;
   bool found = false;
-  while ( (vpos = bits::lix(victims)) != -1){
-    /*
-    cerr << "trapCheck " << 
-     Soldier(player, getPiece(vpos, player), vpos).toString() << 
-    " -> " << coordToStr(trap);    
-    cerr << "=================" << endl;
-    */
+  for (int i = 2; i < limit + 1; i++){
+    u64 victimsAct = victims & bits::sphere(trap, i/2); 
+    while ((pos = bits::lix(victimsAct)) != BIT_EMPTY){
+      //must be here !!! inside the cycle
+      Move move;
 
-    if(trapCheck(vpos, getPiece(vpos, player), player, trap, limit, 0, &move)){
-      found = true;
-      cerr << "FOUND KILL : " << endl << moveToStringWithKills(move) << endl;
-      if (moves){
-        moves->push_back(move);
+      DEBUG_TRAPCHECK(cerr << "trapCheck " << 
+       Soldier(player, getPiece(pos, player), pos).toString() << 
+      " -> " << coordToStr(trap) << endl;
+      cerr << "=================" << endl;);
+
+      if (trapCheck(pos, getPiece(pos, player), player, trap, i, 0, &move)){
+        found = true;
+        DEBUG_TRAPCHECK(cerr << "FOUND KILL : " << endl << moveToStringWithKills(move) << endl;);
+        victims ^= BIT_ON(pos);
+        if (moves){
+          moves->push_back(move);
+        }
+        if (soldiers) { 
+          soldiers->push_back(Soldier(player, getPiece(pos, player), pos));
+        }
       }
     }
   }
@@ -1099,19 +1111,21 @@ bool Board::trapCheck(player_t player, coord_t trap, int limit, MoveList* moves)
 
 //--------------------------------------------------------------------- 
 
-bool Board::trapCheck(player_t player, MoveList* moves) const
+bool Board::trapCheck(player_t player, MoveList* moves, SoldierList* soldiers) const
 {
+  DEBUG_TRAPCHECK(cerr << "TRAP CHECK FOR PLAYER " << player << endl;);
   u64 t = TRAPS;
   coord_t trap;
+  bool found = false;
   while ((trap = bits::lix(t)) != BIT_EMPTY){
-    trapCheck(player, trap, STEPS_IN_MOVE, moves);
+    found = trapCheck(player, trap, STEPS_IN_MOVE, moves, soldiers) || found;
   }
-  return false;
+  return found;
 }
 
 //--------------------------------------------------------------------- 
 
-bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player, 
+bool Board::trapCheck(coord_t vpos, piece_t piece, player_t player, 
                       coord_t trap, int limit, int used, Move* move) const
 {
 
@@ -1131,79 +1145,72 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
   int d = SQUARE_DISTANCE(vpos, trap);
   int reserve = (limit - used) - 2 * (d + guardsNum);
 
-  /*cerr << "--------------------- " << endl;
+  DEBUG_TRAPCHECK( cerr << "--------------------- " << endl;
   cerr.width(2 * used);
   cerr << "+" << "checking " 
       << Soldier(player, getPiece(vpos, player), vpos).toString() << " -> " 
-      << coordToStr(trap) << " guadsnum " << guardsNum << " reserve " << reserve << endl;
-  */
-  if (reserve < 0){
-    //cerr << "reserve cutoff " << endl;
-    return false;
-  }
-  
-  u64 stronger = strongerWithinDistance(player, piece, vpos, reserve + 1);
-  if (! stronger) { 
-    //cerr << "stronger cutoff " << endl;
-    return false;
-  }
-
-  //optimize ... ? 
-  StepArray steps; 
-
-  //optimize reserve + 2 is too much waste 
-  int distLimit = reserve + 1;
-
+        << coordToStr(trap) << " guadsnum " << guardsNum << " reserve " << reserve << endl;);
     
-  u64 movable = calcMovable(OPP(player));
-  u64 victims[7];
-  calcWeaker(OPP(player), victims);
+    if (reserve < 0){
+      return false;
+    }
+    
+    u64 stronger = strongerWithinDistance(player, piece, vpos, reserve + 1);
+    if (vpos != trap && ! stronger) { 
+      return false;
+    }
 
-  u64 active = movable;
+    //optimize ... ? 
+    StepArray steps; 
 
-  if (vpos == trap) {
+    //optimize reserve + 2 is too much waste 
+    int distLimit = reserve + 2;
+
+      
+    u64 movable = calcMovable(OPP(player));
+    u64 victims[7];
+    calcWeaker(OPP(player), victims);
+
+    u64 active = movable;
+
+    if (vpos == trap) {
     //guard elimination 
     //this is dependant max on 4 steps right now !  
     assert(guardsNum == 1 || guardsNum == 2);
     if (guardsNum == 1) {
-     //TODO optimize
+      //TODO optimize
       u64 g = guards;
       int guard = bits::lix(g);
       assert(bits::lix(g) == BIT_EMPTY && guard != BIT_EMPTY);
      
       active &= bits::sphere(guard, distLimit); 
+      DEBUG_TRAPCHECK( cerr << "1 guard situation" << endl; 
+        bits::print(cerr, active));
     }else {
       active &= bits::neighbors(guards);
+      DEBUG_TRAPCHECK( cerr << "2 guards situation" << endl; 
+        bits::print(cerr, active));
     }
   }else { 
    active &= bits::sphere(vpos, distLimit);
   }
 
-  active &= bits::sphere(vpos, distLimit);
-//active &= stronger; 
-
-  //cerr << "potential figures " << endl; 
-  //bits::print(cerr, active);
+  //active &= stronger; 
 
   int bit;
   while ( (bit = bits::lix(active)) != BIT_EMPTY) {
 
     int len = 0;
     //must act
-    //cerr << bit << endl; 
-    //bits::print(cerr, bitboard_[OPP(player)][0]);
-    //bits::print(cerr, bitboard_[player][0]);
     piece_t p = getPiece(bit, OPP(player));
-    //cerr << p;
-
     genStepsOneTuned(bit, OPP(player), p, steps, len, victims[p]);
 
     for (int j = 0; j < len; j++){
       if (! reserve && ! steps[j].isPushPull()) {
         continue;
       }
-      //cerr << "making step " << steps[j].toString() << endl;
       Board* bb = new Board(*this);
+      DEBUG_TRAPCHECK(cerr << "making step " << steps[j].toString() << endl);
       bb->makeStep(steps[j]);
 
       int newvpos = vpos;
@@ -1213,9 +1220,9 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
 
       if (bb->trapCheck(newvpos, piece, player, trap, limit, 
                        used + steps[j].count(), move)){
-       delete(bb);
-       move->prependStep(steps[j]);
-       return true;
+        move->prependStep(steps[j]);
+        delete(bb);
+        return true;
       }
       delete(bb);
     }

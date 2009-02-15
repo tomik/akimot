@@ -25,6 +25,14 @@
 
 class FileRead;
 
+//#define VERBOSE_TESTS
+#ifdef VERBOSE_TESTS
+  #define DEBUG_TESTS(x) x
+#else
+  #define DEBUG_TESTS(x) ((void) 0)
+#endif 
+
+
 
 class DebugTestSuite : public CxxTest::TestSuite 
 {
@@ -63,21 +71,23 @@ class DebugTestSuite : public CxxTest::TestSuite
             do {
               slen = b->generateAllSteps(b->getPlayerToMove(), s);
               bslen = bb->genSteps(bb->getPlayerToMove(), bs);
-             /* cerr << "=============================";
-
-              cerr << b->toString();
-              cerr << slen;
-              for (int i = 0; i < slen; i++){
-                cerr << s[i].toString() << " ";
-              }
+              
+             /* DEBUG_TESTS(
+                cerr << "=============================";
+                cerr << b->toString();
+                cerr << slen;
+                for (int i = 0; i < slen; i++){
+                  cerr << s[i].toString() << " ";
+                }
                 cerr << endl;
-              cerr << bb->toString();
-              cerr << bslen;
-              for (int i = 0; i < bslen; i++){
-                cerr << bs[i].toString() << " ";
-              }
-                cerr << endl;
-              */  
+                cerr << bb->toString();
+                cerr << bslen;
+                for (int i = 0; i < bslen; i++){
+                  cerr << bs[i].toString() << " ";
+                }
+                  cerr << endl;
+              );  
+            */
                 
               assert(slen == bslen); 
               if (slen == 0)
@@ -97,8 +107,6 @@ class DebugTestSuite : public CxxTest::TestSuite
               }
               c = b->makeStepTryCommitMove(s[index]);
               bc = bb->makeStepTryCommit(bs[bindex]);
-              //cerr << s[index].toString() << " =?= " << bs[bindex].toString();
-              //cerr << b->toString() << bb->toString() << " ======================== " << endl;
               assert(b->getSignature() == bb->getSignature());
               assert(c == bc); 
             }
@@ -188,8 +196,6 @@ class DebugTestSuite : public CxxTest::TestSuite
           if (! board2.initFromRecord(fnRecord.c_str()))
             TS_FAIL((string) "Init from " + fnRecord + (string) " failed");
 
-          //cerr << board1.toString() << endl;
-          //cerr << board2.toString() << endl;
           TS_ASSERT_EQUALS( board1, board2);
         }
      }
@@ -213,7 +219,6 @@ class DebugTestSuite : public CxxTest::TestSuite
         string fn = string(STEP_KILL_PRINT_TEST_DIR) + s1;
         Board* b = new Board();
         b->initFromPosition(fn.c_str());
-        //cerr << b->toString();
         
         TS_ASSERT_EQUALS(b->moveToStringWithKills(s2), s3);
         delete b;
@@ -296,17 +301,12 @@ class DebugTestSuite : public CxxTest::TestSuite
         tree->historyReset();     //point tree's actNode to the root 
         while (true) { 
           if (! tree->actNode()->hasChildren()) { 
-            //if (tree->actNode()->getVisits() > UCT_TREE_TEST_MATURE) {
               stepsNum = (rand() % UCT_TREE_MAX_CHILDREN) + 1;
               tree->expandNode(tree->actNode(), steps, stepsNum);
               i++;
               break;
-            //}
-            //tree->updateHistory(winValue[(random() % 2)]);
-            //break;
           }
           tree->randomDescend(); 
-          //tree->uctDescend(); 
         } 
         if (i >= UCT_TREE_NODES)
           break;
@@ -319,13 +319,12 @@ class DebugTestSuite : public CxxTest::TestSuite
         tree->removeNodeCascade(tree->actNode());
       }
 
-      //TODO DFS through tree and check child.father == father, etc. ? 
     } //testUct
 
 
   void testThirdRepetition(void)
   {
-      //tree with random player in the root
+    //tree with random player in the root
     Board* board = new Board();
     board->initNewGame();
     thirdRep.update(board->getSignature(), 1 - board->getPlayerToMove());
@@ -363,9 +362,9 @@ class DebugTestSuite : public CxxTest::TestSuite
   /**
    * Trap checking.
    */
-  void xtestTrapCheck(void)
+  void testTrapCheck(void)
   {
-    string s1, s2, s3, s;
+    string s1, s;
 
     FileRead* f = new FileRead(string(TRAPCHECK_TEST_LIST));
     f->ignoreLines("#");
@@ -375,16 +374,39 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(TRAPCHECK_TEST_DIR) + s1;
       Board* b = new Board();
       b->initFromPosition(fn.c_str());
-      //cerr<< b->toString();
-      SoldierList soldierList;
+
+      DEBUG_TESTS(
+        cerr << b->toString();
+        cerr << getStreamRest(ss) << endl;
+      );
+
+      SoldierList trapableGold;
+      SoldierList trapableSilver;
+      SoldierList trapable;
+      for (int i = 0; i < 10000; i++) {
+        b->trapCheck(GOLD, NULL, &trapableGold);
+        b->trapCheck(SILVER, NULL, &trapableSilver);
+      }
+      trapable = trapableGold;
+      trapable.splice(trapable.end(), trapableSilver);
       Move move;
+
+      DEBUG_TESTS(
+        for (SoldierList::iterator it = trapable.begin(); it != trapable.end(); it++) {
+          cerr << "piece " << it->toString() << " is trapable " << endl;
+        }
+      );
+
       while (ss.good()) { 
         string pieceStr;
         int steps_num;
         ss >> pieceStr;    
+        if (pieceStr == ""){
+          continue;
+        }
         ss >> steps_num;
         bool found = false;
-        for (SoldierList::iterator it = soldierList.begin(); it != soldierList.end(); it++) {
+        for (SoldierList::iterator it = trapable.begin(); it != trapable.end(); it++) {
           if (it->toString() == pieceStr){
             found = true;
             break;

@@ -1,4 +1,6 @@
-01.ari mg5 4 Hb3 3   
+01.ari Hb3 3 mg5 4 
 02.ari Mb6 2 
 03.ari Rc6 4 Dd6 4 
-03.ari Hc4 3 dg6 4 
+04.ari Hc4 3 dg6 4 
+05.ari Db6 3 hc5 4 rc7 4
+06.ari De6 4 cc7 4 cf4 4 cf7 4

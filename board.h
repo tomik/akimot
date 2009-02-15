@@ -694,11 +694,11 @@ class Board
      * @param moves - List of moves performing trap kill.
      * @return True if any trap kill possible, false otherwise.
      */
-    bool trapCheck( player_t player, coord_t trap, int limit, MoveList* moves) const;
+    bool trapCheck( player_t player, coord_t trap, int limit, MoveList* moves, SoldierList* soldiers) const;
 
-    bool trapCheck(player_t player, MoveList* moves) const;
+    bool trapCheck(player_t player, MoveList* moves=NULL, SoldierList* soldiers=NULL) const;
 
-    bool trapCheck( coord_t pos, piece_t piece, player_t player, 
+    bool trapCheck(coord_t pos, piece_t piece, player_t player, 
                    coord_t trap, int limit, int used, Move* move) const;
 
     /**
