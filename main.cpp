@@ -14,9 +14,10 @@ int main(int argc, char *argv[])
   options.parse(argc, (const char **) (argv));
   //options.printAll();
  
-  //cfg.loadFromFile(string(DEFAULT_CFG));
   if (options.fnCfg() != ""){
     cfg.loadFromFile(options.fnCfg());
+  }else{
+    cfg.loadFromFile(string(DEFAULT_CFG));
   }
 
   if (! cfg.checkConfiguration()){

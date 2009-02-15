@@ -214,14 +214,33 @@ bool parsePieceChar(char pieceChar, player_t& player, piece_t& piece);
  */
 string coordToStr(coord_t at); 
 
-/**
- * Prints piece at position. 
- */
-string pieceToStr(player_t player, piece_t piece, coord_t at); 
-
 class Board;
 class Eval;
 
+/**
+ * Piece on board is a soldier. 
+ */
+class Soldier
+{
+  public: 
+    Soldier(player_t player, piece_t piece, coord_t coord);
+
+    string toString();
+
+    piece_t  piece() { return piece_; }
+    player_t player() { return player_; }
+    coord_t  coord() { return coord_; }
+
+  private: 
+    Soldier(){};
+
+    player_t player_;
+    piece_t piece_;
+    coord_t coord_;
+};
+
+typedef list<Soldier> SoldierList;
+typedef SoldierList::iterator SoldierListIter;
 
 /**
  * Information about a kill in the trap. 

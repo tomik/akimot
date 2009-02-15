@@ -67,12 +67,25 @@ string coordToStr(coord_t coord)
 
 //--------------------------------------------------------------------- 
 
-string pieceToStr(player_t player, piece_t piece, coord_t at)
+
+//---------------------------------------------------------------------
+//  section Soldier
+//---------------------------------------------------------------------
+
+
+Soldier::Soldier(player_t player, piece_t piece, coord_t coord)
+: player_(player), piece_(piece), coord_(coord)
+{
+}
+
+//--------------------------------------------------------------------- 
+
+string Soldier::toString()
 {
   stringstream ss;
   string pieceRefStr(" RCDHMErcdhme");
 
-  ss << pieceRefStr[piece + 6 * player] << coordToStr(at);
+  ss << pieceRefStr[piece_ + 6 * player_] << coordToStr(coord_);
   return ss.str();
 }
 
@@ -1058,25 +1071,25 @@ bool Board::trapCheck(player_t player, coord_t trap, int limit, MoveList* moves)
 {
   assert(bits::isTrap(trap));
 
-  //u64 guards = bits::neighborsOne(trap) & bitboard_[player][0];
-  //int guardsNum = bits::neighborsOneNum(trap, guards);
   u64 victims = bitboard_[player][0] & 
-                bits::sphere(trap, limit/2); //- (guardsNum));
+                bits::sphere(trap, limit/2); 
   Move move;
   int vpos;
   bool found = false;
   while ( (vpos = bits::lix(victims)) != -1){
-    /*cerr << "trapCheck " << 
-     pieceToStr(player, getPiece(vpos, player), vpos) << 
+    /*
+    cerr << "trapCheck " << 
+     Soldier(player, getPiece(vpos, player), vpos).toString() << 
     " -> " << coordToStr(trap);    
-    cerr << " trap " << SQUARE_DISTANCE(vpos, trap) << "far away" << endl;
     cerr << "=================" << endl;
-  */
+    */
 
     if(trapCheck(vpos, getPiece(vpos, player), player, trap, limit, 0, &move)){
       found = true;
       cerr << "FOUND KILL : " << endl << moveToStringWithKills(move) << endl;
-      moves->push_back(move);
+      if (moves){
+        moves->push_back(move);
+      }
     }
   }
   
@@ -1121,7 +1134,7 @@ bool Board::trapCheck( coord_t vpos, piece_t piece, player_t player,
   /*cerr << "--------------------- " << endl;
   cerr.width(2 * used);
   cerr << "+" << "checking " 
-      << pieceToStr(player, getPiece(vpos, player), vpos) << " -> " 
+      << Soldier(player, getPiece(vpos, player), vpos).toString() << " -> " 
       << coordToStr(trap) << " guadsnum " << guardsNum << " reserve " << reserve << endl;
   */
   if (reserve < 0){

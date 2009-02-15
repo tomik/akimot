@@ -10,7 +10,7 @@ LOG_FILE = "log"
 
 MODES=['standalone', 'finish_only', 'master', 'slave', 'test']
 
-def setup_all(opt):
+def setup(opt):
     try:
         os.mkdir(opt.game_dir)
     except: 
@@ -101,29 +101,29 @@ if __name__ == "__main__":
     options.timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     options.setup_msg = "%s x %s \n%s matches\n%s" % (bots[0], bots[1], options.games_num, options.comment)
 
-    setup_all(options)
     if options.mode == 'standalone': 
-        #setup(bots, options)
+        setup(options)
         run(bots, options)
         finish(options)
     elif options.mode == 'slave': 
+        setup(options)
         run(bots, options)
     elif options.mode == 'finish_only': 
         finish(options)
     elif options.mode == 'master': 
         from psshlib import work, MS_CREW
         JOB = 'cd $MATCH;python %s %s %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], bots[0], bots[1], options.game_dir) 
-        jobs = [JOB % i for i in xrange(options.start_from, options.start_from + options.games_num )] 
-        work(MS_CREW, 3, jobs);
-        job = 'cd $MATCH;python %s %s %s --mode finish_only --game_dir %s -n %d' % (sys.argv[0], bots[0], bots[1], options.game_dir, options.games_num) 
+        jobs = [JOB % i for i in xrange(options.start_from, options.start_from + options.games_num)] 
+        work(MS_CREW, 20, jobs);
+        job = 'cd $MATCH;python %s %s %s --mode finish_only --game_dir %s --games_num %d --comment "%s"' \
+                % (sys.argv[0], bots[0], bots[1], options.game_dir, options.games_num, options.comment)
         work(MS_CREW, 1, [job]);
     elif options.mode == 'test': 
         from psshlib import work, MS_CREW
         print "MS WORK TEST"
 
         jobs = []
-        for i in xrange(2):
-            jobs.append('cd $MATCH; touch x' )
-        work(MS_CREW, 5, jobs);
-
+        for i in xrange(10):
+            jobs.append('echo "%d"' % i)
+        work(MS_CREW, 3, jobs);
         

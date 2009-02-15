@@ -108,7 +108,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
   //items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));
-  vals_ = NULL;
+  vals_ = NULL; 
 }
 
 //--------------------------------------------------------------------- 

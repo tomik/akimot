@@ -11,6 +11,8 @@
 #define INIT_TEST_LIST "./data/init/list.txt"
 #define RABBITS_TEST_DIR "./data/rabbits/"
 #define RABBITS_TEST_LIST "./data/rabbits/list.txt"
+#define TRAPCHECK_TEST_DIR "./data/trapcheck/"
+#define TRAPCHECK_TEST_LIST "./data/trapcheck/list.txt"
 #define STEP_KILL_PRINT_TEST_LIST "./data/step_kill_print/list.txt"
 #define STEP_KILL_PRINT_TEST_DIR "./data/step_kill_print/"
 #define HASH_TABLE_INSERTS 100
@@ -28,7 +30,10 @@ class DebugTestSuite : public CxxTest::TestSuite
 {
   public:
 
-    void setUp() { randomStructuresInit();}
+    void setUp() { 
+      cfg.loadFromFile(string(DEFAULT_CFG));
+      randomStructuresInit();
+    }
 
     /*
      * Tests consistency of normal board with bitboard.
@@ -49,9 +54,8 @@ class DebugTestSuite : public CxxTest::TestSuite
         for (int k = 0; k < 100; k++){
           Board * bb = new Board();
           OB_Board * b = new OB_Board(); 
-          assert(b->getSignature() == bb->getSignature());
-          assert(b->initFromPosition(START_POS));
           assert(bb->initFromPosition(START_POS));
+          assert(b->initFromPosition(START_POS));
           assert(b->getSignature() == bb->getSignature());
 
           do { 
@@ -321,6 +325,7 @@ class DebugTestSuite : public CxxTest::TestSuite
 
   void testThirdRepetition(void)
   {
+      //tree with random player in the root
     Board* board = new Board();
     board->initNewGame();
     thirdRep.update(board->getSignature(), 1 - board->getPlayerToMove());
@@ -347,17 +352,50 @@ class DebugTestSuite : public CxxTest::TestSuite
       string fn = string(RABBITS_TEST_DIR) + s1;
       Board* b = new Board();
       b->initFromPosition(fn.c_str());
-      //cerr<< b->toString();
-      //BBoard* bb = new BBoard(*b);
-      //cerr << bb->toString();
       Move move;
-      //assert(quick_expected == b->quickGoalCheck(GOLD, STEPS_IN_MOVE, &move));
       assert(full_expected == b->goalCheck(b->getPlayerToMove(), STEPS_IN_MOVE));
-      //delete bb;
       delete b;
           
     }
 
   }
+
+  /**
+   * Trap checking.
+   */
+  void xtestTrapCheck(void)
+  {
+    string s1, s2, s3, s;
+
+    FileRead* f = new FileRead(string(TRAPCHECK_TEST_LIST));
+    f->ignoreLines("#");
+    while (f->getLine(s)){
+      stringstream ss(s);
+      ss >> s1; 
+      string fn = string(TRAPCHECK_TEST_DIR) + s1;
+      Board* b = new Board();
+      b->initFromPosition(fn.c_str());
+      //cerr<< b->toString();
+      SoldierList soldierList;
+      Move move;
+      while (ss.good()) { 
+        string pieceStr;
+        int steps_num;
+        ss >> pieceStr;    
+        ss >> steps_num;
+        bool found = false;
+        for (SoldierList::iterator it = soldierList.begin(); it != soldierList.end(); it++) {
+          if (it->toString() == pieceStr){
+            found = true;
+            break;
+          }
+        }
+        assert(found);
+      }
+      delete b;
+    }
+
+  }
+
 };
 

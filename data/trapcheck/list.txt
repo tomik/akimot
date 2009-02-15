@@ -1,0 +1,4 @@
+01.ari mg5 4 Hb3 3   
+02.ari Mb6 2 
+03.ari Rc6 4 Dd6 4 
+03.ari Hc4 3 dg6 4 

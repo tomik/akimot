@@ -30,10 +30,6 @@ SimplePlayout::SimplePlayout(Board* board, uint maxPlayoutLength, uint evalAfter
 playoutStatus_e SimplePlayout::doPlayout()
 {
   uint moves = 0;
-  /*if (options.localMode()){
-    cerr << "X                 PLAYOUT START                X " << endl;
-  }
-  */
 
   while (true) {  
 	  //playOne();
@@ -141,9 +137,9 @@ Node::Node(TWstep* twStep, int level, float heur)
   heur_       = heur;
   twStep_     = twStep;
   if (cfg.historyHeuristic()) {
-    value_ = twStep->value;
-    visits_ = twStep->visits < cfg.matureLevel()/2 ? 
-              twStep->visits : cfg.matureLevel() ;
+    value_    = twStep->value;
+    visits_   = twStep->visits < cfg.matureLevel()/2 ? 
+                twStep->visits : cfg.matureLevel() ;
   }
   level_      = level;
 }
@@ -576,9 +572,7 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
   assert(len);
   assert(node);
   int level = len ? calcNodeLevel(node, steps[0]) : 0;
-  if (steps[0].getPlayer() != steps[len-1].getPlayer()){
-    cerr << "problem" << endl;
-  }
+  assert(steps[0].getPlayer() == steps[len-1].getPlayer());
   for (uint i = 0; i < len; i++){
     newChild = new Node(&(twSteps_[steps[i]]), level,  
                           heurs ? (*heurs)[i] : 0);  
@@ -1017,15 +1011,10 @@ void Uct::doPlayout(const Board* board)
   
   tree_->historyReset();     //point tree's actNode to the root 
 
-  //cerr << endl << "Playout : " ;
+  logDDebug("Playout : ");
   do { 
-   /*cerr << "   " << tree_->actNode()->toString();
-    Node* n=tree_->actNode()->getFirstChild();
-    while (n!= NULL){
-      cerr << "           " << n->toString();
-      n = n->getSibling();
-    }
-  */
+   logDDebug(tree_->actNode()->toString().c_str());
+  
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 
@@ -1081,16 +1070,15 @@ void Uct::doPlayout(const Board* board)
         continue;
       }
 
-      //"random" playout TODO ... check
       SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, 
+          //cfg.playoutLen()
+          //TODO CHECK THIS !!!
+          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          cfg.playoutLen() + 1 :
           cfg.playoutLen()
-          //tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
-          //EVAL_AFTER_LENGTH + 3:
-          //EVAL_AFTER_LENGTH 
           );
       playoutStatus = simplePlayout.doPlayout();
-      //playoutStatus = PLAYOUT_EVAL;
-      tree_->updateHistory( decidePlayoutWinner(playBoard));
+      tree_->updateHistory(decidePlayoutWinner(playBoard));
       break;
     }
 
@@ -1099,7 +1087,6 @@ void Uct::doPlayout(const Board* board)
 
     Step step = tree_->actNode()->getStep();
 
-    //cerr << step.toString() << " ";
     //perform the step and try commit
     if (playBoard->makeStepTryCommit(step) )   {
       //commit was successful - check whether winning criteria are reached already

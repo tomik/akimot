@@ -72,6 +72,7 @@ void Values::init(){
 
 }
 
+//--------------------------------------------------------------------- 
 
 void Values::baseMirrorIndexes(int& player, int& index) 
 {
@@ -90,6 +91,8 @@ void Values::baseMirrorIndexes(int& player, int& index)
   index = 8 * r + c;
   
 }
+
+//--------------------------------------------------------------------- 
 
 void Values::mirrorPiecePositions()
 {
@@ -265,8 +268,8 @@ Eval::Eval()
 Eval::Eval(const Board* board) 
 {
   init();
-  base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
- // float e = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  //base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  //float e = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
   
 }
 
@@ -348,15 +351,15 @@ int Eval::evaluate(const Board* b) const
       piece_t piece = b->getPiece(pos, player);
       tot[player] += vals_->pieceValue[piece];
       
-      logDDebug("material bonus %4d for %s", vals_->pieceValue[piece], pieceToStr(player, piece, pos).c_str());
+      logDDebug("material bonus %4d for %s", vals_->pieceValue[piece], Soldier(player, piece, pos).toString().c_str());
 
       tot[player] += vals_->piecePos[gs][player][piece][pos];
-      logDDebug("positional bonus %4d for %s", vals_->piecePos[gs][player][piece][pos], pieceToStr(player, piece, pos).c_str());
+      logDDebug("positional bonus %4d for %s", vals_->piecePos[gs][player][piece][pos], Soldier(player, piece, pos).toString().c_str());
 
     //frozen
       if (! bits::getBit(movable, pos)){
         tot[player] += vals_->pieceValue[piece] * vals_->frozenPenaltyRatio;
-        logDDebug("material penalty %4.2f for %s being frozen", vals_->pieceValue[piece] * vals_->frozenPenaltyRatio, pieceToStr(player, piece, pos).c_str());
+        logDDebug("material penalty %4.2f for %s being frozen", vals_->pieceValue[piece] * vals_->frozenPenaltyRatio, Soldier(player, piece, pos).toString().c_str());
       } 
 
     //hostage situation TODO IMPROVE
@@ -375,7 +378,7 @@ int Eval::evaluate(const Board* b) const
           if (guardsNum[player] < 2 && ! bits::getBit(all, pos)){
             tot[player] += vals_->camelHostagePenalty;
             logDDebug("hostage penalty %4d for %s being hostage", 
-               vals_->camelHostagePenalty, pieceToStr(player, piece, pos).c_str());
+               vals_->camelHostagePenalty, Soldier(player, piece, pos).toString().c_str());
           }
         }
       }
@@ -478,7 +481,7 @@ int Eval::evaluate(const Board* b) const
           tot[player] += vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece];
           logDDebug("full frame penalty %4.2f to %d player for %s framed" , 
                     vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece],
-                    player, pieceToStr(player, framedPiece, trap).c_str()); 
+                    player, Soldier(player, framedPiece, trap).toString().c_str()); 
           //pin penalty
           u64 u = guards[player];
           assert(u);
@@ -489,13 +492,13 @@ int Eval::evaluate(const Board* b) const
           tot[player] += vals_->pinnedPenaltyRatio *  vals_->pieceValue[pinnedPiece];
               logDDebug("full pin penalty %4.2f to %d player for %s pinned" , 
                         vals_->pinnedPenaltyRatio *  vals_->pieceValue[pinnedPiece], 
-                        player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
+                        player, Soldier(player, pinnedPiece, pinnedPos).toString().c_str()); 
           int sd = b->strongerDistance(player, pinnedPiece, pinnedPos);
           if (sd != BIT_EMPTY && sd <= 2) {
             tot[player] += vals_->framePenaltyRatio * vals_->pieceValue[framedPiece];
             logDDebug("extra pin penalty %4.2f to %d player for %s pinned in danger",
                   vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece],
-                  player, pieceToStr(player, pinnedPiece, pinnedPos).c_str()); 
+                  player, Soldier(player, pinnedPiece, pinnedPos).toString().c_str()); 
           }
         }
       }
