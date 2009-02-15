@@ -618,6 +618,32 @@ recordAction_e  Move::parseRecordActionToken(const string& token, player_t& play
 }
 
 //---------------------------------------------------------------------
+//  section ContextMove
+//---------------------------------------------------------------------
+
+ContextMove::ContextMove(Move move, const Bitboard& bitboard):
+  move_(move)
+{
+  StepList steps = move_.getStepList();
+  mask_ = 0ULL;
+  //TODO !!! 
+  for (StepListIter it = steps.begin(); it != steps.end(); it++){
+    assert(it->pieceMoved());
+    mask_ |= BIT_ON(it->from_) | bits::neighborsOne(it->from_);
+    if (it->isPushPull()){
+      mask_ |= BIT_ON(it->oppFrom_) | bits::neighborsOne(it->oppFrom_);
+    }
+  }
+
+  for (int i = 0; i < 2; i++){
+    for (int j = 0; j < PIECE_NUM + 1; j++){
+      context_[i][j] = mask_ & bitboard[i][j];
+    }
+  }
+}
+
+
+//---------------------------------------------------------------------
 //  section Board
 //---------------------------------------------------------------------
 
@@ -1329,9 +1355,10 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
 bool Board::contextMovePlayable(const ContextMove& contextMove) const
 {
   for (int j = 0; j < PIECE_NUM + 1; j++){
-    if ((contextMove.mask_ & (bitboard_[0][j] | bitboard_[1][j]))
-         != contextMove.context_[j]){
-      return false;
+    for (int i = 0; i < 2; i++){
+      if ((contextMove.mask_ & bitboard_[i][j]) != contextMove.context_[i][j]){
+        return false;
+      }
     }
   }
   return true;
@@ -1492,6 +1519,13 @@ player_t Board::gameOver() const
 player_t Board::getPlayerToMove() const
 {
   return toMove_;
+}
+
+//--------------------------------------------------------------------- 
+
+const Bitboard& Board::getBitboard() const
+{
+  return bitboard_;
 }
 
 //--------------------------------------------------------------------- 
@@ -1675,13 +1709,6 @@ u64 Board::weaker(player_t player, piece_t piece) const
     res |= bitboard_[player][i];  
   }
   return res;
-}
-
-//--------------------------------------------------------------------- 
-
-uint Board::getStepCount() 
-{
-  return stepCount_;
 }
 
 //--------------------------------------------------------------------- 
@@ -2148,6 +2175,13 @@ bool Board::isSetupPhase() const
 uint Board::getStepCount() const
 {
   return stepCount_;
+}
+
+//--------------------------------------------------------------------- 
+
+uint Board::getStepCountLeft() const
+{
+  return STEPS_IN_MOVE - stepCount_;
 }
 
 //--------------------------------------------------------------------- 

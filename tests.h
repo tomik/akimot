@@ -383,10 +383,8 @@ class DebugTestSuite : public CxxTest::TestSuite
       SoldierList trapableGold;
       SoldierList trapableSilver;
       SoldierList trapable;
-      for (int i = 0; i < 10000; i++) {
-        b->trapCheck(GOLD, NULL, &trapableGold);
-        b->trapCheck(SILVER, NULL, &trapableSilver);
-      }
+      b->trapCheck(GOLD, NULL, &trapableGold);
+      b->trapCheck(SILVER, NULL, &trapableSilver);
       trapable = trapableGold;
       trapable.splice(trapable.end(), trapableSilver);
       Move move;

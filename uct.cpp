@@ -1018,13 +1018,12 @@ void Uct::doPlayout(const Board* board)
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->isMature()) {
 
-        //goalCheck => value fixation
+        //goalCheck 
         Move move;
-        //if (playBoard->quickGoalCheck(&move)){
         if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
           float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
           //if not complete step - add pass 
-          //small workaround preventing for instance rabbits crouching along the victory line
+          //small workaround preventing rabbits crouching along the victory line
           if (playBoard->canContinue(move)){
             move.appendStep(Step(STEP_PASS, playBoard->getPlayerToMove()));
           }
@@ -1036,9 +1035,19 @@ void Uct::doPlayout(const Board* board)
           tree_->updateHistory(value);
           break;
         }
+        
+        /*
+        //tactics in playouts extension
+        move = Move();
+        if (playBoard->goalCheck(OPP(playBoard->getPlayerToMove()), 
+            STEPS_IN_MOVE, &move)){
+          contextMoves[OPP(playBoard->getPlayerToMove())].push_back(
+              ContextMove(move, playBoard->getBitboard()));
+        }
+        //trapCheck 
+        */
 
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
-
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
         int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
 

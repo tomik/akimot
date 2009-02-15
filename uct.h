@@ -603,6 +603,9 @@ class Uct
     int nodesPruned_;
     /**Total number of playouts.*/
     int playouts_;
+    
+    /*tactics in playouts*/
+    ContextMoveList contextMoves[2];
 
 };
 

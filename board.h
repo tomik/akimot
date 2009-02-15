@@ -340,6 +340,7 @@ class Step
     friend class Board;
     friend class Eval;
     friend class OB_Board;
+    friend class ContextMove;
   
   private: 
     /**
@@ -483,17 +484,23 @@ typedef stack<Board*> Bpool;
 
 extern Bpool bpool;
 extern StepArray stepArray; 
+typedef u64 Bitboard[2][7];
 
 class ContextMove { 
   
   public:  
+    ContextMove(Move move, const Bitboard& bitboard);
     friend class Board;
+
   private: 
-    u64 context_[7];
-    u64 mask_;
+    ContextMove(){};
     Move move_;
+    Bitboard context_;
+    u64 mask_;
 };
     
+typedef list<ContextMove> ContextMoveList;
+typedef ContextMoveList::iterator ContextMoveListIter;
 
 class Board
 {
@@ -661,8 +668,6 @@ class Board
      */
     Step lastStep() const;
 
-	  uint getStepCount();
-
     /**
      * Checks is in the move beginning. 
      */
@@ -732,16 +737,30 @@ class Board
     player_t getPlayerToMove() const;
 
     /**
+     * Bitboard getter.
+     */
+    const Bitboard& getBitboard() const;
+
+    /**
      * Next step's player getter.
      */
     player_t getPlayerToMoveAfterStep(const Step& step) const;
+
+    /**
+     * Step count getter. 
+     */
+	  uint getStepCount() const;
+
+    /**
+     * Steps left. 
+     */
+	  uint getStepCountLeft() const;
+
 
     void *operator new(size_t size);
     void operator delete(void* p);
 
   private: 
-
-
 
     /**
      * Reachability check.
@@ -919,16 +938,11 @@ class Board
     bool stepIsThirdRepetition(const Step& ) const;
 
     /**
-     * Step count getter. 
-     */
-	  uint getStepCount() const;
-
-    /**
      * Pre move signature getter.
      */
     u64 getPreMoveSignature() const;
 
-    u64 bitboard_[2][7];
+    Bitboard bitboard_;
 
     static bool       classInit;
     static ThirdRep*  thirdRep_;
