@@ -134,6 +134,12 @@ class Tagui(QtGui.QMainWindow):
             self.log.active = True
             self.log.clear()
             self.log.segments = self.process_log_lines(open(log_fn).readlines())
+
+            #log might come frmo both players ( 2 akimots playing each other ) ... dirty
+            if 2 * len(self.log.segments) < self.record.count():
+                self.log.index_func = lambda x: x/2
+            else: 
+                self.log.index_func = lambda x: x
     
     def go_back(self):
         row = self.record.currentRow() 
@@ -165,7 +171,7 @@ class Tagui(QtGui.QMainWindow):
         self.record.last_row = row
         #if row > 0:
         try:
-            self.log.setText(self.log.segments[(row)/2])
+            self.log.setText(self.log.segments[self.log.index_func(row)])
         except IndexError: 
             pass
         self.ui.button_back.setEnabled(True)

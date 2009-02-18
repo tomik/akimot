@@ -166,6 +166,8 @@ class Eval
     float evaluateStep(const Board*, const Step& step) const;
 
   private: 
+
+    gameStage_e determineGameStage(const Bitboard& bitboard) const;
     
     static string trapTypeToStr(trapType_e trapType);
 

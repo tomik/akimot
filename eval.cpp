@@ -318,6 +318,14 @@ float Eval::evaluateInPercent(const Board* b) const
 
 //--------------------------------------------------------------------- 
 
+gameStage_e Eval::determineGameStage(const Bitboard & bitboard) const 
+{
+  int piecesNum = bits::bitCount(bitboard[GOLD][0] | bitboard[SILVER][0]);
+  return piecesNum > 28 ? GS_BEGIN : (piecesNum > 20 ? GS_MIDDLE : GS_LATE );
+}
+
+//--------------------------------------------------------------------- 
+
 int Eval::evaluate(const Board* b) const
 {
   float  tot[2] = { 0, 0 };
@@ -333,8 +341,7 @@ int Eval::evaluate(const Board* b) const
   u64 all = (b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0] );
 
   //determine game stage
-  int piecesNum = bits::bitCount(b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0]);
-  gameStage_e gs = piecesNum > 28 ? GS_BEGIN : (piecesNum > 20 ? GS_MIDDLE : GS_LATE );
+  gameStage_e gs = determineGameStage(b->getBitboard());
 
   logDDebug("Game stage is : %d    [0 - begin, 1 - middle, 2 - end]", gs);
 
@@ -375,7 +382,7 @@ int Eval::evaluate(const Board* b) const
           guardsNum[GOLD] = bits::neighborsOneNum(trap, guards[GOLD]);
           guardsNum[SILVER] = bits::neighborsOneNum(trap, guards[SILVER]);
           //little guards && empty trap
-          if (guardsNum[player] < 2 && ! bits::getBit(all, pos)){
+          if (guardsNum[player] < 2 && ! bits::getBit(all, trap)){
             tot[player] += vals_->camelHostagePenalty;
             logDDebug("hostage penalty %4d for %s being hostage", 
                vals_->camelHostagePenalty, Soldier(player, piece, pos).toString().c_str());
@@ -643,9 +650,21 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
   }
 
-  /*
   //rabbit movements 
+  
+  gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
+    switch (gs) { 
+      case GS_BEGIN: eval += -1.5;
+                break;
+      case GS_MIDDLE: eval += -0.5; 
+                break;
+      case GS_LATE: eval += 2; 
+                break;
+    }
+  }
+
+  /*
     //moves in opponent's part of the board are encouraged
     if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
         (toMove_ == SILVER && ROW(step.from_) <= 5)){
