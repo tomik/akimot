@@ -32,8 +32,7 @@ playoutStatus_e SimplePlayout::doPlayout()
   uint moves = 0;
 
   while (true) {  
-	  //playOne();
-    board_->findMCmoveAndMake();
+	  playOne();
 	  playoutLength_++;
     if (hasWinner())
 	    return PLAYOUT_OK;
@@ -59,14 +58,15 @@ bool SimplePlayout::hasWinner(){
 
 void SimplePlayout::playOne()
 {
-   //board_->findMCmoveAndMake();
-	Step step;
+  board_->findMCmoveAndMake();
+	/*Step step;
 
 	do {
 		step = board_->findMCstep();
 	}
 	while (! board_->makeStepTryCommit(step));
 	return;
+  */
 }
 
 //---------------------------------------------------------------------
@@ -74,6 +74,30 @@ void SimplePlayout::playOne()
 uint SimplePlayout::getPlayoutLength()
 {
 	return playoutLength_/2;
+}
+
+//---------------------------------------------------------------------
+// section AdvisorPlayout
+//---------------------------------------------------------------------
+
+AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength, const MoveAdvisor* advisor):
+  SimplePlayout(board, maxPlayoutLength, evalAfterLength), advisor_(advisor)
+{
+  ;
+}
+
+//---------------------------------------------------------------------
+
+void AdvisorPlayout::playOne()
+{
+  Move move;
+  if (advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
+      board_->getStepCountLeft(), &move)){
+    board_->makeMove(move);
+  }  
+  else{
+    board_->findMCmoveAndMake();
+  }
 }
 
 //---------------------------------------------------------------------
@@ -945,6 +969,7 @@ void Uct::init(const Board* board)
   searchExt_ = new SearchExt();
   tree_  = new Tree(board->getPlayerToMove());
   tt_ = new TT();
+  advisor_ = new MoveAdvisor();
 
   bestMoveNode_ = NULL;
   bestMoveRepr_ = "";
@@ -966,6 +991,7 @@ Uct::~Uct()
   delete tree_;
   delete tt_;
   delete searchExt_;
+  delete advisor_;
 }
 
 
@@ -1036,16 +1062,16 @@ void Uct::doPlayout(const Board* board)
           break;
         }
         
-        /*
         //tactics in playouts extension
+       
         move = Move();
-        if (playBoard->goalCheck(OPP(playBoard->getPlayerToMove()), 
-            STEPS_IN_MOVE, &move)){
-          contextMoves[OPP(playBoard->getPlayerToMove())].push_back(
-              ContextMove(move, playBoard->getBitboard()));
+        player_t opp = OPP(playBoard->getPlayerToMove());
+        if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
+          advisor_->addMove(move, playBoard->getBitboard(), 
+                            playBoard->getStepCountLeft()); 
         }
         //trapCheck 
-        */
+        
 
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
@@ -1079,14 +1105,15 @@ void Uct::doPlayout(const Board* board)
         continue;
       }
 
-      SimplePlayout simplePlayout(playBoard, MAX_PLAYOUT_LENGTH, 
+      AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
           //cfg.playoutLen()
           //TODO CHECK THIS !!!
           tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
           cfg.playoutLen() + 1 :
-          cfg.playoutLen()
+          cfg.playoutLen(), 
+          advisor_
           );
-      playoutStatus = simplePlayout.doPlayout();
+      playoutStatus = playoutManager.doPlayout();
       tree_->updateHistory(decidePlayoutWinner(playBoard));
       break;
     }

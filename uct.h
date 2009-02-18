@@ -81,15 +81,33 @@ class SimplePlayout
     /**
     * Wrapper around get winner from board.
     */
-    virtual bool hasWinner();
+    bool hasWinner();
 
     SimplePlayout();
 
-    Board*		board_;
+    Board*		  board_;
     uint        playoutLength_;
     uint        maxPlayoutLength_;
     uint        evalAfterLength_;
 
+};
+
+class AdvisorPlayout : public SimplePlayout
+{
+  public:
+    /**
+     * Constructor with board initialization.
+     */
+		AdvisorPlayout(Board*, uint maxPlayoutLength, uint evalAfterLength, 
+                   const MoveAdvisor* advisor);
+
+    /**
+     * Play one move in simulation with knowledge.
+     */
+    void playOne();
+
+  private: 
+    const MoveAdvisor * advisor_;
 };
 
 /**
@@ -604,9 +622,8 @@ class Uct
     /**Total number of playouts.*/
     int playouts_;
     
-    /*tactics in playouts*/
-    ContextMoveList contextMoves[2];
-
+    /*Move advisor is filled here and used in playouts.*/
+    MoveAdvisor * advisor_;
 };
 
 

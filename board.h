@@ -445,6 +445,11 @@ class Move
     bool isOpening() const;
 
     /**
+     * Player getter.
+     */
+    player_t getPlayer() const;
+
+    /**
      * Representation.
      */
     string toString();
@@ -486,21 +491,48 @@ extern Bpool bpool;
 extern StepArray stepArray; 
 typedef u64 Bitboard[2][7];
 
-class ContextMove { 
-  
+/**
+ * Move with context.
+ *
+ * Context defines segment of board which must be present in a position 
+ * for a move to have a meaning (includes segment present for move to be applicable).
+ */
+class ContextMove 
+{ 
   public:  
-    ContextMove(Move move, const Bitboard& bitboard);
-    friend class Board;
+    ContextMove(Move move, const Bitboard& bitboard, int stepsLeft);
 
+    /**
+     * Checks applicability.
+     */
+    bool applicable(const Bitboard& bitboard, int stepsLeft) const;
+
+    Move getMove() const;
   private: 
     ContextMove(){};
     Move move_;
     Bitboard context_;
     u64 mask_;
+    int stepsLeft_;
 };
-    
+
 typedef list<ContextMove> ContextMoveList;
 typedef ContextMoveList::iterator ContextMoveListIter;
+
+/**
+ * Move advisor.
+ *
+ * Mechanism for propagating good moves to playouts.
+ */
+class MoveAdvisor 
+{
+  public: 
+    bool getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move) const;
+    void addMove(const Move & move, const Bitboard& bitboard, int stepsLeft);
+  private:
+    ContextMoveList contextMoves[2];
+};
+    
 
 class Board
 {
@@ -707,9 +739,14 @@ class Board
                    coord_t trap, int limit, int used, Move* move) const;
 
     /**
+     * Bitboard string representation.
+     */
+		static string bitboardToString(const Bitboard & bitb);
+
+    /**
      * String representation.
      */
-		string toString() const;
+	  string toString() const;
 
     /**
      * Print of move with kills.
@@ -769,11 +806,6 @@ class Board
      */
     int reachability(int from, int to, player_t player, 
                     int limit, int used, Move * move) const;
-
-    /**
-     * Checks context move playability.
-     */
-    bool contextMovePlayable(const ContextMove& contextMove) const;
 
     /**
      * Step generation for one.

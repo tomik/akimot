@@ -561,6 +561,15 @@ bool Move::isOpening() const
 
 //--------------------------------------------------------------------- 
 
+player_t Move::getPlayer() const
+{
+  if (stepList_.empty()) {
+    return NO_PLAYER;
+  }
+  return stepList_.begin()->getPlayer();
+}
+//--------------------------------------------------------------------- 
+
 string Move::toString()
 {
   string s;
@@ -621,8 +630,8 @@ recordAction_e  Move::parseRecordActionToken(const string& token, player_t& play
 //  section ContextMove
 //---------------------------------------------------------------------
 
-ContextMove::ContextMove(Move move, const Bitboard& bitboard):
-  move_(move)
+ContextMove::ContextMove(Move move, const Bitboard& bitboard, int stepsLeft):
+  move_(move), stepsLeft_(stepsLeft)
 {
   StepList steps = move_.getStepList();
   mask_ = 0ULL;
@@ -640,8 +649,59 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
       context_[i][j] = mask_ & bitboard[i][j];
     }
   }
+
+  
+  /*cerr << "=== Context Move ===" << endl 
+    << Board::bitboardToString(bitboard) 
+    << " + " << endl << move.toString() << endl;
+    bits::print(cerr, mask_);
+    cerr <<  " = " << endl 
+    << Board::bitboardToString(context_);
+  */
 }
 
+//--------------------------------------------------------------------- 
+
+bool ContextMove::applicable(const Bitboard& bitboard, int stepsLeft) const
+{
+  for (int j = 0; j < PIECE_NUM + 1; j++){
+    for (int i = 0; i < 2; i++){
+      if ((mask_ & bitboard[i][j]) != context_[i][j]){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
+//--------------------------------------------------------------------- 
+
+Move ContextMove::getMove() const { 
+  return move_;
+}
+
+//---------------------------------------------------------------------
+//  section MoveAdviser
+//---------------------------------------------------------------------
+
+bool MoveAdvisor::getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move) const{
+  for (ContextMoveList::const_iterator it = contextMoves[player].begin(); 
+                           it != contextMoves[player].end(); it++){
+    if (it->applicable(bitboard, stepsLeft)){
+      *move = it->getMove();
+      return true;
+    }
+  }  
+  return false;
+}
+
+//--------------------------------------------------------------------- 
+
+void MoveAdvisor::addMove(const Move & move, const Bitboard& bitboard, int stepsLeft)
+{
+  contextMoves[move.getPlayer()].push_back(ContextMove(move, bitboard, stepsLeft));
+}
 
 //---------------------------------------------------------------------
 //  section Board
@@ -1352,20 +1412,6 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
 
 //--------------------------------------------------------------------- 
 
-bool Board::contextMovePlayable(const ContextMove& contextMove) const
-{
-  for (int j = 0; j < PIECE_NUM + 1; j++){
-    for (int i = 0; i < 2; i++){
-      if ((contextMove.mask_ & bitboard_[i][j]) != contextMove.context_[i][j]){
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-//--------------------------------------------------------------------- 
-
 void Board::genStepsOne(coord_t coord, player_t player, 
                             StepArray& steps, int& stepsNum) const { 
   if (bits::getBit(calcMovable(player), coord)){
@@ -1438,7 +1484,52 @@ void Board::genStepsOneTuned(coord_t from, player_t player, piece_t piece,
                         getPiece(victimFrom, OPP(player)), victimFrom, victimTo);
     }
   } 
+};
+
+string Board::bitboardToString(const Bitboard & bitb)
+{
+  stringstream ss;
+
+  ss << " +-----------------+\n";
+
+  string refStr(".123456rcdhmeRCDHME");
+  for (int i = SIDE_SIZE - 1; i >= 0; i--) {
+    ss << i + 1 <<"| ";
+    for (int j = 0; j <  SIDE_SIZE; j++) {
+      coord_t coord = i * SIDE_SIZE + j;
+      player_t player = NO_PLAYER;
+      piece_t piece = NO_PIECE;
+      for (int k = 0; k <  2; k++) 
+        for (int l = 1; l <  PIECE_NUM + 1; l++) {
+			    if (bits::getBit(bitb[k][l], coord)){
+            player = k;
+            piece = l;
+            break;
+          }
+        }
+      assert(player == NO_PLAYER || 
+                       piece + ((2 - player) * 6) <= int(refStr.length()));
+			if (player == NO_PLAYER ){
+			  if (bits::getBit(TRAPS, coord)){
+				  ss << "X ";
+        }
+        else{
+				  ss << ". ";
+        }
+      }
+			else{
+				ss << refStr[piece + ((2 - player) * 6)] << " ";
+      }
+    }
+    ss << "| " << endl;
+  }
+
+  ss << " +-----------------+" << endl;
+  ss << "   a b c d e f g h" << endl;
+
+  return ss.str();
 }
+  
 
 //--------------------------------------------------------------------- 
 
@@ -1460,35 +1551,7 @@ string Board::toString() const
 
   assert(toMove_ == GOLD || toMove_ == SILVER );
 
-  ss << " +-----------------+\n";
-    
-  coord_t coord;
-  string refStr(".123456rcdhmeRCDHME");
-  for (int i = SIDE_SIZE - 1; i >= 0; i--) {
-    ss << i + 1 <<"| ";
-    for (int j = 0; j <  SIDE_SIZE; j++) {
-      coord = i * SIDE_SIZE + j;
-      assert(getPlayer(coord) == NO_PLAYER || 
-             getPiece(coord,getPlayer(coord)) + ((2 - getPlayer(coord)) * 6) 
-             <= int(refStr.length()));
-			if (getPlayer(coord) == NO_PLAYER ){
-			  if (bits::getBit(TRAPS, coord)){
-				  ss << "X ";
-        }
-        else{
-				  ss << ". ";
-        }
-      }
-			else{
-				ss << refStr[getPiece(coord, getPlayer(coord)) + 
-                              ((2 - getPlayer(coord)) * 6)] << " ";
-      }
-    }
-    ss << "| " << endl;
-  }
-
-  ss << " +-----------------+" << endl;
-  ss << "   a b c d e f g h" << endl;
+  ss << bitboardToString(bitboard_);
 
 	return ss.str();
 } 
