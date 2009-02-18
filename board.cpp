@@ -1792,7 +1792,7 @@ void Board::initNewGame()
 
 //--------------------------------------------------------------------- 
 
-bool Board::initFromRecord(const char* fn)
+bool Board::initFromRecord(const char* fn, bool init_repetitions)
 {
 
   init();
@@ -1815,6 +1815,9 @@ bool Board::initFromRecord(const char* fn)
     moveCount = str2int(token.substr(0, token.length() - 1));
     assert(moveCount == moveCount_);
     makeMove(getStreamRest(ss));
+    if (init_repetitions) {
+      thirdRep_->update( signature_, toMove_);
+    }
   }
 
   return true;
@@ -2175,13 +2178,22 @@ int Board::filterRepetitions(StepArray& steps, int stepsNum) const
   int i = 0;
   while (i < stepsNum) 
     if (stepIsVirtualPass(steps[i]))
-      steps[i] = steps[stepsNum-- - 1];
+      steps[i] = steps[--stepsNum];
     else
       i++;  
 
   //check third time repetitions
   //this can be checked only for steps that finish the move
   //these are : pass, step_single for stepCount == 3, push/pull for stepCount == 2 
+  
+  i = 0;
+  while (i < stepsNum){
+    if (steps[i].stepType_ == STEP_PASS && stepIsThirdRepetition(steps[i])){
+      steps[i] = steps[--stepsNum];
+      break;
+    }
+    i++;
+  }
 
   if ( stepCount_ < 2 ) 
     return stepsNum;
@@ -2190,7 +2202,7 @@ int Board::filterRepetitions(StepArray& steps, int stepsNum) const
   while (i < stepsNum)
     if ((stepCount_ == 3 || steps[i].isPushPull()) &&  
          stepIsThirdRepetition(steps[i])){
-      steps[i] = steps[stepsNum-- - 1];
+      steps[i] = steps[--stepsNum];
     } 
     else {
       i++;  

@@ -552,7 +552,7 @@ class Board
     * @return true if initialization went right 
     * otherwise false
     */
-    bool  initFromRecord(const char* fn); 
+    bool  initFromRecord(const char* fn, bool init_repetitions=false); 
 
     /**
     * Inits board from a position in file.

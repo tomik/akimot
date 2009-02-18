@@ -9,6 +9,13 @@
 int main(int argc, char *argv[]) 
 {
 
+  /*stringstream ss;
+  for (int i = 0; i < argc; i++){
+    ss << argv[i] << " ";
+  }
+  cerr << "ARGUMENTS : " << ss.str();
+  */
+
   randomStructuresInit();
 
   options.parse(argc, (const char **) (argv));
@@ -28,16 +35,24 @@ int main(int argc, char *argv[])
   //getMove protocol
   if (options.getMoveMode()){
 
+
     Board board;
     Engine* engine = new Engine();
 
+    //last three arguments should be : position game_record gamestate file 
+    if (argc - 2 <= 0) {
+      cerr << "Expected -g positionfile recordfile gamefile\n";
+      return 1;
+    }
 
-    //initSuccess = board.initFromRecord(options.fnInput());
+    string gr = argv[argc - 2];
 
-    if (! board.initFromPosition(options.fnInput().c_str())){
+    //if (! board.initFromPosition(options.fnInput().c_str())){
+    if (! board.initFromRecord(gr.c_str(), true)){
       cout << "Couldn't read position from file.\n";
       return 1;
     } 
+
     cerr << "=====" << endl;
     cerr << board.toString();
     engine->doSearch(&board);
