@@ -638,7 +638,7 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard, int stepsLeft):
   //TODO !!! 
   for (StepListIter it = steps.begin(); it != steps.end(); it++){
     assert(it->pieceMoved());
-    mask_ |= BIT_ON(it->from_) | bits::neighborsOne(it->from_);
+    mask_ |= BIT_ON(it->from_) | (it->piece_ == ELEPHANT ? 0ULL : bits::neighborsOne(it->from_));
     if (it->isPushPull()){
       mask_ |= BIT_ON(it->oppFrom_) | bits::neighborsOne(it->oppFrom_);
     }

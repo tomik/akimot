@@ -91,9 +91,14 @@ AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAft
 void AdvisorPlayout::playOne()
 {
   Move move;
-  if (advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
+  if (cfg.moveAdvisor() && advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
       board_->getStepCountLeft(), &move)){
+    //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
+    //cerr << board_->toString();
+    //cerr << board_->moveToStringWithKills(move) << endl;
     board_->makeMove(move);
+    //cerr << board_->toString();
+    //cerr << "+"; 
   }  
   else{
     board_->findMCmoveAndMake();
@@ -1064,13 +1069,23 @@ void Uct::doPlayout(const Board* board)
         
         //tactics in playouts extension
        
-        move = Move();
-        player_t opp = OPP(playBoard->getPlayerToMove());
-        if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
-          advisor_->addMove(move, playBoard->getBitboard(), 
-                            playBoard->getStepCountLeft()); 
+        if (cfg.moveAdvisor()){
+          move = Move();
+          player_t opp = OPP(playBoard->getPlayerToMove());
+          if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
+            advisor_->addMove(move, playBoard->getBitboard(), 
+                              playBoard->getStepCountLeft()); 
+          }
+          //trapCheck 
+          MoveList moves;
+          if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
+            for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
+              advisor_->addMove((*it), playBoard->getBitboard(), playBoard->getStepCountLeft()); 
+              //cerr << playBoard->toString();
+              //cerr << playBoard->moveToStringWithKills(*it) << endl;
+            }
+          }
         }
-        //trapCheck 
         
 
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);

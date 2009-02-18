@@ -81,6 +81,7 @@ class Cfg
     inline float tcMoveDefault() { return tcMoveDefault_; }
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
+    inline bool moveAdvisor() { return moveAdvisor_; }
     inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
     inline int searchThreadsNum() { return searchThreadsNum_; }
     inline string evalCfg() { return evalCfg_; }
@@ -116,6 +117,8 @@ class Cfg
     bool exactPlayoutValue_;
     /**Use knowledge in playout.*/
     bool knowledgeInPlayout_;
+    /**Use move advisour in uct/playouts.*/ 
+    bool  moveAdvisor_;
     /**How many steps go to step tournament in playout (must be > 0).*/
     uint knowledgeTournamentSize_;
     /**Number of threads for search.*/
