@@ -58,15 +58,18 @@ bool SimplePlayout::hasWinner(){
 
 void SimplePlayout::playOne()
 {
-  board_->findMCmoveAndMake();
-	/*Step step;
+  /*if (cfg.knowledgeTournamentSize() > 0) {
+    Step step;
 
-	do {
-		step = board_->findMCstep();
-	}
-	while (! board_->makeStepTryCommit(step));
-	return;
+    do {
+      step = board_->findMCstep();
+    }
+    while (! board_->makeStepTryCommit(step));
+    return;
+  } else { 
   */
+    board_->findMCmoveAndMake();
+  //}
 }
 
 //---------------------------------------------------------------------
@@ -101,7 +104,8 @@ void AdvisorPlayout::playOne()
     //cerr << "+"; 
   }  
   else{
-    board_->findMCmoveAndMake();
+    SimplePlayout::playOne();
+    //board_->findMCmoveAndMake();
   }
 }
 
@@ -1246,7 +1250,7 @@ double Uct::decidePlayoutWinner(const Board* playBoard) const
   if (cfg.exactPlayoutValue()){
     return 2 * (evalGold - 0.5);
   }
-  double r = (double)rand()/((double)(RAND_MAX) + (double)(1));
+  double r = (double)grand()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
     return 1;
   else

@@ -715,13 +715,13 @@ Step OB_Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       const Step& step = steps[i];
       eval = evaluateStep(step); 
       //cerr << i << "/" << stepsNum << "/" << endl;
-      cerr << step.toString() << " " << eval << " | ";
+      //cerr << step.toString() << " " << eval << " | ";
       if (eval > bestEval){
         bestEval = eval;
         bestIndex = i;
       }
     }
-    cerr << steps[bestIndex].toString() << endl;
+    //cerr << steps[bestIndex].toString() << endl;
   }
   else {
 

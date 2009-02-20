@@ -109,17 +109,33 @@ class FileRead
     string ignoreStart_;
 };
 
+
+/**
+ * (game) random generator.
+ */
+class Grand
+{
+  public:
+    Grand();
+    void seed(unsigned int seed);
+    unsigned int operator()();
+  private:
+    unsigned int high_;
+    unsigned int low_;
+};
+
+extern Grand grand;
 extern int smallPrimes[];
 extern const int smallPrimesNum; 
 
 inline int smallRandomPrime()
 {
-  return smallPrimes[rand() % smallPrimesNum];
+  return smallPrimes[grand() % smallPrimesNum];
 }
 
 inline float random01()
 {
-  return (double)rand()/((double)(RAND_MAX) + (double)(1));
+  return (double)grand()/((double)(RAND_MAX) + (double)(1));
 }
 
 /**

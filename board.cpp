@@ -34,7 +34,9 @@ bool Board::classInit = false;
 
 void randomStructuresInit()
 {
-  srand((unsigned) time(NULL));
+
+  grand.seed((unsigned) time(NULL));
+  //srand((unsigned) time(NULL));
   bits::initZobrist();
 }
 
@@ -988,7 +990,7 @@ Step Board::findMCstep()
   }
 
   assert(len > 0);
-  int index = rand() % len;
+  int index = grand() % len;
   assert( index >= 0 && index < len );
 
   return( stepArray[index]); 
@@ -1954,7 +1956,7 @@ void Board::findMCmoveAndMake()
   #define RADIUS 4
   u64 area = 0ULL;
   for (int i = 0; i < 2; i++){
-    int start = rand() % BIT_LEN; 
+    int start = grand() % BIT_LEN; 
     area |= bits::sphere(start, RADIUS);
   }
   //bits::print(cerr, area);
@@ -1984,7 +1986,7 @@ void Board::findMCmoveAndMake()
       step = chooseStepWithKnowledge(stepArray, len);
     }
     else{
-      step = stepArray[rand() % len];
+      step = stepArray[grand() % len];
     }
     if (! step.isPass()){
       p.remove(step.from_);
@@ -2334,7 +2336,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
   else {
 
     for (uint i = 0; i < (stepsNum/2 > cfg.knowledgeTournamentSize() ? cfg.knowledgeTournamentSize() : stepsNum/2); i++){
-      uint r = rand() % stepsNum;
+      uint r = grand() % stepsNum;
       const Step& step = steps[r];
       eval = eval_->evaluateStep(this, step); 
       if (eval > bestEval){

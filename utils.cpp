@@ -1,8 +1,12 @@
 #include "utils.h"
 
+#define INITIAL_SEED 0x38F271A
+#define PAIR_SEED 0x49616E42
+
 string logLevelStr[10] = { "debug", "warning", "error", "info", "", "ddebug" };
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
+Grand grand;
 int smallPrimes[] = {17, 23, 29, 31, 37, 41, 43, 47, 53, 59};
 const int smallPrimesNum = 10; 
 
@@ -109,6 +113,28 @@ void FileRead::ignoreLines(const char* ignoreStart)
 bool FileRead::good() const
 {
   return f_.good();
+}
+
+//--------------------------------------------------------------------- 
+
+Grand::Grand() {
+  seed(INITIAL_SEED);
+}
+
+//--------------------------------------------------------------------- 
+
+void Grand::seed(unsigned int seed) {
+  high_ = seed;
+  low_ = high_ ^ PAIR_SEED;
+}
+
+//--------------------------------------------------------------------- 
+
+unsigned int Grand::operator()() {
+  high_ = (high_ << 16) + (high_ >> 16);
+  high_ += low_;
+  low_ += high_;
+  return high_;
 }
 
 //--------------------------------------------------------------------- 
