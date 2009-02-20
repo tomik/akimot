@@ -138,6 +138,10 @@ inline float random01()
   return (double)grand()/((double)(RAND_MAX) + (double)(1));
 }
 
+int max(int a, int b);
+
+int min(int a, int b);
+
 /**
  * String to int converter.
  */

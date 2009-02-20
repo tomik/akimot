@@ -114,6 +114,8 @@ class Values
 
     int camelHostagePenalty;
 
+    int elephantBlockadePenalty;
+
     //ratio substracted from piece value if supports framed piece (not mobile)
     float pinnedPenaltyRatio;  
 
@@ -168,6 +170,8 @@ class Eval
   private: 
 
     gameStage_e determineGameStage(const Bitboard& bitboard) const;
+    
+    bool blocked(player_t player, piece_t piece, coord_t coord, const Board* b) const;
     
     static string trapTypeToStr(trapType_e trapType);
 

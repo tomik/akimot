@@ -94,18 +94,19 @@ Cfg::Cfg()
 {
   items_.push_back(CfgItem("local_playout", IT_BOOL, (void*)&localPlayout_,"1"));
   items_.push_back(CfgItem("use_best_eval", IT_BOOL, (void*)&useBestEval_,"1"));
-  items_.push_back(CfgItem("extensions_in_eval", IT_BOOL, (void*)&extensionsInEval_,"1"));
+  items_.push_back(CfgItem("extensions_in_eval", IT_BOOL, (void*)&extensionsInEval_,"0"));
   items_.push_back(CfgItem("uct_transposition_tables", IT_BOOL, (void*)&uct_tt_,"1"));
   items_.push_back(CfgItem("fpu", IT_FLOAT, (void*)&fpu_,"1.1"));
-  items_.push_back(CfgItem("knowledge_in_tree", IT_BOOL, (void*)&knowledgeInTree_,"1"));
-  items_.push_back(CfgItem("history_heuristic", IT_BOOL, (void*)&historyHeuristic_,"1"));
+  items_.push_back(CfgItem("knowledge_in_tree", IT_BOOL, (void*)&knowledgeInTree_,"0"));
+  items_.push_back(CfgItem("uct_relative_update", IT_BOOL, (void*)&uctRelativeUpdate_,"1"));
+  items_.push_back(CfgItem("history_heuristic", IT_BOOL, (void*)&historyHeuristic_,"0"));
   items_.push_back(CfgItem("explore_rate", IT_FLOAT, (void*)&exploreRate_,"0.2"));
   items_.push_back(CfgItem("playout_len", IT_INT, (void*)&playoutLen_,"3"));
-  items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_,"20"));
+  items_.push_back(CfgItem("mature_level", IT_INT, (void*)&matureLevel_,"15"));
   items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_,"1"));
-  items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"0"));
+  items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"1"));
   items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
-  items_.push_back(CfgItem("move_advisor", IT_BOOL, (void*)&moveAdvisor_,"1"));
+  items_.push_back(CfgItem("move_advisor", IT_BOOL, (void*)&moveAdvisor_,"0"));
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
   //items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));

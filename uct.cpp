@@ -164,16 +164,16 @@ Node::Node(TWstep* twStep, int level, float heur)
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
-  bestCached_ = NULL;
   visits_     = 0;
   value_      = 0; 
   heur_       = heur;
   twStep_     = twStep;
-  if (cfg.historyHeuristic()) {
+  /*if (cfg.historyHeuristic()) {
     value_    = twStep->value;
     visits_   = twStep->visits < cfg.matureLevel()/2 ? 
                 twStep->visits : cfg.matureLevel() ;
   }
+  */
   level_      = level;
 }
 
@@ -183,9 +183,6 @@ Node* Node::findUctChild()
 {
   assert(this->firstChild_ != NULL);
   
-  //if (bestCached_)
-  //  return bestCached_;
-
   Node* act = firstChild_;
   Node* best = firstChild_;
   float bestUrgency = INT_MIN;   
@@ -202,9 +199,6 @@ Node* Node::findUctChild()
     }
     act = act->sibling_;
   }
-
-  //store best one - might be invalidated in update 
-  //bestCached_ = best;
 
   return best;
 }
@@ -258,7 +252,7 @@ float Node::ucb(float exploreCoeff) const
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
          + sqrt((exploreCoeff/visits_)) 
          + heur_/visits_ 
-         //+ (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)
+         + (cfg.historyHeuristic() ? (5 * (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
          ;
   
 }
@@ -302,7 +296,6 @@ void Node::removeChild(Node* child)
   assert(visits_ >= 0);
   //wins_ -= toDelete->wins_;
   
-  //bestCached_ = NULL; 
   delete toDelete;
 }
 
@@ -324,14 +317,18 @@ void Node::removeChildrenRec()
 
 void Node::update(float sample)
 {
-  value_ += (sample - value_)/++visits_;         
-  //invalidate cache if neccessary
- /* if ((nodeType_ == NODE_MAX && sample == -1) || 
-      (nodeType_ == NODE_MIN && sample == 1)) {
-    bestCached_ = NULL;
+  if (cfg.uctRelativeUpdate() && isMature()){
+    //int diff = abs(int((sample - value_)/0.15));
+    //int weight = diff > 0 ? diff : 1; 
+    //+ sqrt((exploreCoeff/visits_)) 
+    //cerr << value_ << "/" << visits_ << "/" << sample << "/" << weight << " ";
+    int diff = abs(int((sample - value_ )* sqrt(visits_)));
+    int weight = min(max(diff, 1), 20);
+    visits_ += weight;
+    value_ += ((sample - value_) * weight)/visits_;         
+  }else{
+    value_ += (sample - value_)/++visits_;         
   }
-  */
-
 }
 
 //--------------------------------------------------------------------- 
@@ -474,7 +471,7 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getLevel() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " -> " 
+  ss << getStep().toString() << "(" << getLevel() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
     << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
     << endl;
   return ss.str();
@@ -1051,7 +1048,7 @@ void Uct::doPlayout(const Board* board)
    logDDebug(tree_->actNode()->toString().c_str());
   
     if (! tree_->actNode()->hasChildren()) { 
-      if (tree_->actNode()->isMature()) {
+      if (tree_->actNode()->isMature() && tree_->getNodeDepth(tree_->actNode()) < UCT_MAX_DEPTH - 1) {
 
         //goalCheck 
         Move move;

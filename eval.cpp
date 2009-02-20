@@ -51,6 +51,7 @@ void Values::init(){
   values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("camel_hostage_penalty", IT_INT, (void*)&camelHostagePenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("elephant_blockade_penalty", IT_INT, (void*)&elephantBlockadePenalty, SINGLE_VALUE));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][ELEPHANT], BIT_LEN));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][ELEPHANT], BIT_LEN));
   values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][ELEPHANT], BIT_LEN));
@@ -326,6 +327,29 @@ gameStage_e Eval::determineGameStage(const Bitboard & bitboard) const
 
 //--------------------------------------------------------------------- 
 
+bool Eval::blocked(player_t player, piece_t piece, coord_t coord, const Board* b) const 
+{
+  
+  u64 nbg  = bits::neighborsOne(coord); 
+  u64 mine = nbg & b->bitboard_[player][0];
+  u64 opps = nbg & b->bitboard_[OPP(player)][0];
+  u64 all  = b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0];
+  //unguarded traps
+  u64 dieTrap = nbg & (TRAPS ^ (TRAPS & bits::neighbors(b->bitboard_[player][0] ^ BIT_ON(coord))));
+  //TODO safe trap ... but blocked anyway ? 
+  if (nbg ^ ((mine | opps | dieTrap) & nbg)) {
+    return false;
+  }
+  u64 mustBlock = bits::neighbors(opps & (b->weaker(OPP(player), piece) ^ dieTrap));
+  if (mustBlock == 0ULL || (mustBlock & all) == mustBlock ){
+    return true;
+  }
+
+  return false;
+}
+
+//--------------------------------------------------------------------- 
+
 int Eval::evaluate(const Board* b) const
 {
   float  tot[2] = { 0, 0 };
@@ -389,6 +413,14 @@ int Eval::evaluate(const Board* b) const
           }
         }
       }
+    
+    //blockade situation
+    if (piece == ELEPHANT && blocked(player, piece, pos, b)) {
+      tot[player] += vals_->elephantBlockadePenalty;
+      logDDebug("elephant blockade penalty %4d for %s being blocked", 
+         vals_->elephantBlockadePenalty, Soldier(player, piece, pos).toString().c_str());
+    }
+    
      
 
     //distance to stronger
@@ -399,11 +431,7 @@ int Eval::evaluate(const Board* b) const
     logDDebug("rabbit penalty %4d for %d rabbits left", vals_->rabbitPenalty[rabbitsNum], rabbitsNum);
     tot[player] += vals_->rabbitPenalty[rabbitsNum];
 
-    //blockade
-
     //influence
-     
-    //hostages
     
     //special shapes: forks
     
@@ -425,7 +453,7 @@ int Eval::evaluate(const Board* b) const
     
     u64 guardsArea = guards[GOLD] | guards[SILVER];
     u64 victimsArea = bits::sphere(trap, 2);
-    u64 influenceArea = bits::sphere(trap, 3);
+    u64 influenceArea = bits::sphere(trap, 4);
 
     player_t guardDom = b->strongestPieceOwner(guardsArea);
     player_t influenceDom = b->strongestPieceOwner(influenceArea & movable);

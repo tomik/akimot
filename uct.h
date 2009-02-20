@@ -248,9 +248,6 @@ class Node
     int         visits_;
     TWstep*     twStep_;
 
-    /** Best son cached to be used immediately for UCB descend*/
-    Node*       bestCached_; 
-
     Node*       sibling_;
     Node*       firstChild_;  
     Node*       father_;
