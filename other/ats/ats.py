@@ -53,6 +53,13 @@ class TimeSettings(object):
         self.cycles = int(cycles)
         self.time_per_test = float(time_per_test)
 
+def check_piece_pos(piece_pos, pos):
+    try: 
+        pos.index(piece_pos)
+        return True
+    except ValueError:
+        pass
+
 class Test(object):
     """
         One test.
@@ -82,25 +89,19 @@ class Test(object):
         log.debug("Doing the test %s." % self) 
         while True:
             resp = engine.get_response()
-            if resp.type == "info":
-                log.debug(resp.message)
-                lmsg = resp.message.split(' ')
-                if lmsg[0] == 'winratio':
-                  winratio = float(lmsg[1])
-                  #break
-            elif resp.type == "log":
-                log.debug( "log: %s" % resp.message)
-            elif resp.type == "bestmove":
-                log.debug( "bestmove: %s" % resp.move)
+            if resp.type == "bestmove":
+                log.debug("bestmove: %s" % resp.move)
                 bestmove = resp.move
                 break
+            else:
+                log.debug(resp.message)
 
         if self.test.condition == "score goal":
             if pos.do_move(board.parse_move(bestmove)).is_goal():
                 return True
             return False
 
-        if self.test.condition == "prevent goal":
+        elif self.test.condition == "prevent goal":
             new_pos = pos.do_move(board.parse_move(bestmove))
             if pos.is_goal():
                 return True
@@ -110,14 +111,26 @@ class Test(object):
                     return False
             return True 
 
-        raise Exception("Unknown condition.")
+        elif self.test.condition == "piece_position":
+            new_pos = pos.do_move(board.parse_move(bestmove))
+            after_pp = self.test.after_piece_position
+            wpieces, bpieces = new_pos.to_placing_move()
+            pieces_str = "%s %s" % ( wpieces[2:], bpieces[2:])
+            for case in after_pp.split('|'):
+                for e in case.split(' '):
+                    #check kills
+                    if check_piece_pos(e, bestmove):
+                        continue 
+                    #check position
+                    if check_piece_pos(e, pieces_str):
+                        continue 
+                    break 
+                else:
+                    return True
 
-        #judge by winratio OBSOLETE 
-        #if self.test.condition == "winratio":
-        #    if winratio >= float(self.test.win_ratio):
-        #        return True
-        #    return False
-            
+            return False 
+
+        raise Exception("Unknown condition.")
 
     def __str__(self):
         return "%s" % (self.test.name)
@@ -162,7 +175,7 @@ def filter_test_files(filter, test_files):
         left, right = (int(item.split('-')[0]), int(item.split('-')[-1]))
         l += range(left, right + 1)
     d = dict(zip(l,l))
-    test_files_nums = [ int(re.sub(r'[a-z/]*([0-9])*.*',r'\1',f)) for f in test_files]
+    test_files_nums = [ int(re.sub(r'[a-z/]*([0-9]*).*',r'\1',f)) for f in test_files]
     return [ t for t,n in zip(test_files, test_files_nums) if d.has_key(n)]
 
 if __name__ == '__main__':

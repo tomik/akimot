@@ -1,0 +1,27 @@
+[settings]
+
+comment =
+    Frame cat at c3. 
+
+position =  
+    10w
+     +-----------------+
+    8| r r r       r r |
+    7|     r         h |
+    6|   h X r   X d   |
+    5|   d   c     r   |
+    4|     H   E   m   |
+    3|   c X e C D   H |
+    2|   D   M R R     |
+    1| R R R R     R R |
+     +-----------------+
+       a b c d e f g h
+
+tags = frame
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = cc3 Db3 Mc2 | cc3 Db3 Rc2 Rc1
+
