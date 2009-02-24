@@ -40,17 +40,21 @@ int main(int argc, char *argv[])
     Engine* engine = new Engine();
 
     //last three arguments should be : position game_record gamestate file 
-    if (argc - 2 <= 0) {
-      cerr << "Expected -g positionfile recordfile gamefile\n";
-      return 1;
-    }
 
-    string gr = argv[argc - 2];
-
-    //if (! board.initFromPosition(options.fnInput().c_str())){
-    if (! board.initFromRecord(gr.c_str(), true)){
-      cout << "Couldn't read position from file.\n";
-      return 1;
+      string gr = argv[argc - 2];
+    if (options.fnRecord() != "") { 
+      logDebug("Loading from record %s.\n", options.fnRecord().c_str());
+      if (! board.initFromRecord(options.fnRecord().c_str(), true)){
+        logError("Couldn't read record from file %s.\n", options.fnRecord().c_str());
+        return 1;
+      }
+    } 
+    else if (options.fnPosition() != "" ){ 
+      logDebug("Loading from position %s.\n", options.fnPosition().c_str());
+      if (! board.initFromPosition(options.fnPosition().c_str())){
+        logError("Couldn't read position from file %s.\n", options.fnPosition().c_str());
+        return 1;
+      }
     } 
 
     cerr << "=====" << endl;

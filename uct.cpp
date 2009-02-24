@@ -675,6 +675,8 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
     act = act->findMostExploredChild();
   }
 
+  return act;
+
   //Now we have some good solution - DFS in the 
   //first layer of the tree follows
    

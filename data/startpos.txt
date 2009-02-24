@@ -1,7 +1,7 @@
 2w
  +-----------------+
 8| r r r r r r r r |
-7| h d c m e c d h |
+7| h d c e m c d h |
 6|     X     X     |
 5|                 |
 4|                 |

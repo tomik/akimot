@@ -36,6 +36,7 @@ void randomStructuresInit()
 {
 
   srand((unsigned) time(NULL));
+  //srand(0);
   grand.seed(rand());
   bits::initZobrist();
 }
@@ -354,7 +355,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, coord_t from,
     case SOUTH : s << "s"; break;
 
     default :
-      assert(false);
+      //assert(false);
       break;
   }
   s << " ";
@@ -572,10 +573,10 @@ player_t Move::getPlayer() const
 }
 //--------------------------------------------------------------------- 
 
-string Move::toString()
+string Move::toString() const
 {
   string s;
-  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++){
+  for (StepList::const_iterator it = stepList_.begin(); it != stepList_.end(); it++){
     s = s + (*it).toString();
   }
   return s;
@@ -1544,6 +1545,7 @@ string Board::toString() const
 
   ss << endl;
   ss << "Signature " << signature_ << endl;
+  //ss << "Pre Signature " << preMoveScgnature_ << endl;
   ss << "Move ";
 
   if (toMove_ == GOLD) 
@@ -2129,6 +2131,7 @@ void Board::makeMove(const string& moveRaw)
   if (moveStr == ""){
     return; 
   }
+  //cerr << "move str: " << moveStr << endl;
   makeMove(Move(moveStr));
 }
 
@@ -2139,6 +2142,7 @@ void Board::makeMove(const Move& move)
 {
   StepList stepList;
   stepList  = move.getStepList();
+  //cerr << "making move " << move.toString() << endl;
 
   assert(stepList.size() <= STEPS_IN_MOVE || 
         (move.isOpening() && stepList.size() <= MAX_PIECES));

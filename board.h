@@ -452,7 +452,7 @@ class Move
     /**
      * Representation.
      */
-    string toString();
+    string toString() const;
     
   private:
     /**
