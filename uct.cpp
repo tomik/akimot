@@ -1123,11 +1123,12 @@ void Uct::doPlayout(const Board* board)
       }
 
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
-          //cfg.playoutLen()
+          cfg.playoutLen(),
           //TODO CHECK THIS !!!
-          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          /*tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
           cfg.playoutLen() + 1 :
           cfg.playoutLen(), 
+          */
           advisor_
           );
       playoutStatus = playoutManager.doPlayout();

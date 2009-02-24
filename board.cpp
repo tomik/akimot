@@ -35,8 +35,8 @@ bool Board::classInit = false;
 void randomStructuresInit()
 {
 
-  grand.seed((unsigned) time(NULL));
-  //srand((unsigned) time(NULL));
+  srand((unsigned) time(NULL));
+  grand.seed(rand());
   bits::initZobrist();
 }
 

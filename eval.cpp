@@ -252,13 +252,10 @@ u64 adv[8][2] = {
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
 //#define EVAL_MAX 1900
-//#define EVAL_MIN (-1899)
 
-#define EVAL_MAX 800
-#define EVAL_MIN (-800)
+#define EVAL_MAX 5000
 
 #define EVAL_MAX_DAILEY 2000
-#define EVAL_MIN_DAILEY (-2000)
 
 //--------------------------------------------------------------------- 
 
@@ -272,7 +269,7 @@ Eval::Eval()
 Eval::Eval(const Board* board) 
 {
   init();
-  base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  //base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
   
 }
 
@@ -284,7 +281,6 @@ void Eval::init()
   vals_ = new Values(*cfg.evaluationValues());
   base_eval_ = 0;
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
-  eval_min_ = cfg.useBestEval() ? EVAL_MIN : EVAL_MIN_DAILEY;
 }
 
 //--------------------------------------------------------------------- 
@@ -302,17 +298,14 @@ float Eval::evaluateInPercent(const Board* b) const
   if (cfg.extensionsInEval() && b->goalCheck(b->getPlayerToMove(), 3)) {
     return 1 - b->getPlayerToMove();
   }
-
-  //return random01();
   
   float evaluation;
   float p; 
-  //cerr << vals_->toString();
 
   evaluation = cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
-  evaluation -= base_eval_;
-  p = (evaluation - eval_min_) / float(eval_max_ - eval_min_);
-  p = p < 0 ? 0 : (p > 1 ? 1 : p);
+  //evaluation -= base_eval_;
+  p = log_sig(double(6)/eval_max_, evaluation);
+  logDDebug("%f ~ %f ", evaluation, p);
 
   //evalTT_->insertItem(b->getSignature(), p);
 
@@ -636,8 +629,14 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   }
   */
 
-  if (step.piece_ == ELEPHANT ) {
-    eval += 0.1;
+  switch (step.piece_) { 
+    case ELEPHANT :   eval += 0.3;
+                      break;
+    case CAMEL :   eval += 0.25;
+                      break;
+    case HORSE :   eval += 0.2;
+                      break;
+    default : break;
   }
 
   if (step.isPushPull()){
@@ -654,9 +653,8 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   
   //check self-kill
   if (step.isSingleStep() && b->checkKillForward(step.from_, step.to_)){
-    //allow self-kills to allow rabbits move to the goal
-    //in the opponent's part of the board
-    if (step.piece_ == RABBIT && ! IS_TRAP(step.to_) && 
+    //leave buddy in opponent trap
+    if (! IS_TRAP(step.to_) && 
         ((step.player_ == GOLD && ROW(step.from_) >= 4) ||
         (step.player_ == SILVER && ROW(step.from_) <= 5))){
       eval -= 1;
@@ -676,7 +674,6 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     eval += 0.2;
   }
   
-
   //check opp-kill
   if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
     eval += 5;   
@@ -687,15 +684,14 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -1.5;
+      case GS_BEGIN: eval += -1.2;
                 break;
-      case GS_MIDDLE: eval += -0.5; 
+      case GS_MIDDLE: eval += -0.2; 
                 break;
-      case GS_LATE: eval += 2; 
+      case GS_LATE: eval += 0.2; 
                 break;
     }
   }
-
 
   //locality 
   if (cfg.localPlayout() && 

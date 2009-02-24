@@ -180,8 +180,7 @@ class Eval
     Values * vals_;
 
     /**Base evaluation ... for relative evaluation.*/
-    float base_eval_;
-    float eval_min_;
-    float eval_max_;
+    double base_eval_;
+    double eval_max_;
 
 };

@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <limits.h>
+#include <math.h>
 
 typedef unsigned long long u64;
 
@@ -127,6 +128,17 @@ class Grand
 extern Grand grand;
 extern int smallPrimes[];
 extern const int smallPrimesNum; 
+
+/**
+ * Logistic sigmoid.
+ */
+inline double log_sig(double param, double value)
+{
+  const double E = 2.71828182;
+  double ret = 1/(1 + pow(E, -1 * param * value));
+  assert(ret < 1 && ret > 0);
+  return ret;
+}
 
 inline int smallRandomPrime()
 {
