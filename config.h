@@ -83,6 +83,7 @@ class Cfg
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
     inline bool moveAdvisor() { return moveAdvisor_; }
+    inline bool playoutByMoves() { return playoutByMoves_; }
     inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
     inline int searchThreadsNum() { return searchThreadsNum_; }
     inline string evalCfg() { return evalCfg_; }
@@ -104,6 +105,8 @@ class Cfg
     float fpu_;
     /**Use knowledge in uct tree.*/
     bool knowledgeInTree_;
+    /**In playout go by moves or steps.*/
+    bool playoutByMoves_;
     /**Relative update in playout.*/
     bool uctRelativeUpdate_;
     /**Use tw steps as history heuristic.*/

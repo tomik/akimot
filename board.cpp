@@ -1029,6 +1029,8 @@ void Board::commit()
 
 void Board::makeStep(const Step& step){
 
+    lastStep_ = step;
+
     if (step.stepType_ == STEP_NULL){
       return;
     }
@@ -1942,7 +1944,7 @@ bool Board::initFromPositionCompactString(const string& s)
 
 void Board::findMCmoveAndMake()
 {
-  
+
   if (bitboard_[toMove_][0] == 0){
     //TODO handle case when stepCount_ == 0 and player MUST move ? 
     makeStepTryCommit(Step(STEP_PASS, toMove_));
@@ -2339,6 +2341,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       uint r = grand() % stepsNum;
       const Step& step = steps[r];
       eval = eval_->evaluateStep(this, step); 
+      //cerr << " eval: " << step.toString() << " " << eval;
       if (eval > bestEval){
         bestEval = eval;
         bestIndex = r;

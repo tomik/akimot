@@ -106,6 +106,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_,"1"));
   items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"1"));
   items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
+  items_.push_back(CfgItem("playout_by_moves", IT_BOOL, (void*)&playoutByMoves_,"0"));
   items_.push_back(CfgItem("move_advisor", IT_BOOL, (void*)&moveAdvisor_,"0"));
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));

@@ -16,3 +16,4 @@ other/ats/log
 *log
 a.cfg
 gmon.out
+*.cfg

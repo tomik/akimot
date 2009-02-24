@@ -58,18 +58,18 @@ bool SimplePlayout::hasWinner(){
 
 void SimplePlayout::playOne()
 {
-  /*if (cfg.knowledgeTournamentSize() > 0) {
+  if (cfg.playoutByMoves()) {
+    board_->findMCmoveAndMake();
+  }
+  else{
     Step step;
 
     do {
       step = board_->findMCstep();
+      logDDebug(step.toString().c_str());
     }
     while (! board_->makeStepTryCommit(step));
-    return;
-  } else { 
-  */
-    board_->findMCmoveAndMake();
-  //}
+  }
 }
 
 //---------------------------------------------------------------------
@@ -1043,7 +1043,8 @@ void Uct::doPlayout(const Board* board)
   
   tree_->historyReset();     //point tree's actNode to the root 
 
-  logDDebug("Playout : ");
+  logDDebug(board->toString().c_str());
+  logDDebug("===== Playout :===== ");
   do { 
    logDDebug(tree_->actNode()->toString().c_str());
   

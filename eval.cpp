@@ -251,8 +251,11 @@ u64 adv[8][2] = {
 //penalty for being frozen per piece rabbit 10, cat 20, ...
 //const int frozenPenalty[7] = { 0, 10, 20, 25};
 
-#define EVAL_MAX 1900
-#define EVAL_MIN (-1899)
+//#define EVAL_MAX 1900
+//#define EVAL_MIN (-1899)
+
+#define EVAL_MAX 800
+#define EVAL_MIN (-800)
 
 #define EVAL_MAX_DAILEY 2000
 #define EVAL_MIN_DAILEY (-2000)
@@ -269,8 +272,7 @@ Eval::Eval()
 Eval::Eval(const Board* board) 
 {
   init();
-  //base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
-  //float e = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
+  base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
   
 }
 
@@ -434,9 +436,7 @@ int Eval::evaluate(const Board* b) const
     //influence
     
     //special shapes: forks
-    
   }
-
   //traps 
   u64 traps = TRAPS;   
   coord_t trap = BIT_EMPTY;
@@ -541,6 +541,7 @@ int Eval::evaluate(const Board* b) const
   }
       
   logDDebug("total for gold %d", int(tot[0] - tot[1]));
+  //cerr << int(tot[0] - tot[1]) << " ";
   return int(tot[0] - tot[1]);
 }
 //--------------------------------------------------------------------- 
@@ -647,12 +648,12 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
     //otherwise push/pulls are encouraged
     else{
-      eval += 0.5; 
+      eval += 0.1; 
     }
   } 
   
   //check self-kill
-  if (b->checkKillForward(step.from_, step.to_)){
+  if (step.isSingleStep() && b->checkKillForward(step.from_, step.to_)){
     //allow self-kills to allow rabbits move to the goal
     //in the opponent's part of the board
     if (step.piece_ == RABBIT && ! IS_TRAP(step.to_) && 
@@ -664,18 +665,21 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
       eval -= 5;   
     }
   }
-  else{
 
-  /*  //push opp to trap is good 
-    if (step.isPushPull() && IS_TRAP(step.oppTo_)){
-      eval += 3;
-    }
-  */
+  //step into potentially dangerous trap
+  if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
+    eval -= 0.5;
+  }
 
-    //check opp-kill
-    if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
-      eval += 5;   
-    }
+  //push opp to trap is good 
+  if (step.isPushPull() && IS_TRAP(step.oppTo_)){
+    eval += 0.2;
+  }
+  
+
+  //check opp-kill
+  if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
+    eval += 5;   
   }
 
   //rabbit movements 
@@ -692,48 +696,13 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
   }
 
-  /*
-    //moves in opponent's part of the board are encouraged
-    if ((toMove_ == GOLD && ROW(step.from_) >= 4) ||
-        (toMove_ == SILVER && ROW(step.from_) <= 5)){
-      //empty space ahead is good 
-      bool empty = true;
-      int emptyNum = 0;
-      int row = ROW(step.from_);
-      int toEdge = toMove_ == GOLD ? 
-          TOP_ROW - row : 
-          row - BOTTOM_ROW;
-      while (emptyNum < toEdge){
-        row += toMove_ == GOLD ? +1 : -1 ;
-        if (board_[row * 10 + COL(step.from_)] != EMPTY_SQUARE){
-          empty = false;
-          assert(toEdge > emptyNum);
-          break;
-        }
-        emptyNum++;
-      } 
-      //moving forward
-      if (step.to_ - step.from_ == rabbitForward[toMoveIndex_]) {
-        if (empty){
-          eval += 5;
-        }
-        eval += emptyNum * 1;
-      }
-      //TODO add evaluation for moves left right
-
-    }
-    else { //move in player's part
-      eval += -2;
-    }
-  } //rabbits
 
   //locality 
   if (cfg.localPlayout() && 
-      lastStep_.stepType_ != STEP_NULL){
-    int d = SQUARE_DISTANCE(lastStep_.to_, step.from_);
-    eval += d <= 3 ? (3 - d) * 0.5 : 0;
+      b->lastStep().stepType_ != STEP_NULL){
+    int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
+    eval += d <= 3 ? (3 - d) * 0.1 : 0;
   }
-  */
 
   return eval;
 }
