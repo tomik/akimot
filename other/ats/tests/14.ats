@@ -1,0 +1,25 @@
+[settings]
+
+comment =
+    Rabbit at e4 goal prevention. 
+
+position =  
+  50w
+   +-----------------+
+  8| r r     r       |
+  7|         c r   r |
+  6|   h X   d X     |
+  5|   d     e   h M |
+  4|         r   H r |
+  3|     X     X R   |
+  2| r         R m E |
+  1| R R     R     R |
+   +-----------------+
+    a b c d e f g h
+
+tags = rabbit, goal, prevent
+
+[criteria]
+
+condition = prevent goal 
+

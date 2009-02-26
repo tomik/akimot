@@ -58,18 +58,18 @@ bool SimplePlayout::hasWinner(){
 
 void SimplePlayout::playOne()
 {
-  /*if (cfg.knowledgeTournamentSize() > 0) {
+  if (cfg.playoutByMoves()) {
+    board_->findMCmoveAndMake();
+  }
+  else{
     Step step;
 
     do {
       step = board_->findMCstep();
+      logDDebug(step.toString().c_str());
     }
     while (! board_->makeStepTryCommit(step));
-    return;
-  } else { 
-  */
-    board_->findMCmoveAndMake();
-  //}
+  }
 }
 
 //---------------------------------------------------------------------
@@ -675,6 +675,8 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
     act = act->findMostExploredChild();
   }
 
+  return act;
+
   //Now we have some good solution - DFS in the 
   //first layer of the tree follows
    
@@ -1043,7 +1045,8 @@ void Uct::doPlayout(const Board* board)
   
   tree_->historyReset();     //point tree's actNode to the root 
 
-  logDDebug("Playout : ");
+  logDDebug(board->toString().c_str());
+  logDDebug("===== Playout :===== ");
   do { 
    logDDebug(tree_->actNode()->toString().c_str());
   
@@ -1122,11 +1125,12 @@ void Uct::doPlayout(const Board* board)
       }
 
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
-          //cfg.playoutLen()
+          cfg.playoutLen(),
           //TODO CHECK THIS !!!
-          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          /*tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
           cfg.playoutLen() + 1 :
           cfg.playoutLen(), 
+          */
           advisor_
           );
       playoutStatus = playoutManager.doPlayout();

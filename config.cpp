@@ -106,6 +106,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("tc_move_default", IT_FLOAT, (void*)&tcMoveDefault_,"1"));
   items_.push_back(CfgItem("exact_playout_value", IT_BOOL, (void*)&exactPlayoutValue_,"1"));
   items_.push_back(CfgItem("knowledge_in_playout", IT_BOOL, (void*)&knowledgeInPlayout_,"1"));
+  items_.push_back(CfgItem("playout_by_moves", IT_BOOL, (void*)&playoutByMoves_,"0"));
   items_.push_back(CfgItem("move_advisor", IT_BOOL, (void*)&moveAdvisor_,"0"));
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
@@ -183,7 +184,9 @@ bool Cfg::checkConfiguration()
 
 Options::Options()
 {
-  fnInput_ = OptionString("i","input","input file - in combination with -g", OT_STRING, "");
+  fnPosition_ = OptionString("","Position","Position file - in combination with -g", OT_STRING, "");
+  fnRecord_ = OptionString("","Record","Record file - in combination with -g", OT_STRING, "");
+  fnGameState_ = OptionString("","GameState","GameState file - in combination with -g", OT_STRING, "");
   fnCfg_ = OptionString("c","cfg","Configuration file.", OT_STRING, "");
   fnAeiInit_ = OptionString("a","aeiinit","Aei init file", OT_STRING, "");
   benchmarkMode_ = OptionBool("b","benchmark","runs in benchmarkModeing mode",OT_BOOL_POS, false);
@@ -192,11 +195,16 @@ Options::Options()
 
   options_.clear();
   options_.push_back(&fnAeiInit_);
-  options_.push_back(&fnInput_);
   options_.push_back(&fnCfg_);
   options_.push_back(&benchmarkMode_);
   options_.push_back(&localMode_);
   options_.push_back(&getMoveMode_);
+
+  values_.clear();
+  //order in which options are expected is important
+  values_.push_back(&fnPosition_);
+  values_.push_back(&fnRecord_);
+  values_.push_back(&fnGameState_);
 }
 
 //--------------------------------------------------------------------- 
@@ -254,7 +262,9 @@ bool Options::parseToken(string token, string value) {
 				default : break;
 			}
       if ((value != "") && ((*it)->type_ == OT_BOOL_POS || (*it)->type_ == OT_BOOL_NEG))
-        parseValue(value);
+        if (! parseValue(value)) {
+			    return false;
+        }
 		} // if 
 		if ( consistent ) 
 			return true;
@@ -268,9 +278,12 @@ bool Options::parseToken(string token, string value) {
 
 bool Options::parseValue(string value)
 {
-  //todo ... quite dummy - just sets value for file input - undummyfy 
-  //for instance - mark options without name ( and go through them and parse values to them ) 
-  fnInput_.setValueParsed(value);
+  if (values_.empty()) {
+    logError("Wrong command line configuration ... no value to parse.");  
+    return false;
+  }
+  values_.front()->setValueParsed(value);
+  values_.pop_front();
   return true;
 }
 

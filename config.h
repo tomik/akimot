@@ -83,6 +83,7 @@ class Cfg
     inline bool exactPlayoutValue() { return exactPlayoutValue_; }
     inline bool knowledgeInPlayout() { return knowledgeInPlayout_;}
     inline bool moveAdvisor() { return moveAdvisor_; }
+    inline bool playoutByMoves() { return playoutByMoves_; }
     inline uint knowledgeTournamentSize() { return knowledgeTournamentSize_; }
     inline int searchThreadsNum() { return searchThreadsNum_; }
     inline string evalCfg() { return evalCfg_; }
@@ -104,6 +105,8 @@ class Cfg
     float fpu_;
     /**Use knowledge in uct tree.*/
     bool knowledgeInTree_;
+    /**In playout go by moves or steps.*/
+    bool playoutByMoves_;
     /**Relative update in playout.*/
     bool uctRelativeUpdate_;
     /**Use tw steps as history heuristic.*/
@@ -158,6 +161,7 @@ class OptionFather
     virtual void setValueParsed(bool){};
     virtual void setValueParsed(string){};
     virtual void setValueParsed(int){};
+    bool parsed() { return parsed_;}
     virtual string toString(){ return "";};
 };
 
@@ -198,11 +202,16 @@ class Options
 {
   private:
     OptionList  options_;
+    OptionList  values_;
 
     /**AEI init file - for debugging.*/
     OptionString fnAeiInit_;
     /**Position input file - for getMoveMode_.*/
-    OptionString fnInput_;
+    OptionString fnPosition_;
+    /**Record input file.*/
+    OptionString fnRecord_;
+    /**Game state input file.*/
+    OptionString fnGameState_;
     /**Configuration file.*/
     OptionString fnCfg_;
     OptionBool benchmarkMode_; 
@@ -220,7 +229,9 @@ class Options
     bool localMode() { return localMode_.getValue(); }
     bool getMoveMode() { return getMoveMode_.getValue(); }
     string fnAeiInit() { return fnAeiInit_.getValue(); }
-    string fnInput() { return fnInput_.getValue(); }
+    string fnPosition() { return fnPosition_.getValue(); }
+    string fnRecord() { return fnRecord_.getValue(); }
+    string fnGameState() { return fnGameState_.getValue(); }
     string fnCfg() { return fnCfg_.getValue(); }
 
     void printAll();

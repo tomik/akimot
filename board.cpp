@@ -35,8 +35,9 @@ bool Board::classInit = false;
 void randomStructuresInit()
 {
 
-  grand.seed((unsigned) time(NULL));
-  //srand((unsigned) time(NULL));
+  srand((unsigned) time(NULL));
+  //srand(0);
+  grand.seed(rand());
   bits::initZobrist();
 }
 
@@ -354,7 +355,7 @@ const string Step::oneSteptoString(player_t player, piece_t piece, coord_t from,
     case SOUTH : s << "s"; break;
 
     default :
-      assert(false);
+      //assert(false);
       break;
   }
   s << " ";
@@ -572,10 +573,10 @@ player_t Move::getPlayer() const
 }
 //--------------------------------------------------------------------- 
 
-string Move::toString()
+string Move::toString() const
 {
   string s;
-  for (StepListIter it = stepList_.begin(); it != stepList_.end(); it++){
+  for (StepList::const_iterator it = stepList_.begin(); it != stepList_.end(); it++){
     s = s + (*it).toString();
   }
   return s;
@@ -1028,6 +1029,8 @@ void Board::commit()
 //--------------------------------------------------------------------- 
 
 void Board::makeStep(const Step& step){
+
+    lastStep_ = step;
 
     if (step.stepType_ == STEP_NULL){
       return;
@@ -1542,6 +1545,7 @@ string Board::toString() const
 
   ss << endl;
   ss << "Signature " << signature_ << endl;
+  //ss << "Pre Signature " << preMoveScgnature_ << endl;
   ss << "Move ";
 
   if (toMove_ == GOLD) 
@@ -1942,7 +1946,7 @@ bool Board::initFromPositionCompactString(const string& s)
 
 void Board::findMCmoveAndMake()
 {
-  
+
   if (bitboard_[toMove_][0] == 0){
     //TODO handle case when stepCount_ == 0 and player MUST move ? 
     makeStepTryCommit(Step(STEP_PASS, toMove_));
@@ -2127,6 +2131,7 @@ void Board::makeMove(const string& moveRaw)
   if (moveStr == ""){
     return; 
   }
+  //cerr << "move str: " << moveStr << endl;
   makeMove(Move(moveStr));
 }
 
@@ -2137,6 +2142,7 @@ void Board::makeMove(const Move& move)
 {
   StepList stepList;
   stepList  = move.getStepList();
+  //cerr << "making move " << move.toString() << endl;
 
   assert(stepList.size() <= STEPS_IN_MOVE || 
         (move.isOpening() && stepList.size() <= MAX_PIECES));
@@ -2339,6 +2345,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       uint r = grand() % stepsNum;
       const Step& step = steps[r];
       eval = eval_->evaluateStep(this, step); 
+      //cerr << " eval: " << step.toString() << " " << eval;
       if (eval > bestEval){
         bestEval = eval;
         bestIndex = r;
