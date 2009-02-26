@@ -8,7 +8,6 @@
 #pragma once
 
 #include <list>
-#include <pthread.h>
 
 #include "utils.h"
 #include "config.h"

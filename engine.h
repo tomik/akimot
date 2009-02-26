@@ -13,7 +13,6 @@
 
 using std::vector;
 
-#define MAX_THREADS 64
 
 //how much time engine has for "clock clicking"
 #define CLOCK_CLICK_RESERVE 0.1

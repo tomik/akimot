@@ -13,6 +13,7 @@
 #include <stack>
 #include <list>
 #include <bitset>
+#include <pthread.h>
 
 using std::queue;
 using std::stack;
@@ -487,9 +488,31 @@ typedef list<int> intList;
 
 typedef stack<Board*> Bpool;
 
-extern Bpool bpool;
-extern StepArray stepArray; 
 typedef u64 Bitboard[2][7];
+
+class Glob {
+  public:
+    Glob();
+    void init();
+    inline Bpool* bpool() {return bpool_[tti()];}
+    inline ThirdRep* thirdRep() {return thirdRep_[tti()];}
+  private:
+    /**
+     * Thread to index.
+     */
+    pthread_mutex_t lock;
+    int tti();
+    int add_thread();
+
+    int threadIds_[MAX_THREADS];
+    int threadsNum_ ;
+
+    Bpool * bpool_[MAX_THREADS];
+    ThirdRep * thirdRep_[MAX_THREADS];
+};
+
+extern Glob glob;
+
 
 /**
  * Move with context.
