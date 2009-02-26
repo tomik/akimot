@@ -46,12 +46,17 @@ def run(bots, opt):
         print "running %d/%d score so far: %d x %d" % (i - opt.start_from + 1, opt.games_num, results.count('w'), results.count('b'))
         record = "%s/%s_%d" % (opt.game_dir, RECORD_FILE, i)
         log = "%s/%s_%d" % (opt.game_dir, LOG_FILE, i) 
-        cmdline = "./match %s %s 1>%s 2>%s" % (bots[0], bots[1], record, log)
+        tmp_record = "/tmp/%s_%d.%s" % (RECORD_FILE, i, os.getpid())
+        tmp_log = "/tmp/%s_%d.%s" % (LOG_FILE, i, os.getpid())
+        cmdline = "./match %s %s 1>%s 2>%s" % (bots[0], bots[1], tmp_record, tmp_log)
 
         if os.system(cmdline) == 2:
             print "\nInterrupted ..."
             break
-        results.append(get_result(record))
+        results.append(get_result(tmp_record))
+
+        shutil.move(tmp_record, record)
+        shutil.move(tmp_log, log)
 
 def finish(opt):
     #copy configuration files

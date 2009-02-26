@@ -53,6 +53,14 @@ class TimeSettings(object):
         self.cycles = int(cycles)
         self.time_per_test = float(time_per_test)
 
+def is_kill(piece_pos):
+    try: 
+        pos.index('x')
+        return True
+    except ValueError:
+        pass
+
+
 def check_piece_pos(piece_pos, pos):
     try: 
         pos.index(piece_pos)
@@ -118,10 +126,9 @@ class Test(object):
             pieces_str = "%s %s" % ( wpieces[2:], bpieces[2:])
             for item in after_pp.split('|'):
                 case, sep, reward = item.partition(':') 
-                print case, sep, reward
                 for e in case.split(' '):
                     #check kills
-                    if check_piece_pos(e, bestmove):
+                    if is_kill(e) and check_piece_pos(e, bestmove):
                         continue 
                     #check position
                     if check_piece_pos(e, pieces_str):

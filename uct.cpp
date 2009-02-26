@@ -483,6 +483,7 @@ string Node::recToString(int depth) const
 {
   const float print_visit_threshold_base    = 300;
   const float print_visit_threshold_parent  = 0.05;
+  const int   print_max_brothers            = 3;
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
@@ -504,6 +505,7 @@ string Node::recToString(int depth) const
     actNode = actNode->sibling_;
   }
   
+  int printed = 0;
   while (true){
     for (nodeTab::iterator it = tab.begin(); it != tab.end(); it++){
       if(! best || ((*it)->visits_ > best->visits_)){
@@ -515,6 +517,9 @@ string Node::recToString(int depth) const
         tab.erase(best);
         best = NULL;
     }else{
+      break;
+    }
+    if (++printed >= print_max_brothers) {
       break;
     }
   }
