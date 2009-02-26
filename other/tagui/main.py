@@ -106,7 +106,7 @@ class Tagui(QtGui.QMainWindow):
 
     def process_log_lines(self, lines):
         segments = []
-        current = None
+        current = []
         for line in lines:
             if line.find(LOG_WARNING) != ERROR:
                 continue

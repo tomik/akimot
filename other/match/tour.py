@@ -114,7 +114,7 @@ if __name__ == "__main__":
         from psshlib import work, MS_CREW
         JOB = 'cd $MATCH;python %s %s %s --mode slave --game_dir %s --start_from %%d' % (sys.argv[0], bots[0], bots[1], options.game_dir) 
         jobs = [JOB % i for i in xrange(options.start_from, options.start_from + options.games_num)] 
-        work(MS_CREW, 20, jobs);
+        work(MS_CREW, 25, jobs);
         job = 'cd $MATCH;python %s %s %s --mode finish_only --game_dir %s --games_num %d --comment "%s"' \
                 % (sys.argv[0], bots[0], bots[1], options.game_dir, options.games_num, options.comment)
         work(MS_CREW, 1, [job]);

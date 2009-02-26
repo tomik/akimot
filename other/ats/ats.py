@@ -98,25 +98,27 @@ class Test(object):
 
         if self.test.condition == "score goal":
             if pos.do_move(board.parse_move(bestmove)).is_goal():
-                return True
-            return False
+                return 1
+            return 0
 
         elif self.test.condition == "prevent goal":
             new_pos = pos.do_move(board.parse_move(bestmove))
             if pos.is_goal():
-                return True
+                return 1
             for p, move in new_pos.get_moves().items():
                 if p.is_goal():
                     print "Opponent's goal by:", board.steps_to_str(move)
-                    return False
-            return True 
+                    return 0
+            return 1 
 
         elif self.test.condition == "piece_position":
             new_pos = pos.do_move(board.parse_move(bestmove))
             after_pp = self.test.after_piece_position
             wpieces, bpieces = new_pos.to_placing_move()
             pieces_str = "%s %s" % ( wpieces[2:], bpieces[2:])
-            for case in after_pp.split('|'):
+            for item in after_pp.split('|'):
+                case, sep, reward = item.partition(':') 
+                print case, sep, reward
                 for e in case.split(' '):
                     #check kills
                     if check_piece_pos(e, bestmove):
@@ -126,9 +128,12 @@ class Test(object):
                         continue 
                     break 
                 else:
-                    return True
+                    try: 
+                        return float(reward)
+                    except ValueError:
+                        return 1
 
-            return False 
+            return 0 
 
         raise Exception("Unknown condition.")
 
@@ -152,16 +157,14 @@ class Suite:
             for c in xrange(self.time_settings.cycles):
                 i += 1 
                 log.debug("trial %d", i) 
-                if test.do_test(self.engine):
-                    passed[test] = passed.get(test, 0) + 1 
-                    log.debug("%s passed.", test) 
-                else:
-                    log.debug("%s failed.", test) 
+                res = test.do_test(self.engine)
+                passed[test] = passed.get(test, 0) + res 
+                log.debug("%s %3.2f%%.", test, res * 100) 
                 
         passed_num = sum(passed.values())
         for test in self.tests:
-            print ("%s passed %d/%d times." % (test, passed.get(test,0), self.time_settings.cycles))
-        print("Passed %d/%d tests." % (passed_num, self.time_settings.cycles * len(self.tests)))
+            print ("%s scored %0.2f of %d" % (test, passed.get(test,0), self.time_settings.cycles))
+        print("scored %0.2f of %d" % (passed_num, self.time_settings.cycles * len(self.tests)))
     
     def __del__(self):
         self.engine.quit()

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main_window_with_log.ui'
 #
-# Created: Wed Feb 11 18:04:32 2009
+# Created: Mon Feb 23 13:01:06 2009
 #      by: PyQt4 UI code generator 4.4.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,12 @@ from PyQt4 import QtCore, QtGui
 class Ui_window_main(object):
     def setupUi(self, window_main):
         window_main.setObjectName("window_main")
-        window_main.resize(1173, 863)
+        window_main.resize(664, 456)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(window_main.sizePolicy().hasHeightForWidth())
+        window_main.setSizePolicy(sizePolicy)
         self.centralwidget = QtGui.QWidget(window_main)
         self.centralwidget.setObjectName("centralwidget")
         self.record = QtGui.QListWidget(self.centralwidget)
@@ -28,7 +33,12 @@ class Ui_window_main(object):
         self.button_forward.setObjectName("button_forward")
         self.board = QtGui.QLabel(self.centralwidget)
         self.board.setGeometry(QtCore.QRect(40, 20, 650, 650))
-        self.board.setFrameShape(QtGui.QFrame.Box)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.board.sizePolicy().hasHeightForWidth())
+        self.board.setSizePolicy(sizePolicy)
+        self.board.setFrameShape(QtGui.QFrame.NoFrame)
         self.board.setFrameShadow(QtGui.QFrame.Raised)
         self.board.setLineWidth(1)
         self.board.setObjectName("board")
@@ -60,7 +70,7 @@ class Ui_window_main(object):
         self.label_time_per_move.setObjectName("label_time_per_move")
         window_main.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(window_main)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1173, 27))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 664, 27))
         self.menubar.setObjectName("menubar")
         window_main.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(window_main)

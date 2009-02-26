@@ -24,4 +24,4 @@ tags = frame
 
 condition = piece_position
 
-after_piece_position = rf3 
+after_piece_position = Md3 He3 Dg3 | Md3 he3 : 0.8 | Me3 hd3 : 0.7
