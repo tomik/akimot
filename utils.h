@@ -40,6 +40,7 @@ enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW, LL_DDEBUG };
 
 #define STR_LOAD_FAIL "Fatal error occured while loading position."
 
+#define MAX_THREADS 17
 
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...);
 

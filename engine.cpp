@@ -136,6 +136,8 @@ void Engine::doSearch(const Board* board)
     threadsNum = MAX_THREADS;
   }
 
+  glob.init();
+
   pthread_t threads[MAX_THREADS];
   Uct* ucts[MAX_THREADS];
   pthread_attr_t attr;

@@ -14,8 +14,10 @@
 ThirdRep*  Board::thirdRep_;
 Eval*  Board::eval_;
 
-Bpool bpool;
-StepArray stepArray;
+Glob glob;
+
+int threadsNum = 0;
+int threadIds[MAX_THREADS];
 
 //#define DEBUG_TRAPCHECK_ON
 
@@ -31,6 +33,65 @@ bool Board::classInit = false;
 //---------------------------------------------------------------------
 //  section Global
 //---------------------------------------------------------------------
+
+//--------------------------------------------------------------------- 
+
+Glob::Glob() 
+{
+  for (int i = 0; i < MAX_THREADS; i++){
+    bpool_[i] = NULL;
+    thirdRep_[i] = NULL;
+  }
+  init();
+}
+
+//--------------------------------------------------------------------- 
+
+void Glob::init()
+{
+  assert(threadsNum < MAX_THREADS);
+  for (int i = 0; i < MAX_THREADS; i++){
+    if (bpool_[i] != NULL){
+      delete bpool_[i];
+      bpool_[i] = NULL;
+    }
+    if (thirdRep_[i] != NULL){
+      delete thirdRep_[i];
+      thirdRep_[i] = NULL;
+    }
+  }
+  threadsNum_ = 0;
+}
+
+//--------------------------------------------------------------------- 
+
+int Glob::tti() 
+{
+  int index = pthread_self();
+  for (int i = 0; i < threadsNum_; i++){
+    if (threadIds_[i] == index){
+      return i;
+    }  
+  }
+
+  return add_thread();
+}
+
+//--------------------------------------------------------------------- 
+
+int Glob::add_thread() {
+
+  pthread_mutex_lock(&lock);
+  threadIds_[threadsNum_] = pthread_self();
+  bpool_[threadsNum_] = new Bpool();
+  thirdRep_[threadsNum_] = new ThirdRep();
+  int ret = threadsNum_;
+  threadsNum_++;
+  pthread_mutex_unlock(&lock);
+  return ret;
+}
+
+//--------------------------------------------------------------------- 
 
 void randomStructuresInit()
 {
@@ -967,6 +1028,7 @@ ostream& bits::print(ostream& o, const u64& b){
 Step Board::findMCstep() 
 {
   Step step;
+  StepArray steps;
 
   //it's not possible to have 0 rabbits in the beginning of move
   assert( bitboard_[toMove_][1] || stepCount_ > 0); 
@@ -977,7 +1039,7 @@ Step Board::findMCstep()
     //if he managed to kill opponent's last rabbit before he lost his last piece
     return Step(STEP_PASS, toMove_);          
   }
-  int len = genSteps(toMove_, stepArray);
+  int len = genSteps(toMove_, steps);
   assert(len < MAX_STEPS);
 
   //player to move has no step to play - not even pass
@@ -987,14 +1049,14 @@ Step Board::findMCstep()
   }
 
   if (cfg.knowledgeInPlayout()){
-    return chooseStepWithKnowledge(stepArray, len);
+    return chooseStepWithKnowledge(steps, len);
   }
 
   assert(len > 0);
   int index = grand() % len;
   assert( index >= 0 && index < len );
 
-  return( stepArray[index]); 
+  return(steps[index]); 
 } 
 
 //--------------------------------------------------------------------- 
@@ -1839,9 +1901,9 @@ bool Board::operator== ( const Board& board) const
 //---------------------------------------------------------------------
 
 void* Board::operator new(size_t size) {
-  if (! bpool.empty()) {
-    Board* b = bpool.top();
-    bpool.pop();
+  if (! glob.bpool()->empty()) {
+    Board* b = glob.bpool()->top();
+    glob.bpool()->pop();
     return b;
   } 
   return malloc(size);
@@ -1850,7 +1912,7 @@ void* Board::operator new(size_t size) {
 //--------------------------------------------------------------------- 
 
 void Board::operator delete(void* p) {
-  bpool.push(static_cast<Board*> (p));
+  glob.bpool()->push(static_cast<Board*> (p));
   //Board* b = static_cast<Board*>(p);
   //free(b);
 }
@@ -1953,6 +2015,8 @@ void Board::findMCmoveAndMake()
     return;
   }
 
+  StepArray steps;
+
   Step step;
   intList p; 
   
@@ -1977,20 +2041,20 @@ void Board::findMCmoveAndMake()
 
   do { 
     int len = 1;
-    stepArray[0] = Step(STEP_PASS, toMove_);
+    steps[0] = Step(STEP_PASS, toMove_);
 
     for (intList::iterator it = p.begin(); it != p.end(); it++) { 
       if (getPlayer((*it)) != toMove_){ //might have fallen into trap
         continue;
       }
       assert(getPlayer((*it)) == toMove_);
-      genStepsOne((*it), toMove_, stepArray, len);
+      genStepsOne((*it), toMove_, steps, len);
     }
     if (cfg.knowledgeInPlayout()){
-      step = chooseStepWithKnowledge(stepArray, len);
+      step = chooseStepWithKnowledge(steps, len);
     }
     else{
-      step = stepArray[grand() % len];
+      step = steps[grand() % len];
     }
     if (! step.isPass()){
       p.remove(step.from_);
