@@ -55,7 +55,7 @@ class TimeSettings(object):
 
 def is_kill(piece_pos):
     try: 
-        pos.index('x')
+        piece_pos.index('x')
         return True
     except ValueError:
         pass
