@@ -642,6 +642,10 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   }
   */
 
+  if (step.piece_ == ELEPHANT ) {
+    eval += 0.1;
+  }
+/*
   switch (step.piece_) { 
     case ELEPHANT :   eval += 0.15;
                       break;
@@ -651,6 +655,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
                       break;
     default : break;
   }
+  */
 
   if (step.isPushPull()){
     //push opponent to the goal :( not impossible ? )
@@ -660,7 +665,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
     //otherwise push/pulls are encouraged
     else{
-      eval += 0.3; 
+      eval += 0.25; 
     }
   } 
 

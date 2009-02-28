@@ -252,7 +252,7 @@ float Node::ucb(float exploreCoeff) const
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
          + sqrt((exploreCoeff/visits_)) 
          + heur_/visits_ 
-         + (cfg.historyHeuristic() ? (5 * (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
+         //+ (cfg.historyHeuristic() ? (5 * (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
          ;
   
 }
@@ -680,7 +680,7 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
     act = act->findMostExploredChild();
   }
 
-  return act;
+  //return act;
 
   //Now we have some good solution - DFS in the 
   //first layer of the tree follows
@@ -1130,12 +1130,11 @@ void Uct::doPlayout(const Board* board)
       }
 
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
-          cfg.playoutLen(),
+          //cfg.playoutLen(),
           //TODO CHECK THIS !!!
-          /*tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
+          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
           cfg.playoutLen() + 1 :
           cfg.playoutLen(), 
-          */
           advisor_
           );
       playoutStatus = playoutManager.doPlayout();
