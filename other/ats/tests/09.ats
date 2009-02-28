@@ -8,9 +8,9 @@ position =
     12w
      +-----------------+
     8| r r r r r r     | 
-    7| h d       d     | 
+    7| h d       m d   | 
     6|     X E   X     | 
-    5|           c m   | 
+    5|           c     | 
     4|       r h e r   | 
     3|   D X   M X H   | 
     2| H R C     C D   | 
@@ -24,4 +24,4 @@ tags = frame
 
 condition = piece_position
 
-after_piece_position = Md3 He3 Dg3 | Md3 he3 : 0.8 | Me3 hd3 : 0.7
+after_piece_position = rf3

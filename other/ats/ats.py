@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 """
   Arimaa Test Suite
 """
@@ -192,8 +194,10 @@ if __name__ == '__main__':
     try:
         config_file = sys.argv[1]
     except IndexError:
-        log.error("Usage: %s config_file." % sys.argv[0])
-        sys.exit(1)
+        log.warning("No config file given, falling to implicit.")
+        config_file = 'ats.cfg'
+        #log.error("Usage: %s config_file." % sys.argv[0])
+        #sys.exit(1)
       
     config = SafeConfigParser()
     try:

@@ -343,6 +343,9 @@ bool Step::operator== ( const Step& other) const
 bool Step::operator< ( const Step& other) const
 {
   //TODO optimize - add laziness ! 
+  if (*this == other){ 
+    return false;
+  }
   const int itemsNum = 8;
   int items[] = {stepType_ - other.stepType_, from_ - other.from_, to_ - other.to_, 
             piece_ - other.piece_, player_ - other.player_, 
@@ -2412,6 +2415,8 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       //cerr << " eval: " << step.toString() << " " << eval;
       if (eval > bestEval){
         bestEval = eval;
+        bestIndex = r;
+      } else if (eval == bestEval && random01() > 0.5 ) {
         bestIndex = r;
       }
     }

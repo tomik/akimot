@@ -44,6 +44,7 @@ void Values::init(){
   values.push_back(ValueItem("rabbit_penalty", IT_INT_AR, (void*)&rabbitPenalty, RABBITS_NUM + 1));
   values.push_back(ValueItem("frozen_penalty_ratio", IT_FLOAT, (void*)&frozenPenaltyRatio, SINGLE_VALUE));
   values.push_back(ValueItem("trap_sole_val", IT_INT, (void*)&trapSoleVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_more_than_one_val", IT_INT, (void*)&trapMoreThanOneVal, SINGLE_VALUE));
   values.push_back(ValueItem("trap_safe_val", IT_INT, (void*)&trapSafeVal, SINGLE_VALUE));
   values.push_back(ValueItem("trap_active_val", IT_INT, (void*)&trapActiveVal, SINGLE_VALUE));
   values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
@@ -438,17 +439,18 @@ int Eval::evaluate(const Board* b) const
   int guardsNum[2] = {0, 0};
 
   while ((trap = bits::lix(traps)) != BIT_EMPTY){
+
     guards[GOLD] = bits::neighborsOne(trap) & b->bitboard_[GOLD][0];
     guards[SILVER] = bits::neighborsOne(trap) & b->bitboard_[SILVER][0];
 
     guardsNum[GOLD] = bits::neighborsOneNum(trap, guards[GOLD]);
     guardsNum[SILVER] = bits::neighborsOneNum(trap, guards[SILVER]);
     
-    u64 guardsArea = guards[GOLD] | guards[SILVER];
+    u64 guardsAll = guards[GOLD] | guards[SILVER];
     u64 victimsArea = bits::sphere(trap, 2);
-    u64 influenceArea = bits::sphere(trap, 4);
+    u64 influenceArea = bits::sphere(trap, 3);
 
-    player_t guardDom = b->strongestPieceOwner(guardsArea);
+    player_t guardDom = b->strongestPieceOwner(guardsAll);
     player_t influenceDom = b->strongestPieceOwner(influenceArea & movable);
 
     logDDebug("trap %s - dominant %d/%d guards g/s : %d/%d",
@@ -456,6 +458,14 @@ int Eval::evaluate(const Board* b) const
       guardsNum[GOLD], guardsNum[SILVER]); 
 
     for (int player = 0; player < 2; player++) {
+      
+      if (guardsNum[player] > 1) {
+        tot[player] += vals_->trapMoreThanOneVal;
+        logDDebug("trap more than one %d to %d player for %s trap " , 
+          vals_->trapMoreThanOneVal, player, coordToStr(trap).c_str()); 
+      }
+
+      //sole traps
       if (guardsNum[player] > 0 && guardsNum[OPP(player)] == 0){
         tot[player] += vals_->trapSoleVal;
         logDDebug("trap sole %d to %d player for %s trap " , 
@@ -468,6 +478,8 @@ int Eval::evaluate(const Board* b) const
             vals_->trapPotVal, player, coordToStr(trap).c_str()); 
         }
       }
+
+      //fighting traps
       if (guardsNum[player] > 0 && guardsNum[OPP(player) > 0]){
         //2 guards or locally unbeatable piece => safe
         //(guardDom == player cannot be used => absolutely strongest piece )
@@ -475,7 +487,7 @@ int Eval::evaluate(const Board* b) const
             (guardDom != OPP(player) && influenceDom != OPP(player))){
 
           //dominance in trap
-          if (guardsNum[player] >= guardsNum[OPP(player)] && guardDom == player){
+          if (guardsNum[player] >= 2 && guardDom == player){
             tot[player] += vals_->trapActiveVal;
             logDDebug("trap active %d to %d player for %s trap " , 
                       vals_->trapActiveVal, player, coordToStr(trap).c_str()); 
@@ -503,7 +515,7 @@ int Eval::evaluate(const Board* b) const
         u64 mustBlock = 
           bits::neighbors(guards[OPP(player)] & b->weaker(OPP(player), framedPiece));
         
-        if (guardsArea == bits::neighborsOne(trap) && 
+        if (guardsAll == bits::neighborsOne(trap) && 
            ( mustBlock == 0ULL || (mustBlock & all) == mustBlock )){
           //frame penalty
           tot[player] += vals_->framePenaltyRatio *  vals_->pieceValue[framedPiece];
@@ -521,6 +533,7 @@ int Eval::evaluate(const Board* b) const
               logDDebug("full pin penalty %4.2f to %d player for %s pinned" , 
                         vals_->pinnedPenaltyRatio *  vals_->pieceValue[pinnedPiece], 
                         player, Soldier(player, pinnedPiece, pinnedPos).toString().c_str()); 
+
           int sd = b->strongerDistance(player, pinnedPiece, pinnedPos);
           if (sd != BIT_EMPTY && sd <= 2) {
             tot[player] += vals_->framePenaltyRatio * vals_->pieceValue[framedPiece];
@@ -630,11 +643,11 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   */
 
   switch (step.piece_) { 
-    case ELEPHANT :   eval += 0.3;
+    case ELEPHANT :   eval += 0.15;
                       break;
-    case CAMEL :   eval += 0.25;
+    case CAMEL :   eval += 0.1;
                       break;
-    case HORSE :   eval += 0.2;
+    case HORSE :   eval += 0.1;
                       break;
     default : break;
   }
@@ -647,10 +660,10 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
     //otherwise push/pulls are encouraged
     else{
-      eval += 0.1; 
+      eval += 0.3; 
     }
   } 
-  
+
   //check self-kill
   if (step.isSingleStep() && b->checkKillForward(step.from_, step.to_)){
     //leave buddy in opponent trap
@@ -666,7 +679,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
 
   //step into potentially dangerous trap
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
-    eval -= 0.5;
+    eval -= 0.2;
   }
 
   //push opp to trap is good 
@@ -697,7 +710,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (cfg.localPlayout() && 
       b->lastStep().stepType_ != STEP_NULL){
     int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
-    eval += d <= 3 ? (3 - d) * 0.1 : 0;
+    eval += d <= 3 ? (3 - d) * 0.15 : 0;
   }
 
   return eval;

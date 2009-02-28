@@ -23,4 +23,4 @@ tags = prevent, capture
 
 condition = piece_position
 
-after_piece_position = Ec5 | Ed6 
+after_piece_position = Ec5 | Ed6 | Dc5 : 0.7 | Cc5: 0.6

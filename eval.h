@@ -103,6 +103,7 @@ class Values
 
     //traps
     int trapSoleVal;  
+    int trapMoreThanOneVal;
     int trapSafeVal;  
     int trapActiveVal;
     int trapPotVal;

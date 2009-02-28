@@ -94,7 +94,7 @@ AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAft
 void AdvisorPlayout::playOne()
 {
   Move move;
-  if (cfg.moveAdvisor() && advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
+  if (cfg.moveAdvisor() && random01() < cfg.moveAdvisor() && advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
       board_->getStepCountLeft(), &move)){
     //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
     //cerr << board_->toString();
