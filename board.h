@@ -18,6 +18,7 @@
 using std::queue;
 using std::stack;
 using std::list;
+using std::vector;
 using std::bitset;
 
 #include "utils.h"
@@ -342,6 +343,7 @@ class Step
     friend class Eval;
     friend class OB_Board;
     friend class ContextMove;
+    friend class Move;
   
   private: 
     /**
@@ -450,6 +452,8 @@ class Move
      */
     player_t getPlayer() const;
 
+    bool operator==(const Move& other) const;
+
     /**
      * Representation.
      */
@@ -468,7 +472,11 @@ class Move
     */
     recordAction_e  parseRecordActionToken(const string& token, player_t& player, 
                                            piece_t& piece, coord_t& from, coord_t& to);
+
+    void updateStepCount(const Step& step);
+
     StepList stepList_;
+    int stepCount_;
 
     /**
      * Is opening move. 
@@ -523,7 +531,7 @@ extern Glob glob;
 class ContextMove 
 { 
   public:  
-    ContextMove(Move move, const Bitboard& bitboard, int stepsLeft);
+    ContextMove(Move move, const Bitboard& bitboard);
 
     /**
      * Checks applicability.
@@ -531,16 +539,21 @@ class ContextMove
     bool applicable(const Bitboard& bitboard, int stepsLeft) const;
 
     Move getMove() const;
+
+    float getValue() const;
+
+    void update(float sample); 
   private: 
     ContextMove(){};
     Move move_;
     Bitboard context_;
     u64 mask_;
-    int stepsLeft_;
+    float value_;
+    int visits_;
 };
 
-typedef list<ContextMove> ContextMoveList;
-typedef ContextMoveList::iterator ContextMoveListIter;
+typedef vector<ContextMove> ContextMoves;
+typedef ContextMoves::iterator ContextMovesIter;
 
 /**
  * Move advisor.
@@ -550,10 +563,37 @@ typedef ContextMoveList::iterator ContextMoveListIter;
 class MoveAdvisor 
 {
   public: 
-    bool getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move) const;
-    void addMove(const Move & move, const Bitboard& bitboard, int stepsLeft);
+    /**
+     * Get move for given conditions.
+     */
+    bool getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move);
+    bool getMoveRand(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move);
+
+    /**
+     * Add move. 
+     *
+     * If there is no such move already, then
+     * creates context move for given move and position and stores it.
+     */
+    void addMove(const Move & move, const Bitboard& bitboard);
+
+    /**
+     * Check existence of such a move.
+     */
+    
+    void update(float sample);
+
   private:
-    ContextMoveList contextMoves[2];
+    bool hasMove(const Move & move, const Bitboard& bitboard);
+
+    //void bubble(player_t player, int index, direction
+
+    ContextMoves contextMoves[2];
+    /**List of played indexes.*/
+    list<int> playedCMs[2];
+
+    /**Flag saying whether update is needed*/
+    bool update_;
 };
     
 

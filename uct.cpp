@@ -83,7 +83,7 @@ uint SimplePlayout::getPlayoutLength()
 // section AdvisorPlayout
 //---------------------------------------------------------------------
 
-AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength, const MoveAdvisor* advisor):
+AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAfterLength, MoveAdvisor* advisor):
   SimplePlayout(board, maxPlayoutLength, evalAfterLength), advisor_(advisor)
 {
   ;
@@ -94,11 +94,13 @@ AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAft
 void AdvisorPlayout::playOne()
 {
   Move move;
-  if (cfg.moveAdvisor() && random01() < cfg.moveAdvisor() && advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
+  if (cfg.moveAdvisor() && random01() < cfg.moveAdvisor() && 
+      advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
       board_->getStepCountLeft(), &move)){
     //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
     //cerr << board_->toString();
     //cerr << board_->moveToStringWithKills(move) << endl;
+    //cerr << move.toString() << endl;
     board_->makeMove(move);
     //cerr << board_->toString();
     //cerr << "+"; 
@@ -166,7 +168,7 @@ Node::Node(TWstep* twStep, int level, float heur)
   father_     = NULL;  
   visits_     = 0;
   value_      = 0; 
-  heur_       = heur;
+  heur_       = nodeType_ == GOLD ? heur : -1 * heur;
   twStep_     = twStep;
   /*if (cfg.historyHeuristic()) {
     value_    = twStep->value;
@@ -318,14 +320,15 @@ void Node::removeChildrenRec()
 void Node::update(float sample)
 {
   if (cfg.uctRelativeUpdate() && isMature()){
-    //int diff = abs(int((sample - value_)/0.15));
-    //int weight = diff > 0 ? diff : 1; 
-    //+ sqrt((exploreCoeff/visits_)) 
-    //cerr << value_ << "/" << visits_ << "/" << sample << "/" << weight << " ";
-    int diff = abs(int((sample - value_ )* sqrt(visits_)));
-    int weight = min(max(diff, 1), 20);
-    visits_ += weight;
-    value_ += ((sample - value_) * weight)/visits_;         
+      //((sample - value_ > 0 && nodeType_ == NODE_MAX ) || ( sample - value_ < 0 && nodeType_ == NODE_MIN)) ){
+    //int diff = abs(int((sample - value_ ) * sqrt(visits_)));
+    //int weight = min(max(diff, 1), 100);
+    int weight = min(max(int(sqrt(visits_)), 1), 10);
+    float added = ((sample - value_) * weight)/(visits_ + weight);
+    visits_ += 1;
+    //cerr << sample - value_ << "/" << visits_ << "/" << weight << " ";
+    //cerr << value_ << "/" << visits_ << "/" << diff << "/" << added << "/" << (sample - value_)/visits_ << " ";
+    value_ += added;
   }else{
     value_ += (sample - value_)/++visits_;         
   }
@@ -1059,6 +1062,7 @@ void Uct::doPlayout(const Board* board)
       if (tree_->actNode()->isMature() && tree_->getNodeDepth(tree_->actNode()) < UCT_MAX_DEPTH - 1) {
 
         //goalCheck 
+        
         Move move;
         if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
           float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
@@ -1079,17 +1083,32 @@ void Uct::doPlayout(const Board* board)
         //tactics in playouts extension
        
         if (cfg.moveAdvisor()){
+          //opponent goal check
           move = Move();
           player_t opp = OPP(playBoard->getPlayerToMove());
           if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
-            advisor_->addMove(move, playBoard->getBitboard(), 
-                              playBoard->getStepCountLeft()); 
+            if (move.getStepCount()) {
+              advisor_->addMove(move, playBoard->getBitboard());
+                              //playBoard->getStepCountLeft()); 
+            }
           }
-          //trapCheck 
+          //opponent trapCheck
           MoveList moves;
           if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
             for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
-              advisor_->addMove((*it), playBoard->getBitboard(), playBoard->getStepCountLeft()); 
+              advisor_->addMove((*it), playBoard->getBitboard());
+              //cerr << playBoard->toString();
+              //cerr << playBoard->moveToStringWithKills(*it) << endl;
+            }
+          }
+
+          //trapCheck 
+          moves.clear();
+          if (playBoard->getStepCount() == 0 && 
+              playBoard->trapCheck(OPP(playBoard->getPlayerToMove()), &moves)){ 
+            for (MoveList::const_iterator it = moves.begin(); 
+                                          it != moves.end(); it++){ 
+              advisor_->addMove((*it), playBoard->getBitboard());
               //cerr << playBoard->toString();
               //cerr << playBoard->moveToStringWithKills(*it) << endl;
             }
@@ -1138,7 +1157,9 @@ void Uct::doPlayout(const Board* board)
           advisor_
           );
       playoutStatus = playoutManager.doPlayout();
-      tree_->updateHistory(decidePlayoutWinner(playBoard));
+      float sample = decidePlayoutWinner(playBoard);
+      tree_->updateHistory(sample);
+      advisor_->update(sample);
       break;
     }
 

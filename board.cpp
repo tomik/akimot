@@ -541,6 +541,7 @@ string StepWithKills::toString() const
 Move::Move() 
 {
   opening_ = false;
+  stepCount_ = 0;
 }
 
 //--------------------------------------------------------------------- 
@@ -573,6 +574,7 @@ Move::Move(string moveStr)
       case ACTION_STEP:
         assert(opening_ == false);
         appendStep(step);
+        updateStepCount(step);
         break;
       case ACTION_TRAP_FALL:
       case ACTION_ERROR:
@@ -587,6 +589,7 @@ Move::Move(string moveStr)
 void Move::appendStep(Step step)
 {
   stepList_.push_back(step);
+  updateStepCount(step);
 }
 
 //--------------------------------------------------------------------- 
@@ -594,6 +597,7 @@ void Move::appendStep(Step step)
 void Move::prependStep(Step step)
 {
   stepList_.push_front(step);
+  updateStepCount(step);
 }
 
 //--------------------------------------------------------------------- 
@@ -602,6 +606,7 @@ void Move::appendStepList(StepList stepList)
 {
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
     stepList_.push_back(*it);
+    updateStepCount(*it);
   }
 }
 
@@ -616,7 +621,7 @@ StepList Move::getStepList() const
 
 int Move::getStepCount() const
 {
-  return stepList_.size();
+  return stepCount_;
 }
 
 //--------------------------------------------------------------------- 
@@ -635,6 +640,26 @@ player_t Move::getPlayer() const
   }
   return stepList_.begin()->getPlayer();
 }
+    
+//--------------------------------------------------------------------- 
+
+
+bool Move::operator==(const Move& other) const
+{
+  if (stepCount_ != other.stepCount_ ) {
+    return false;
+  }
+  StepList::const_iterator it = stepList_.begin();
+  StepList::const_iterator jt = other.stepList_.begin(); 
+  for (; it != stepList_.end() && jt != other.stepList_.end(); it++, jt++){
+    if (! (*it == *jt)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 //--------------------------------------------------------------------- 
 
 string Move::toString() const
@@ -693,16 +718,31 @@ recordAction_e  Move::parseRecordActionToken(const string& token, player_t& play
   return recordAction;
 }
 
+//--------------------------------------------------------------------- 
+
+void Move::updateStepCount(const Step& step)
+{
+  switch (step.stepType_) {
+    case STEP_NULL: 
+    case STEP_PASS :   break;
+    case STEP_PUSH:
+    case STEP_PULL:  stepCount_++;
+    case STEP_SINGLE : stepCount_++;
+                  break; 
+  }
+}
+
+
 //---------------------------------------------------------------------
 //  section ContextMove
 //---------------------------------------------------------------------
 
-ContextMove::ContextMove(Move move, const Bitboard& bitboard, int stepsLeft):
-  move_(move), stepsLeft_(stepsLeft)
+ContextMove::ContextMove(Move move, const Bitboard& bitboard):
+  move_(move)
 {
   StepList steps = move_.getStepList();
   mask_ = 0ULL;
-  //TODO !!! 
+  //TODO
   for (StepListIter it = steps.begin(); it != steps.end(); it++){
     assert(it->pieceMoved());
     mask_ |= BIT_ON(it->from_) | (it->piece_ == ELEPHANT ? 0ULL : bits::neighborsOne(it->from_));
@@ -717,7 +757,9 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard, int stepsLeft):
     }
   }
 
-  
+  visits_ = 0;
+  value_ = 0;
+
   /*cerr << "=== Context Move ===" << endl 
     << Board::bitboardToString(bitboard) 
     << " + " << endl << move.toString() << endl;
@@ -731,6 +773,9 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard, int stepsLeft):
 
 bool ContextMove::applicable(const Bitboard& bitboard, int stepsLeft) const
 {
+  if (stepsLeft < move_.getStepCount()) {
+    return false;
+  }
   for (int j = 0; j < PIECE_NUM + 1; j++){
     for (int i = 0; i < 2; i++){
       if ((mask_ & bitboard[i][j]) != context_[i][j]){
@@ -744,19 +789,37 @@ bool ContextMove::applicable(const Bitboard& bitboard, int stepsLeft) const
 
 //--------------------------------------------------------------------- 
 
-Move ContextMove::getMove() const { 
+Move ContextMove::getMove() const 
+{
   return move_;
+}
+
+//--------------------------------------------------------------------- 
+
+float ContextMove::getValue() const 
+{ 
+  return move_.getPlayer() == GOLD ? value_ : -1 * value_;
+}
+
+//---------------------------------------------------------------------
+
+void ContextMove::update(float sample) {
+  value_ += (sample - value_)/++visits_;  
 }
 
 //---------------------------------------------------------------------
 //  section MoveAdviser
 //---------------------------------------------------------------------
 
-bool MoveAdvisor::getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move) const{
-  for (ContextMoveList::const_iterator it = contextMoves[player].begin(); 
-                           it != contextMoves[player].end(); it++){
-    if (it->applicable(bitboard, stepsLeft)){
-      *move = it->getMove();
+bool MoveAdvisor::getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move)
+{
+  return getMoveRand(player, bitboard, stepsLeft, move);
+
+  for (uint i = 0; i < contextMoves[player].size(); i++) {
+    if (contextMoves[player][i].applicable(bitboard, stepsLeft)){
+      *move = contextMoves[player][i].getMove();
+      playedCMs[player].push_back(i);
+      update_ = true;
       return true;
     }
   }  
@@ -765,10 +828,74 @@ bool MoveAdvisor::getMove(player_t player, const Bitboard& bitboard, int stepsLe
 
 //--------------------------------------------------------------------- 
 
-void MoveAdvisor::addMove(const Move & move, const Bitboard& bitboard, int stepsLeft)
+bool MoveAdvisor::getMoveRand(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move)
 {
-  contextMoves[move.getPlayer()].push_back(ContextMove(move, bitboard, stepsLeft));
+  int len = contextMoves[player].size();
+  if (! len) {
+    return false;
+  }
+  int sample = len;
+  float bestValue = INT_MIN;
+  int bestIndex = -1;
+  for (int i = 0; i < sample; i++) {
+    int index = i; //grand() % len; 
+    if (contextMoves[player][index].getValue() > bestValue
+        && contextMoves[player][index].applicable(bitboard, stepsLeft))
+        {
+      bestIndex = index;
+      bestValue = contextMoves[player][index].getValue();
+    }
+  }  
+  if (bestIndex != -1){
+      *move = contextMoves[player][bestIndex].getMove();
+      playedCMs[player].push_back(bestIndex);
+      update_ = true;
+      //cerr << move->toString() << "/" << contextMoves[player][bestIndex].getValue() << endl;
+      return true;
+  }
+  return false;
 }
+
+//--------------------------------------------------------------------- 
+
+void MoveAdvisor::addMove(const Move & move, const Bitboard& bitboard)
+{
+  if (! hasMove(move, bitboard)) {
+    //cerr << move.toString() << " " << move.getStepCount() << endl;
+    contextMoves[move.getPlayer()].push_back(ContextMove(move, bitboard));
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void MoveAdvisor::update(float sample) {
+  if (! update_) {
+    return;
+  }
+  for (player_t player = 0; player < 2; player++){
+    for (list<int>::const_iterator it = playedCMs[player].begin(); 
+          it != playedCMs[player].end(); it++){
+      contextMoves[player][*it].update(sample);
+    }
+    playedCMs[player].clear();
+  }
+  update_ = false;
+}
+
+//--------------------------------------------------------------------- 
+
+bool MoveAdvisor::hasMove(const Move & move, const Bitboard& bitboard){
+  player_t pl = move.getPlayer();
+  assert(IS_PLAYER(pl));
+  for (ContextMoves::const_iterator it = contextMoves[pl].begin(); 
+                                       it != contextMoves[pl].end(); it++){
+    if (it->applicable(bitboard, move.getStepCount()) && it->getMove() == move){
+      return true;
+    }
+  }
+  return false;
+}
+
 
 //---------------------------------------------------------------------
 //  section Board
