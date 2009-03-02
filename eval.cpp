@@ -643,7 +643,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   */
 
   if (step.piece_ == ELEPHANT ) {
-    eval += 0.1;
+    eval += 0.5;
   }
 /*
   switch (step.piece_) { 
@@ -683,9 +683,11 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   }
 
   //step into potentially dangerous trap
+  /*
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
     eval -= 0.2;
   }
+  */
 
   //push opp to trap is good 
   if (step.isPushPull() && IS_TRAP(step.oppTo_)){
@@ -702,7 +704,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -1.2;
+      case GS_BEGIN: eval += -0.5;
                 break;
       case GS_MIDDLE: eval += -0.2; 
                 break;

@@ -99,7 +99,7 @@ class AdvisorPlayout : public SimplePlayout
      * Constructor with board initialization.
      */
 		AdvisorPlayout(Board*, uint maxPlayoutLength, uint evalAfterLength, 
-                   const MoveAdvisor* advisor);
+                    MoveAdvisor* advisor);
 
     /**
      * Play one move in simulation with knowledge.
@@ -107,7 +107,7 @@ class AdvisorPlayout : public SimplePlayout
     void playOne();
 
   private: 
-    const MoveAdvisor * advisor_;
+     MoveAdvisor * advisor_;
 };
 
 /**
