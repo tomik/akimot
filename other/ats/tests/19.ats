@@ -1,0 +1,28 @@
+
+[settings]
+
+comment =
+    Potential sacrifice of cat e3 for EH attack at c6.
+
+position =  
+    10w
+     +-----------------+
+    8| r r r . . r . r | 
+    7| . . c . . c . . | 
+    6| . . X h d X h r | 
+    5| . . H E R e . . | 
+    4| R . . . . . . . | 
+    3| C D X . C X . H | 
+    2| . . M R . . . R | 
+    1| . R R . . R R . | 
+     +-----------------+
+       a b c d e f g h
+
+tags = EH attack, sacrifice
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Ed6 hd7 Hb6 
+

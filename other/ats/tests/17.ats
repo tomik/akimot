@@ -1,0 +1,28 @@
+
+[settings]
+
+comment =
+  Elephant blockade at f7. 
+
+position =
+  12b 
+   +-----------------+
+  8| r r r r . c r . | 
+  7| h . c m r E h r | 
+  6| . d X . . X d . | 
+  5| . . . . . r . . | 
+  4| . . . . . . . . | 
+  3| . H C e . X D . | 
+  2| . D . M . C . H | 
+  1| R R R R R R R R | 
+   +-----------------+
+     a b c d e f g h
+
+tags = elephant, blockade
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = re8 re7 cd7 me6 : 1 | re8 re7 md7 ce6 : 0.8 | re8 re7 md7 de6 : 0.85 | re8 cd7 me7 re6 : 0.7
+

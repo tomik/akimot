@@ -1,0 +1,28 @@
+
+[settings]
+
+comment =
+    Frame dog at c3  
+
+position =  
+  10w
+   +-----------------+
+  8| r r r   r     r | 
+  7| h   c     c h   | 
+  6|     X     X d r | 
+  5|     d E         | 
+  4|   C   R         | 
+  3|   H X e   X D   | 
+  2| R D M   R C H   | 
+  1|   R R     R R R | 
+   +-----------------+
+     a b c d e f g h
+
+tags = frame
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = dc3 
+
