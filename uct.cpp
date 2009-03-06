@@ -1159,7 +1159,9 @@ void Uct::doPlayout(const Board* board)
       playoutStatus = playoutManager.doPlayout();
       float sample = decidePlayoutWinner(playBoard);
       tree_->updateHistory(sample);
-      advisor_->update(sample);
+      if (cfg.moveAdvisor()){
+        advisor_->update(sample);
+      }
       break;
     }
 

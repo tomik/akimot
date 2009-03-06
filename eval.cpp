@@ -486,8 +486,8 @@ int Eval::evaluate(const Board* b) const
         if (guardsNum[player] >= 2 || 
             (guardDom != OPP(player) && influenceDom != OPP(player))){
 
-          //dominance in trap
-          if (guardsNum[player] >= 2 && guardDom == player){
+          //dominance in trap ... >= 2 ? 
+          if (guardsNum[player] >= guardsNum[OPP(player)] && guardDom == player){
             tot[player] += vals_->trapActiveVal;
             logDDebug("trap active %d to %d player for %s trap " , 
                       vals_->trapActiveVal, player, coordToStr(trap).c_str()); 
@@ -643,7 +643,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   */
 
   if (step.piece_ == ELEPHANT ) {
-    eval += 0.5;
+    eval += 0.1;
   }
 /*
   switch (step.piece_) { 
@@ -665,7 +665,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
     //otherwise push/pulls are encouraged
     else{
-      eval += 0.25; 
+      eval += 0.1; 
     }
   } 
 
@@ -683,11 +683,9 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   }
 
   //step into potentially dangerous trap
-  /*
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
-    eval -= 0.2;
+    eval -= 0.5;
   }
-  */
 
   //push opp to trap is good 
   if (step.isPushPull() && IS_TRAP(step.oppTo_)){
@@ -704,7 +702,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -0.5;
+      case GS_BEGIN: eval += -1.2;
                 break;
       case GS_MIDDLE: eval += -0.2; 
                 break;
@@ -717,7 +715,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (cfg.localPlayout() && 
       b->lastStep().stepType_ != STEP_NULL){
     int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
-    eval += d <= 3 ? (3 - d) * 0.15 : 0;
+    eval += d <= 3 ? (3 - d) * 0.1 : 0;
   }
 
   return eval;

@@ -42,6 +42,8 @@ enum logLevel_e { LL_DEBUG, LL_WARNING, LL_ERROR, LL_INFO, LL_RAW, LL_DDEBUG };
 
 #define MAX_THREADS 17
 
+#define GRAND_MAX 0xFFFFFFFF
+
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...);
 
 #define logInfo(...) logFunction(LL_INFO, __TIME__, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
@@ -148,7 +150,7 @@ inline int smallRandomPrime()
 
 inline float random01()
 {
-  return (double)grand()/((double)(RAND_MAX) + (double)(1));
+  return (double)grand()/((double)(GRAND_MAX) + (double)(1));
 }
 
 int max(int a, int b);

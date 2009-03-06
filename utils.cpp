@@ -124,7 +124,6 @@ Grand::Grand() {
 //--------------------------------------------------------------------- 
 
 void Grand::seed(unsigned int seed) {
-  srand(seed);
   high_ = seed;
   low_ = high_ ^ PAIR_SEED;
 }
@@ -132,7 +131,6 @@ void Grand::seed(unsigned int seed) {
 //--------------------------------------------------------------------- 
 
 unsigned int Grand::operator()() {
-  return rand();
   high_ = (high_ << 16) + (high_ >> 16);
   high_ += low_;
   low_ += high_;

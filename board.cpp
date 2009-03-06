@@ -2548,7 +2548,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       } 
       else
       //TODO improve ! - roulette ? 
-      if ( eval == bestEval && random01() < 0.5) { 
+      if ( eval == bestEval && random01() > 0.5) { 
         bestIndex = r;
       }
 
