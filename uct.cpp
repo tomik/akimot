@@ -1092,7 +1092,6 @@ void Uct::doPlayout(const Board* board)
                               //playBoard->getStepCountLeft()); 
             }
           }
-
           //opponent trapCheck
           MoveList moves;
           if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
