@@ -100,14 +100,10 @@ void AdvisorPlayout::playOne()
     //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
     //cerr << board_->toString();
     //cerr << board_->moveToStringWithKills(move) << endl;
-    //cerr << move.toString() << endl;
     board_->makeMove(move);
-    //cerr << board_->toString();
-    //cerr << "+"; 
   }  
   else{
     SimplePlayout::playOne();
-    //board_->findMCmoveAndMake();
   }
 }
 
@@ -1092,6 +1088,7 @@ void Uct::doPlayout(const Board* board)
                               //playBoard->getStepCountLeft()); 
             }
           }
+
           //opponent trapCheck
           MoveList moves;
           if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 

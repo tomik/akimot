@@ -747,9 +747,12 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
   //TODO
   for (StepListIter it = steps.begin(); it != steps.end(); it++){
     assert(it->pieceMoved());
-    mask_ |= BIT_ON(it->from_) | (it->piece_ == ELEPHANT ? 0ULL : bits::neighborsOne(it->from_));
+    //mask_ |= BIT_ON(it->from_) | (it->piece_ == ELEPHANT ? 0ULL : bits::neighborsOne(it->from_));
+    mask_ |= BIT_ON(it->to_) | bits::neighborsOne(it->to_);
+    mask_ |= BIT_ON(it->from_) | bits::neighborsOne(it->from_);
     if (it->isPushPull()){
       mask_ |= BIT_ON(it->oppFrom_) | bits::neighborsOne(it->oppFrom_);
+      mask_ |= BIT_ON(it->oppTo_) | bits::neighborsOne(it->oppTo_);
     }
   }
 
@@ -2152,6 +2155,7 @@ void Board::findMCmoveAndMake()
   Step step;
   intList p; 
   
+  /*
   //area selection
   #define RADIUS 4
   u64 area = 0ULL;
@@ -2170,10 +2174,22 @@ void Board::findMCmoveAndMake()
     }
     p.push_back(pos);
   }
+  */
+  
+  for (int i = 0; i < BIT_LEN/2; i++){
+    int pos = grand() % BIT_LEN;
+    if (bits::getBit(bitboard_[toMove_][0], pos)){
+      p.push_back(pos);
+      if (p.size() >= 3) {
+        break;
+      }
+    }
+  }
 
   do { 
-    int len = 1;
-    steps[0] = Step(STEP_PASS, toMove_);
+    //int len = 1;
+    //steps[0] = Step(STEP_PASS, toMove_);
+    int len = 0;
 
     for (intList::iterator it = p.begin(); it != p.end(); it++) { 
       if (getPlayer((*it)) != toMove_){ //might have fallen into trap
@@ -2182,6 +2198,11 @@ void Board::findMCmoveAndMake()
       assert(getPlayer((*it)) == toMove_);
       genStepsOne((*it), toMove_, steps, len);
     }
+
+    if (len == 0){
+      steps[len++] = Step(STEP_PASS, toMove_);
+    }
+
     if (cfg.knowledgeInPlayout()){
       step = chooseStepWithKnowledge(steps, len);
     }
