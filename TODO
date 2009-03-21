@@ -2,13 +2,11 @@
 # [urgency, category] item 
 
 === Actual ===
-[5, eval] make values init global 
-[4, hash] position hashing - add moveIndex - now earlier move kills later move
-[3, uct] change treeWideSteps from map to hashtable ! 
-[3, hash] undumiffy hash table (don't use map, but real hashtable)
-[3, eval] mapping evaluation -> win percentage is dummy -> improve
-[3, board] randomness too slow in choosestepwithknowledge
+[4, uct] tree merge is inconsistent with nodesNum count (because of TT)
+[4, uct] virtual passes and semi passes handling (handle in TT)?
 [3, board] optimize step comparison
+[3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
+
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
@@ -23,12 +21,18 @@
   [12.12][5, board] create class for Move ( list of steps )
   [14.12][5, board] refactor quickGoalCheck and backtrackFlagBoard
          [2, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
+  [3, board] randomness too slow in choosestepwithknowledge
+  [3, eval] mapping evaluation -> win percentage is dummy -> improve
+  [4, hash] position hashing - add moveIndex - now earlier move kills later move
+  [5, eval] make values init global 
 
   === Won't do ===
   [4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
   [5, board] pieceArray lazy delete ! 
   [3, board] get frozenboard back to work
   [3, bench] add more positions to benchmark ! 
+  [3, hash] undumiffy hash table (don't use map, but real hashtable)
+  [3, uct] change treeWideSteps from map to hashtable ! 
 
 === Small Issues ===
 [3,board-hash] move playerSignatures to board and update it in commitMove ? 

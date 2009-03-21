@@ -324,14 +324,6 @@ class DebugTestSuite : public CxxTest::TestSuite
         if (i >= UCT_TREE_NODES)
           break;
       }
-      //remove given number of leafs
-      for (int i = 0; i < UCT_TREE_NODES_DELETE; i++){
-        tree->historyReset();
-        while (tree->actNode()->hasChildren())
-          tree->randomDescend(); 
-        tree->removeNodeCascade(tree->actNode());
-      }
-
     } //testUct
 
 

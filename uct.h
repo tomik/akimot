@@ -144,6 +144,8 @@ class TWsteps: public TWstepsMap
 
 //typedef map<Step, TWstep> TWsteps;
 
+typedef set<Node*> NodeSet;
+
 /**
  * Node in uct tree. 
  */
@@ -189,9 +191,10 @@ class Node
     void removeChild(Node* child);
 
     /**
-     * Delete children. 
+     * Fetches children to given node set. 
+     * useful for instance for final cleanup. 
      */
-    void  removeChildrenRec();
+    void  fetchChildrenRec(NodeSet& ns);
 
     /**
      * Update after playout. 
@@ -231,7 +234,26 @@ class Node
     float getValue() const;
     void setValue(float value);
     nodeType_e getNodeType() const;
+
+    /**
+     * Gets ply in which node lies.
+     */
+    int getDepth() const;
+
+    /**
+     * Depth from last opponent's move.
+     */
+    int getLocalDepth() const;
+
+    /**
+     * Gets level (level ~ +- 4 plys)
+     */
     int getLevel() const;
+
+    /**
+     * Combination of getLocalDepth and getLevel.
+     */
+    int getDepthIdentifier() const;
 
     string toString() const; 
 
@@ -397,21 +419,6 @@ class Tree
      * Gets the actual node (top of history stack). 
      */
     Node* actNode();
-
-    /**
-     * Cascade remove.
-     *
-     * Removes and goes up the tree and keeps 
-     * removing till it is possible. 
-     *
-     * @return Number of moves removed.
-     */
-    int  removeNodeCascade(Node* node);
-
-    /**
-     * Gets ply in which node lies.
-     */
-    int getNodeDepth(Node* node);
 
     /**
      * Nodes num getter. 
@@ -597,10 +604,10 @@ class Uct
      *
      * Signature of every node in nodeList is added to the TT. 
      *
-     * @param nodes Dynamic List of children (retrieved by getBrother())
+     * @param father it's children will get updated
      * @return Number of steps in steps array after update.
      */
-    void updateTT(Node* nodeList, const Board* board);
+    void updateTT(Node* father, const Board* board);
 
     /**UCT tree*/
     Tree* tree_;

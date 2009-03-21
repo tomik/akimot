@@ -269,6 +269,7 @@ void Node::addChild(Node* newChild)
  
 //---------------------------------------------------------------------
 
+//TODO REMOVE ?
 void Node::removeChild(Node* child)
 {
   assert(this->firstChild_ != NULL);
@@ -299,16 +300,17 @@ void Node::removeChild(Node* child)
 
 //---------------------------------------------------------------------
 
-void Node::removeChildrenRec()
+void Node::fetchChildrenRec(NodeSet & ns)
 {
   Node* actNode = firstChild_;
   Node* sibling;
   while(actNode != NULL){
     sibling = actNode->sibling_;
-    actNode->removeChildrenRec();
-    delete actNode;
+    actNode->fetchChildrenRec(ns);
+    ns.insert(actNode);
     actNode = sibling;
   }
+  //delete actNode;
 }
 
 //---------------------------------------------------------------------
@@ -459,9 +461,46 @@ nodeType_e Node::getNodeType() const
 
 //---------------------------------------------------------------------
 
+int Node::getDepth() const
+{
+  int depth = 0;
+  Node* node = this->father_;
+
+  while (node != NULL){
+    node = node->getFather();
+    depth++;
+  }
+  return depth;
+  
+}
+
+//--------------------------------------------------------------------- 
+
+int Node::getLocalDepth() const
+{
+  int depth = 0;
+  Node* node = this->father_;
+
+  while (node != NULL && node->getNodeType() == nodeType_){
+    node = node->getFather();
+    depth++;
+  }
+  return depth;
+}
+
+//--------------------------------------------------------------------- 
+
+
 int Node::getLevel() const
 {
   return level_;
+}
+
+//--------------------------------------------------------------------- 
+
+int Node::getDepthIdentifier() const
+{
+  return STEPS_IN_MOVE * getLevel() + getLocalDepth();
 }
 
 //--------------------------------------------------------------------- 
@@ -559,7 +598,14 @@ Tree::Tree(Tree* trees[], int treesNum)
   }
 
   //tree from merged trees
-  history[0] = Tree::mergeTrees(head, NULL, nodesNum_, nodesExpandedNum_);
+  //
+  if (treesNum == 1){
+    history[0] = trees[0]->root();
+    nodesNum_ = trees[0]->nodesNum_;
+    nodesExpandedNum_ = trees[0]->nodesExpandedNum_;
+  }else{
+    history[0] = Tree::mergeTrees(head, NULL, nodesNum_, nodesExpandedNum_);
+  }
 
 }
 
@@ -576,7 +622,11 @@ Tree::Tree(player_t firstPlayer)
 
 Tree::~Tree()
 {
-  history[0]->removeChildrenRec();
+  NodeSet ns;
+  history[0]->fetchChildrenRec(ns);
+  for (NodeSet::iterator it = ns.begin(); it != ns.end(); it++) {
+    delete (*it);
+  }
   delete history[0];
 }
 
@@ -857,53 +907,6 @@ Node* Tree::actNode()
 
 //--------------------------------------------------------------------- 
 
-int Tree::removeNodeCascade(Node* node)
-{
-  assert(node != NULL);
-  assert(! node->hasChildren());
-
-  Node* ancestor = node->getFather();
-  Node* toRemove = node;
-
-  int removedNodes = 0;
-
-  while (ancestor != NULL && ancestor->hasOneChild()){
-    toRemove = ancestor;
-    ancestor = ancestor->getFather();
-    removedNodes++;
-  } 
-
-  assert(ancestor != NULL); //removing root
-  //should never happen !!!
-  if (ancestor == NULL)
-    return 0;
-    
-  toRemove->removeChildrenRec();
-  ancestor->removeChild(toRemove);
-  nodesNum_ -= removedNodes;
-
-  //updates actual node
-  historyReset();
-  return removedNodes;
-}
-
-//---------------------------------------------------------------------
-
-int Tree::getNodeDepth(Node* node) 
-{
-  assert(node != NULL);
-  int depth = 0;
-
-  while (node != root()){
-    node = node->getFather();
-    depth++;
-  }
-  return depth;
-  
-}
-
-//--------------------------------------------------------------------- 
-
 int Tree::getNodesNum() 
 {
     return nodesNum_;
@@ -1055,7 +1058,7 @@ void Uct::doPlayout(const Board* board)
    logDDebug(tree_->actNode()->toString().c_str());
   
     if (! tree_->actNode()->hasChildren()) { 
-      if (tree_->actNode()->isMature() && tree_->getNodeDepth(tree_->actNode()) < UCT_MAX_DEPTH - 1) {
+      if (tree_->actNode()->isMature() && tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
 
         //goalCheck 
         
@@ -1115,11 +1118,12 @@ void Uct::doPlayout(const Board* board)
 
         stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
         stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-        int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
+        //int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
 
-        if (cfg.uct_tt()){
+        /*if (cfg.uct_tt()){
           stepsNum = filterTT(steps, stepsNum, playBoard, level); 
         }
+        */
 
         if (playBoard->canPass()) { //add pass if possible
           steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
@@ -1135,11 +1139,8 @@ void Uct::doPlayout(const Board* board)
             tree_->expandNode(tree_->actNode(), steps, stepsNum);
           }
           if (cfg.uct_tt()){
-            updateTT(tree_->actNode()->getFirstChild(), playBoard); 
+            updateTT(tree_->actNode(), playBoard); 
           }
-        }else{
-          tree_->removeNodeCascade(tree_->actNode());
-          break;
         }
 
         continue;
@@ -1308,17 +1309,51 @@ int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board, int level
 
 //--------------------------------------------------------------------- 
 
-void Uct::updateTT(Node* nodeList, const Board* board)
+void Uct::updateTT(Node* father, const Board* board)
 {
-  assert(nodeList != NULL); 
-  Node* node = nodeList; 
+  assert(father != NULL); 
+  Node* node = father->getFirstChild(); 
+  Node* ttNode = NULL; 
   u64 afterStepSignature;
   while (node != NULL){
+    if (node->getStep().isPass()){
+      node = node->getSibling();
+      continue;
+    }
     afterStepSignature = board->calcAfterStepSignature(node->getStep());
-    tt_->insertItem(afterStepSignature,
+    //check whether position was encountered already
+    if (tt_->loadItem(afterStepSignature, 
+                     board->getPlayerToMove(), 
+                     ttNode,
+                     node->getDepthIdentifier())){
+      //cerr << node->getLevel() << " " << node->getLocalDepth() << " " << node->getDepthIdentifier() << endl;
+      assert(ttNode != NULL);
+      node->setFirstChild(ttNode->getFirstChild());
+      nodesPruned_++;
+
+      /*
+      cerr << board->toString();
+      cerr << ttNode->toString() << endl;
+      cerr << node->toString() << endl;
+      Node* deadlock = node->getFather();
+      //deadlock check
+      while (deadlock != NULL) { 
+        cerr << "dl " << deadlock->toString() << endl;
+        if (deadlock == ttNode){
+          //remove node ! 
+          assert(false);
+        }
+        deadlock = deadlock->getFather();
+      }
+      */
+
+    }else{
+      //position is not in tt yet -> store it 
+      tt_->insertItem(afterStepSignature,
                     board->getPlayerToMove(), 
                     node, 
-                    node->getLevel());
+                    node->getDepthIdentifier());
+    }
     node = node->getSibling();
   }
 }
