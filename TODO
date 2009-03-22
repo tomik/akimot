@@ -2,11 +2,12 @@
 # [urgency, category] item 
 
 === Actual ===
+[5, uct] remove tactical code from uct::playout -> move to method
 [4, uct] tree merge is inconsistent with nodesNum count (because of TT)
 [4, uct] virtual passes and semi passes and inverse steps handling in uct (handle in TT)?
+[4, eval] relative position evaluation - now in good positions program stops playing 
 [3, board] optimize step comparison
 [3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
-
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 

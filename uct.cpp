@@ -339,6 +339,13 @@ bool Node::isMature() const
   return visits_ > cfg.matureLevel();
 }
 
+//--------------------------------------------------------------------- 
+
+bool Node::isJustMature() const
+{
+  return visits_ == cfg.matureLevel();
+}
+
 //---------------------------------------------------------------------
 
 bool Node::hasChildren() const
@@ -1053,93 +1060,99 @@ void Uct::doPlayout(const Board* board)
    logDDebug(tree_->actNode()->toString().c_str());
   
     if (! tree_->actNode()->hasChildren()) { 
-      if (tree_->actNode()->isMature() && tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
+      if (tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
+        if (tree_->actNode()->isJustMature()) {
+          //goalCheck 
+          
+          Move move;
+          if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
+            float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
+            tree_->expandNodeLimited(tree_->actNode(), move);
+            //descend to the expanded area
+            while (tree_->actNode()->hasChildren()){
+              tree_->firstChildDescend();
+            }
+            tree_->updateHistory(value);
+            break;
+          }
+          
+          //tactics in playouts extension
+         
+          if (cfg.moveAdvisor()){
+            //opponent goal check
+            move = Move();
+            player_t opp = OPP(playBoard->getPlayerToMove());
+            if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
+              if (move.getStepCount()) {
+                advisor_->addMove(move, playBoard->getBitboard());
+                                //playBoard->getStepCountLeft()); 
+              }
+            }
 
-        //goalCheck 
-        
-        Move move;
-        if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
-          float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
-          //if not complete step - add pass 
-          //small workaround preventing rabbits crouching along the victory line
-          if (playBoard->canContinue(move)){
-            move.appendStep(Step(STEP_PASS, playBoard->getPlayerToMove()));
+            //opponent trapCheck
+            MoveList moves;
+            if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
+              for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
+                advisor_->addMove((*it), playBoard->getBitboard());
+                //cerr << playBoard->toString();
+                //cerr << playBoard->moveToStringWithKills(*it) << endl;
+              }
+            }
+
+            //trapCheck 
+            moves.clear();
+            if (playBoard->getStepCount() == 0 && 
+                playBoard->trapCheck(OPP(playBoard->getPlayerToMove()), &moves)){ 
+              for (MoveList::const_iterator it = moves.begin(); 
+                                            it != moves.end(); it++){ 
+                advisor_->addMove((*it), playBoard->getBitboard());
+                //cerr << playBoard->toString();
+                //cerr << playBoard->moveToStringWithKills(*it) << endl;
+              }
+            }
           }
-          tree_->expandNodeLimited(tree_->actNode(), move);
-          //descend to the expanded area
-          while (tree_->actNode()->hasChildren()){
-            tree_->firstChildDescend();
+
+          stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
+          stepsNum = playBoard->filterRepetitions(steps, stepsNum);
+          //int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
+
+          /*if (cfg.uct_tt()){
+            stepsNum = filterTT(steps, stepsNum, playBoard, level); 
           }
-          tree_->updateHistory(value);
+          */
+
+          if (playBoard->canPass()) { //add pass if possible
+            steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
+          }
+
+          if (stepsNum > 0) {
+            if (cfg.knowledgeInTree()){
+              HeurArray heurs;
+              playBoard->getHeuristics(steps, stepsNum, heurs);
+              tree_->expandNode(tree_->actNode(), steps, stepsNum, &heurs);
+            }
+            else{
+              tree_->expandNode(tree_->actNode(), steps, stepsNum);
+            }
+            if (cfg.uct_tt()){
+              updateTT(tree_->actNode(), playBoard); 
+            }
+          }
+          //imobilization
+          //little hack - raise visits_ artificially to break the infinite for loop
+          else{
+            tree_->actNode()->setVisits(tree_->actNode()->getVisits() + 1);
+          }
+
+          continue;
+        }
+        //check win by immobilization 
+        if (tree_->actNode()->isMature()){
+          tree_->updateHistory(OPP(playBoard->getPlayerToMove()));
           break;
         }
-        
-        //tactics in playouts extension
-       
-        if (cfg.moveAdvisor()){
-          //opponent goal check
-          move = Move();
-          player_t opp = OPP(playBoard->getPlayerToMove());
-          if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
-            if (move.getStepCount()) {
-              advisor_->addMove(move, playBoard->getBitboard());
-                              //playBoard->getStepCountLeft()); 
-            }
-          }
+      } //< UCT_MAX_DEPTH check
 
-          //opponent trapCheck
-          MoveList moves;
-          if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
-            for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
-              advisor_->addMove((*it), playBoard->getBitboard());
-              //cerr << playBoard->toString();
-              //cerr << playBoard->moveToStringWithKills(*it) << endl;
-            }
-          }
-
-          //trapCheck 
-          moves.clear();
-          if (playBoard->getStepCount() == 0 && 
-              playBoard->trapCheck(OPP(playBoard->getPlayerToMove()), &moves)){ 
-            for (MoveList::const_iterator it = moves.begin(); 
-                                          it != moves.end(); it++){ 
-              advisor_->addMove((*it), playBoard->getBitboard());
-              //cerr << playBoard->toString();
-              //cerr << playBoard->moveToStringWithKills(*it) << endl;
-            }
-          }
-        }
-        
-
-        stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
-        stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-        //int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
-
-        /*if (cfg.uct_tt()){
-          stepsNum = filterTT(steps, stepsNum, playBoard, level); 
-        }
-        */
-
-        if (playBoard->canPass()) { //add pass if possible
-          steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
-        }
-
-        if (stepsNum > 0) {
-          if (cfg.knowledgeInTree()){
-            HeurArray heurs;
-            playBoard->getHeuristics(steps, stepsNum, heurs);
-            tree_->expandNode(tree_->actNode(), steps, stepsNum, &heurs);
-          }
-          else{
-            tree_->expandNode(tree_->actNode(), steps, stepsNum);
-          }
-          if (cfg.uct_tt()){
-            updateTT(tree_->actNode(), playBoard); 
-          }
-        }
-
-        continue;
-      }
 
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
           //cfg.playoutLen(),

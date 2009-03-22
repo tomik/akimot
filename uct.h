@@ -217,6 +217,7 @@ class Node
      * some given threshold (around number of legal steps from average position) 
      */
     bool  isMature() const;
+    bool  isJustMature() const;
 
     bool  hasChildren() const;
     bool  hasOneChild() const;
