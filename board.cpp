@@ -343,11 +343,10 @@ bool Step::operator== ( const Step& other) const
 bool Step::operator< ( const Step& other) const
 {
   //TODO why is this causing problems ??? 
-  /*
   if (*this == other){ 
     return false;
   }
-  */
+
   const int itemsNum = 8;
   int items[] = {stepType_ - other.stepType_, from_ - other.from_, to_ - other.to_, 
             piece_ - other.piece_, player_ - other.player_, 

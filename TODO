@@ -3,7 +3,7 @@
 
 === Actual ===
 [4, uct] tree merge is inconsistent with nodesNum count (because of TT)
-[4, uct] virtual passes and semi passes handling (handle in TT)?
+[4, uct] virtual passes and semi passes and inverse steps handling in uct (handle in TT)?
 [3, board] optimize step comparison
 [3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
 

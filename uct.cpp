@@ -166,12 +166,6 @@ Node::Node(TWstep* twStep, int level, float heur)
   value_      = 0; 
   heur_       = heur; 
   twStep_     = twStep;
-  /*if (cfg.historyHeuristic()) {
-    value_    = twStep->value;
-    visits_   = twStep->visits < cfg.matureLevel()/2 ? 
-                twStep->visits : cfg.matureLevel() ;
-  }
-  */
   level_      = level;
 }
 
@@ -250,7 +244,7 @@ float Node::ucb(float exploreCoeff) const
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
          + sqrt((exploreCoeff/visits_)) 
          + heur_/visits_ 
-         //+ (cfg.historyHeuristic() ? (5 * (nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
+         + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
          ;
   
 }
@@ -318,7 +312,6 @@ void Node::fetchChildrenRec(NodeSet & ns)
 void Node::update(float sample)
 {
   if (cfg.uctRelativeUpdate() && isMature()){
-      //((sample - value_ > 0 && nodeType_ == NODE_MAX ) || ( sample - value_ < 0 && nodeType_ == NODE_MIN)) ){
     //int diff = abs(int((sample - value_ ) * sqrt(visits_)));
     //int weight = min(max(diff, 1), 100);
     int weight = min(max(int(sqrt(visits_)), 1), 10);
@@ -525,6 +518,7 @@ string Node::recToString(int depth) const
 
   float minVisitCount = print_visit_threshold_base + 
                         visits_ * print_visit_threshold_parent; 
+  //minVisitCount = 0;
   stringstream ss; 
   for (int i = 0; i < depth; i++ )
     ss << "   ";
@@ -1040,6 +1034,7 @@ void Uct::refineResults(const Board* board)
 //---------------------------------------------------------------------
 
 void Uct::doPlayout(const Board* board)
+
 {
   Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;

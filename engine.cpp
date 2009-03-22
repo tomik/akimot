@@ -171,7 +171,6 @@ void Engine::doSearch(const Board* board)
       pthread_detach(threads[t]);
     }
   }
-  
   timeManager_->stopClock();
   mockupSearchResults(board, ucts, threadsNum); 
 
