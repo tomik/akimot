@@ -324,7 +324,7 @@ bool Step::pieceMoved() const
 bool Step::operator== ( const Step& other) const
 {
   if  ( stepType_ == other.stepType_ ){ // necessary condition ! 
-    if ( stepType_ == STEP_PASS || stepType_ == STEP_NULL ) 
+    if ((stepType_ == STEP_PASS || stepType_ == STEP_NULL ) && player_ == other.player_)
       return true;
     if ( other.player_ == player_ && other.piece_ == piece_ && other.from_ == from_ && other.to_ == to_ ) {
       if ( stepType_ == STEP_SINGLE ) 
@@ -342,16 +342,17 @@ bool Step::operator== ( const Step& other) const
 
 bool Step::operator< ( const Step& other) const
 {
-  //TODO why is this causing problems ??? 
+  //TODO optimize
   if (*this == other){ 
     return false;
   }
 
-  const int itemsNum = 8;
   int items[] = {stepType_ - other.stepType_, from_ - other.from_, to_ - other.to_, 
             piece_ - other.piece_, player_ - other.player_, 
             oppFrom_ - other.oppFrom_, oppTo_ - other.oppTo_, 
             oppPiece_ - other.oppPiece_};
+  const int itemsNum = sizeof(items)/sizeof(int);
+
   for (int i = 0; i < itemsNum; i++){
     if (items[i] < 0 ) {
      return true;
