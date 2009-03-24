@@ -2155,52 +2155,29 @@ void Board::findMCmoveAndMake()
   Step step;
   intList p; 
   
-  /*
-  //area selection
-  #define RADIUS 4
-  u64 area = 0ULL;
-  for (int i = 0; i < 2; i++){
-    int start = grand() % BIT_LEN; 
-    area |= bits::sphere(start, RADIUS);
-  }
-  //bits::print(cerr, area);
-  area &= bitboard_[toMove_][0] & getRandomU64();
-  //bits::print(cerr, area);
-  
-  for (int i = 0; i < 2; i++){
-    int pos = bits::lix(area);
-    if (pos == -1){
-      break;
-    }
-    p.push_back(pos);
-  }
-  */
-  
   for (int i = 0; i < BIT_LEN/2; i++){
     int pos = grand() % BIT_LEN;
     if (bits::getBit(bitboard_[toMove_][0], pos)){
       p.push_back(pos);
-      if (p.size() >= 3) {
+      if (p.size() >= 2){
         break;
       }
+      /*if (random01() < 0.4 ) {
+          break;
+      }
+      */
     }
   }
-
+  
   do { 
-    //int len = 1;
-    //steps[0] = Step(STEP_PASS, toMove_);
-    int len = 0;
+    int len = 1;
+    steps[0] = Step(STEP_PASS, toMove_);
 
     for (intList::iterator it = p.begin(); it != p.end(); it++) { 
-      if (getPlayer((*it)) != toMove_){ //might have fallen into trap
-        continue;
+      //piece might have fallen into trap -> must check is there
+      if (getPlayer((*it)) == toMove_){ 
+        genStepsOne((*it), toMove_, steps, len);
       }
-      assert(getPlayer((*it)) == toMove_);
-      genStepsOne((*it), toMove_, steps, len);
-    }
-
-    if (len == 0){
-      steps[len++] = Step(STEP_PASS, toMove_);
     }
 
     if (cfg.knowledgeInPlayout()){
@@ -2215,8 +2192,7 @@ void Board::findMCmoveAndMake()
     }
     //cerr << toString();
     //cerr << step.toString() << endl;
-    //
-  } while ( ! makeStepTryCommit(step));
+  } while (! makeStepTryCommit(step));
 
 }
 
@@ -2240,7 +2216,6 @@ void Board::init(bool newGame)
   //game initialization - done in the first run or when newgame is specified
   if (! classInit || newGame) {
     classInit = true;
-    //bits::initZobrist();  
     bits::buildStepOffsets();
     thirdRep.clear();
     thirdRep_ = &thirdRep;

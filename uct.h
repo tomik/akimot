@@ -110,19 +110,6 @@ class AdvisorPlayout : public SimplePlayout
      MoveAdvisor * advisor_;
 };
 
-/**
- * Search Extensions class
- */
-class SearchExt
-{
-  public:
-    bool quickGoalCheck(const Board* board, player_t player, int stepsLimit);
-  
-  private:
-    queue<int> queue_;
-    bool flagBoard_[SQUARE_NUM];
-};
-
 /**Tree wide step.*/
 class TWstep
 {
@@ -427,6 +414,11 @@ class Tree
     int getNodesNum();
 
     /**
+     * Nodes pruned getter. 
+     */
+    int getNodesPruned();
+
+    /**
      * Nodes expanded getter.
      */
     int getNodesExpandedNum();
@@ -443,6 +435,18 @@ class Tree
      * @param onlyLastMove if true then only steps from last move are returned.
      */
     string pathToActToString(bool onlyLastMove = false);
+
+    /**
+     * Updates Transposition tables.
+     *
+     * Every children of given father is checked:
+     *    if it's position is unique in TT it's added 
+     *    if it's position already exists in TT, it's children are linked
+     *
+     * @param father it's children will get updated
+     */
+    void updateTT(Node* father, const Board* board);
+
 
   private:
     /**
@@ -467,17 +471,22 @@ class Tree
      */
     static int calcNodeLevel(Node* father, const Step& step);
 
+
     Node*      history[UCT_MAX_DEPTH];
     uint       historyTop;
     /**Expanded nodes.*/
     int   nodesExpandedNum_;
     /**Nodes in the tree.*/
     int   nodesNum_;
+    /**Number of pruned nodes in tt.*/
+    int nodesPruned_;
     /**Map of tree wide steps. 
      *
      * Every step with its value (average of all values in the tree) 
      * is stored here. This is used to init new node.*/
     TWsteps  twSteps_;
+    /**Transposition table.*/
+    TT* tt_;              
     
 };
 
@@ -564,11 +573,6 @@ class Uct
      */
     int getPlayoutsNum() const;
 
-    /**
-     * nodesPruned_ getter.
-     */
-    int getNodesTTpruned() const;
-
   private:
     /**
      * Simple constructor.
@@ -589,41 +593,18 @@ class Uct
     double decidePlayoutWinner(const Board*) const;
 
     /**
-     * Filtering steps through Transposition tables.
-     *
-     * Signature of every step in steps is counted and checked 
-     * against transposition table. If found 
-     * step is deleted (won't be added to the tree).
-     *
-     * 
-     * @return Number of steps in steps array after update.
+     * Fills advisor with moves from tactical search. 
      */
-    int filterTT(StepArray& steps, uint stepsNum, const Board* board, int level);
-
-    /**
-     * Updates Transposition tables after nodes were added. 
-     *
-     * Signature of every node in nodeList is added to the TT. 
-     *
-     * @param father it's children will get updated
-     * @return Number of steps in steps array after update.
-     */
-    void updateTT(Node* father, const Board* board);
+    void fill_advisor(const Board * playBoard);
 
     /**UCT tree*/
     Tree* tree_;
     /**Evaluation object*/
     Eval* eval_;
-    /**Transposition table.*/
-    TT* tt_;              
-    /**Search extension.*/
-    SearchExt* searchExt_; 
     /**Pointer to the most visited last step of first move.*/
     Node* bestMoveNode_;  
     /**Best move calculated from bestMoveNode_.*/
     string bestMoveRepr_;  
-    /**Number of pruned nodes in tt.*/
-    int nodesPruned_;
     /**Total number of playouts.*/
     int playouts_;
     

@@ -108,16 +108,6 @@ void AdvisorPlayout::playOne()
 }
 
 //---------------------------------------------------------------------
-// section SearchExt
-//---------------------------------------------------------------------
-
-bool SearchExt::quickGoalCheck(const Board* board, player_t player, int stepsLimit)
-{
-  return false;
-  //return board->quickGoalCheck(player, stepsLimit);
-}
-
-//---------------------------------------------------------------------
 // section TWstep
 //---------------------------------------------------------------------
 
@@ -569,13 +559,6 @@ string Node::recToString(int depth) const
 //  section Tree
 //---------------------------------------------------------------------
 
-Tree::Tree()
-{
-  assert(false);
-}
-
-//--------------------------------------------------------------------- 
-
 Tree::Tree(Node* root)
 {
   assert(root->getFather() == NULL);
@@ -596,10 +579,12 @@ Tree::Tree(Tree* trees[], int treesNum)
     en->node = trees[i]->root();
     en->next = head;
     head = en;
+    nodesPruned_ += trees[i]->nodesPruned_;  
   }
+  //TODO nodesPruned_ simple average now ...
+  nodesPruned_ /= treesNum;
 
   //tree from merged trees
-  //
   if (treesNum == 1){
     history[0] = trees[0]->root();
     nodesNum_ = trees[0]->nodesNum_;
@@ -629,27 +614,10 @@ Tree::~Tree()
     delete (*it);
   }
   delete history[0];
+  delete tt_;
 }
 
 //--------------------------------------------------------------------- 
-
-void Tree::init()
-{
-  history[0] = NULL; 
-  twSteps_.clear();
-  historyTop = 0;
-  nodesExpandedNum_ = 0;
-  nodesNum_ = 0;
-}
-
-//--------------------------------------------------------------------- 
-
-int Tree::calcNodeLevel(Node* father, const Step& step) 
-{
-  return father->getLevel() + (father->getPlayer() == step.getPlayer() ? 0 : 1);  
-}
-
-//---------------------------------------------------------------------
 
 void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs)
 {
@@ -681,8 +649,8 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
     newChild = new Node(&twSteps_[*it], level);
     node->addChild(newChild);
     node = newChild;
-   // nodesNum_++;
-   // nodesExpandedNum_++;
+    nodesNum_++;
+    nodesExpandedNum_++;
   }
 }
 
@@ -758,7 +726,6 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
       }
     }
   }
-  //assert(false);
   return best;
 }
 
@@ -915,6 +882,13 @@ int Tree::getNodesNum()
 
 //--------------------------------------------------------------------- 
 
+int Tree::getNodesPruned() 
+{
+    return nodesPruned_;
+}
+
+//--------------------------------------------------------------------- 
+
 int Tree::getNodesExpandedNum() 
 {
     return nodesExpandedNum_;
@@ -941,6 +915,74 @@ string Tree::pathToActToString(bool onlyLastMove )
 }
 
 //---------------------------------------------------------------------
+
+void Tree::updateTT(Node* father, const Board* board)
+{
+  assert(father != NULL); 
+  Node* node = father->getFirstChild(); 
+  Node* ttNode = NULL; 
+  u64 afterStepSignature;
+  while (node != NULL){
+    if (node->getStep().isPass()){
+      node = node->getSibling();
+      continue;
+    }
+    afterStepSignature = board->calcAfterStepSignature(node->getStep());
+    //check whether position was encountered already
+    if (tt_->loadItem(afterStepSignature, 
+                     board->getPlayerToMove(), 
+                     ttNode,
+                     node->getDepthIdentifier())){
+      assert(ttNode != NULL);
+      node->setFirstChild(ttNode->getFirstChild());
+      nodesPruned_++;
+
+    }else{
+      //position is not in tt yet -> store it 
+      tt_->insertItem(afterStepSignature,
+                    board->getPlayerToMove(), 
+                    node, 
+                    node->getDepthIdentifier());
+    }
+    node = node->getSibling();
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+Tree::Tree()
+{
+  assert(false);
+}
+
+//--------------------------------------------------------------------- 
+
+void Tree::init()
+{
+  tt_ = new TT();
+
+  //root is NOT saved 
+  /*tt_->insertItem(board->getSignature(),
+                  board->getPlayerToMove(), 
+                  tree_->root());
+  */
+
+  history[0] = NULL; 
+  twSteps_.clear();
+  historyTop = 0;
+  nodesExpandedNum_ = 0;
+  nodesNum_ = 0;
+  nodesPruned_ = 0;
+}
+
+//--------------------------------------------------------------------- 
+
+int Tree::calcNodeLevel(Node* father, const Step& step) 
+{
+  return father->getLevel() + (father->getPlayer() == step.getPlayer() ? 0 : 1);  
+}
+
+//---------------------------------------------------------------------
 //  section Uct
 //---------------------------------------------------------------------
 
@@ -959,7 +1001,6 @@ Uct::Uct(const Board* board, Uct* ucts[], int uctsNum)
   for (int i = 0; i < uctsNum; i++){
     trees[i] = ucts[i]->getTree();
     playouts_ += ucts[i]->getPlayoutsNum();
-    nodesPruned_ += ucts[i]->getNodesTTpruned();
   }
 
   //delete tree initialized in init
@@ -982,20 +1023,13 @@ Uct::Uct(const Board* board)
 void Uct::init(const Board* board)
 {
   eval_  = new Eval(board);
-  searchExt_ = new SearchExt();
   tree_  = new Tree(board->getPlayerToMove());
-  tt_ = new TT();
   advisor_ = new MoveAdvisor();
 
   bestMoveNode_ = NULL;
   bestMoveRepr_ = "";
-  nodesPruned_ = 0;
   playouts_ = 0;
 
-  //save root in the tt
-  tt_->insertItem(board->getSignature(),
-                  board->getPlayerToMove(), 
-                  tree_->root());
 
 }
 
@@ -1005,8 +1039,6 @@ Uct::~Uct()
 {
   delete eval_;
   delete tree_;
-  delete tt_;
-  delete searchExt_;
   delete advisor_;
 }
 
@@ -1032,7 +1064,7 @@ void Uct::refineResults(const Board* board)
   bestMoveRepr_ = board->moveToStringWithKills(bestMove);
 
   //add signature of final position ! -> for future thirdRepetitionCheck
-  //TODO this should be done when the move is actually MADE ! 
+  //TODO IS THIS NECCESSARY - use new position loading - AEI ? 
   Board* playBoard = new Board(*board);
   playBoard->makeMove(bestMove);
   thirdRep.update(playBoard->getSignature(), playBoard->getPlayerToMove()) ;
@@ -1041,7 +1073,6 @@ void Uct::refineResults(const Board* board)
 //---------------------------------------------------------------------
 
 void Uct::doPlayout(const Board* board)
-
 {
   Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;
@@ -1079,47 +1110,11 @@ void Uct::doPlayout(const Board* board)
           //tactics in playouts extension
          
           if (cfg.moveAdvisor()){
-            //opponent goal check
-            move = Move();
-            player_t opp = OPP(playBoard->getPlayerToMove());
-            if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
-              if (move.getStepCount()) {
-                advisor_->addMove(move, playBoard->getBitboard());
-                                //playBoard->getStepCountLeft()); 
-              }
-            }
-
-            //opponent trapCheck
-            MoveList moves;
-            if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
-              for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
-                advisor_->addMove((*it), playBoard->getBitboard());
-                //cerr << playBoard->toString();
-                //cerr << playBoard->moveToStringWithKills(*it) << endl;
-              }
-            }
-
-            //trapCheck 
-            moves.clear();
-            if (playBoard->getStepCount() == 0 && 
-                playBoard->trapCheck(OPP(playBoard->getPlayerToMove()), &moves)){ 
-              for (MoveList::const_iterator it = moves.begin(); 
-                                            it != moves.end(); it++){ 
-                advisor_->addMove((*it), playBoard->getBitboard());
-                //cerr << playBoard->toString();
-                //cerr << playBoard->moveToStringWithKills(*it) << endl;
-              }
-            }
-          }
+            fill_advisor(playBoard); 
+          } 
 
           stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
           stepsNum = playBoard->filterRepetitions(steps, stepsNum);
-          //int level = tree_->actNode() + playBoard->isMoveBeginning() ? 1 : 0;
-
-          /*if (cfg.uct_tt()){
-            stepsNum = filterTT(steps, stepsNum, playBoard, level); 
-          }
-          */
 
           if (playBoard->canPass()) { //add pass if possible
             steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
@@ -1135,7 +1130,7 @@ void Uct::doPlayout(const Board* board)
               tree_->expandNode(tree_->actNode(), steps, stepsNum);
             }
             if (cfg.uct_tt()){
-              updateTT(tree_->actNode(), playBoard); 
+              tree_->updateTT(tree_->actNode(), playBoard); 
             }
           }
           //imobilization
@@ -1162,6 +1157,7 @@ void Uct::doPlayout(const Board* board)
           cfg.playoutLen(), 
           advisor_
           );
+
       playoutStatus = playoutManager.doPlayout();
       float sample = decidePlayoutWinner(playBoard);
       tree_->updateHistory(sample);
@@ -1204,7 +1200,7 @@ string Uct::getStats(float seconds) const
         << "  " << tree_->getNodesNum() << " nodes in the tree" << endl 
         << "  " << tree_->getNodesExpandedNum() << " nodes expanded" << endl 
         //<< "  " << tree_->getLongestVariant() << " nodes in longest path" << endl
-        << "  " << nodesPruned_ << " nodes pruned" << endl 
+        << "  " << tree_->getNodesPruned() << " nodes pruned" << endl 
         << "  " << "best move: " << getBestMoveRepr() << endl 
         << "  " << "best move visits: " << getBestMoveVisits() << endl 
         << "  " << "win condidence: " << getWinRatio() << endl 
@@ -1267,13 +1263,6 @@ int Uct::getPlayoutsNum() const
 
 //--------------------------------------------------------------------- 
 
-int Uct::getNodesTTpruned() const 
-{
-  return nodesPruned_;
-}
-
-//--------------------------------------------------------------------- 
-
 double Uct::decidePlayoutWinner(const Board* playBoard) const
 {
   if IS_PLAYER(playBoard->getWinner()){
@@ -1293,78 +1282,39 @@ double Uct::decidePlayoutWinner(const Board* playBoard) const
 
 //--------------------------------------------------------------------- 
 
-int Uct::filterTT(StepArray& steps, uint stepsNum, const Board* board, int level)
-{
-  uint i = 0;
-  u64 afterStepSignature;
+void Uct::fill_advisor(const Board * playBoard) {
 
-  while (i < stepsNum){
-    afterStepSignature = board->calcAfterStepSignature(steps[i]);
-    if (tt_->hasItem(afterStepSignature, 
-                     board->getPlayerToMove(), 
-                     level)){
-      //TODO change this policy     
-      //if node with same position already exists in the tree new node is not added 
-      steps[i] = steps[--stepsNum];
-      nodesPruned_++;
-      continue;
+  //opponent goal check
+  Move move = Move();
+  player_t opp = OPP(playBoard->getPlayerToMove());
+  if (playBoard->goalCheck(opp, STEPS_IN_MOVE, &move)){
+    if (move.getStepCount()) {
+      advisor_->addMove(move, playBoard->getBitboard());
+                      //playBoard->getStepCountLeft()); 
     }
-    i++; 
   }
 
-  return stepsNum;
-}  
-
-//--------------------------------------------------------------------- 
-
-void Uct::updateTT(Node* father, const Board* board)
-{
-  assert(father != NULL); 
-  Node* node = father->getFirstChild(); 
-  Node* ttNode = NULL; 
-  u64 afterStepSignature;
-  while (node != NULL){
-    if (node->getStep().isPass()){
-      node = node->getSibling();
-      continue;
+  //opponent trapCheck
+  MoveList moves;
+  if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
+    for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
+      advisor_->addMove((*it), playBoard->getBitboard());
     }
-    afterStepSignature = board->calcAfterStepSignature(node->getStep());
-    //check whether position was encountered already
-    if (tt_->loadItem(afterStepSignature, 
-                     board->getPlayerToMove(), 
-                     ttNode,
-                     node->getDepthIdentifier())){
-      //cerr << node->getLevel() << " " << node->getLocalDepth() << " " << node->getDepthIdentifier() << endl;
-      assert(ttNode != NULL);
-      node->setFirstChild(ttNode->getFirstChild());
-      nodesPruned_++;
+  }
 
-      /*
-      cerr << board->toString();
-      cerr << ttNode->toString() << endl;
-      cerr << node->toString() << endl;
-      Node* deadlock = node->getFather();
-      //deadlock check
-      while (deadlock != NULL) { 
-        cerr << "dl " << deadlock->toString() << endl;
-        if (deadlock == ttNode){
-          //remove node ! 
-          assert(false);
-        }
-        deadlock = deadlock->getFather();
-      }
-      */
-
-    }else{
-      //position is not in tt yet -> store it 
-      tt_->insertItem(afterStepSignature,
-                    board->getPlayerToMove(), 
-                    node, 
-                    node->getDepthIdentifier());
+  //trapCheck 
+  moves.clear();
+  if (playBoard->getStepCount() == 0 && 
+      playBoard->trapCheck(OPP(playBoard->getPlayerToMove()), &moves)){ 
+    for (MoveList::const_iterator it = moves.begin(); 
+                                  it != moves.end(); it++){ 
+      advisor_->addMove((*it), playBoard->getBitboard());
+      //cerr << playBoard->toString();
+      //cerr << playBoard->moveToStringWithKills(*it) << endl;
     }
-    node = node->getSibling();
   }
 }
+
 //--------------------------------------------------------------------- 
 //--------------------------------------------------------------------- 
 
