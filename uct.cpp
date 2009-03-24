@@ -1149,12 +1149,13 @@ void Uct::doPlayout(const Board* board)
       } //< UCT_MAX_DEPTH check
 
 
+      int base = 1 + (grand() % cfg.playoutLen());
+      int playoutLen = base + (tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ? 1 : 0);
+           
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
           //cfg.playoutLen(),
           //TODO CHECK THIS !!!
-          tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ?
-          cfg.playoutLen() + 1 :
-          cfg.playoutLen(), 
+          playoutLen,
           advisor_
           );
 

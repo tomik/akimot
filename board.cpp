@@ -2159,7 +2159,7 @@ void Board::findMCmoveAndMake()
     int pos = grand() % BIT_LEN;
     if (bits::getBit(bitboard_[toMove_][0], pos)){
       p.push_back(pos);
-      if (p.size() >= 2){
+      if (p.size() >= 3){
         break;
       }
       /*if (random01() < 0.4 ) {
