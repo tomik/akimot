@@ -2170,8 +2170,9 @@ void Board::findMCmoveAndMake()
   }
   
   do { 
-    int len = 1;
-    steps[0] = Step(STEP_PASS, toMove_);
+    //int len = 1;
+    //steps[0] = Step(STEP_PASS, toMove_);
+    int len = 0;
 
     for (intList::iterator it = p.begin(); it != p.end(); it++) { 
       //piece might have fallen into trap -> must check is there
@@ -2180,6 +2181,9 @@ void Board::findMCmoveAndMake()
       }
     }
 
+    if (len == 0){
+      steps[len++] = Step(STEP_PASS, toMove_);
+    }
     if (cfg.knowledgeInPlayout()){
       step = chooseStepWithKnowledge(steps, len);
     }

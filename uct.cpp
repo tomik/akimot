@@ -157,20 +157,22 @@ Node::Node(TWstep* twStep, int level, float heur)
   heur_       = heur; 
   twStep_     = twStep;
   level_      = level;
+  ttRep_      = NULL;
 }
 
 //---------------------------------------------------------------------
 
-Node* Node::findUctChild() 
+Node* Node::findUctChild(Node* realFather) 
 {
   assert(this->firstChild_ != NULL);
+  assert(realFather != NULL);
   
   Node* act = firstChild_;
   Node* best = firstChild_;
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
 
-  float exploreCoeff = cfg.exploreRate() * log(visits_);
+  float exploreCoeff = cfg.exploreRate() * log(realFather->visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
@@ -313,6 +315,13 @@ void Node::update(float sample)
   }else{
     value_ += (sample - value_)/++visits_;         
   }
+
+  //value update in ttNodes
+  if (ttRep_) {
+    for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
+    (*it)->value_ = value_;
+   } 
+  }
 }
 
 //--------------------------------------------------------------------- 
@@ -383,6 +392,20 @@ Node* Node::getSibling() const
 void Node::setSibling(Node* node) 
 { 
   sibling_ = node; 
+}
+
+//--------------------------------------------------------------------- 
+
+NodeList* Node::getTTrep() const
+{
+  return ttRep_;
+}
+
+//---------------------------------------------------------------------
+
+void Node::setTTrep(NodeList* nodelist) 
+{ 
+  ttRep_ = nodelist; 
 }
 
 //---------------------------------------------------------------------
@@ -499,7 +522,7 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getLevel() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
+  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
     << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
     << endl;
   return ss.str();
@@ -633,6 +656,13 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
     nodesNum_++;
   }
   nodesExpandedNum_++;
+  
+  //expander different from representant
+  if (node->getTTrep()) {
+    for (NodeList::iterator it = node->getTTrep()->begin(); it != node->getTTrep()->end(); it++){
+      (*it)->setFirstChild(node->getFirstChild());
+    }
+  }
 }
 
 //--------------------------------------------------------------------- 
@@ -659,7 +689,7 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
 void Tree::uctDescend()
 {
   assert(actNode()->hasChildren());
-  history[historyTop + 1]= actNode()->findUctChild();
+  history[historyTop + 1]= actNode()->findUctChild(history[historyTop]);
   historyTop++;
   assert(actNode() != NULL);
 }
@@ -920,7 +950,8 @@ void Tree::updateTT(Node* father, const Board* board)
 {
   assert(father != NULL); 
   Node* node = father->getFirstChild(); 
-  Node* ttNode = NULL; 
+  NodeList* rep = NULL; 
+  Node* repNode = NULL; 
   u64 afterStepSignature;
   while (node != NULL){
     if (node->getStep().isPass()){
@@ -931,17 +962,26 @@ void Tree::updateTT(Node* father, const Board* board)
     //check whether position was encountered already
     if (tt_->loadItem(afterStepSignature, 
                      board->getPlayerToMove(), 
-                     ttNode,
+                     rep,
                      node->getDepthIdentifier())){
-      assert(ttNode != NULL);
-      node->setFirstChild(ttNode->getFirstChild());
+      assert(rep != NULL);
+      repNode = rep->front(); 
       nodesPruned_++;
+      
+      node->setFirstChild(repNode->getFirstChild());
+      node->setValue(repNode->getValue());
+      node->setTTrep(rep);
+      rep->push_back(node);
+      //cerr << node->toString() << " --- " << ttNode->toString() << endl;
 
     }else{
       //position is not in tt yet -> store it 
+      rep = new NodeList();
+      rep->push_back(node);
+      node->setTTrep(rep);
       tt_->insertItem(afterStepSignature,
                     board->getPlayerToMove(), 
-                    node, 
+                    rep, 
                     node->getDepthIdentifier());
     }
     node = node->getSibling();
@@ -1121,6 +1161,7 @@ void Uct::doPlayout(const Board* board)
           }
 
           if (stepsNum > 0) {
+
             if (cfg.knowledgeInTree()){
               HeurArray heurs;
               playBoard->getHeuristics(steps, stepsNum, heurs);

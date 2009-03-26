@@ -149,7 +149,7 @@ class Node
     /**
      * Finds child with highest UCB1 value.
      */
-    Node* findUctChild();
+    Node* findUctChild(Node * realFather);
 
     /**
      * Finds random child.
@@ -214,6 +214,8 @@ class Node
     void  setFirstChild(Node *);
     Node* getSibling() const;
     void  setSibling(Node*);
+    NodeList* getTTrep() const;
+    void setTTrep(NodeList * node);
     Step  getStep() const;
     TWstep*  getTWstep() const;
     player_t getPlayer() const;
@@ -257,6 +259,9 @@ class Node
     float       heur_;
     int         visits_;
     TWstep*     twStep_;
+
+    /**Transposition tables representant*/
+    NodeList*       ttRep_;
 
     Node*       sibling_;
     Node*       firstChild_;  

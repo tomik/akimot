@@ -2,8 +2,10 @@
 
 #include "utils.h"
 #include <map>
+#include <list>
 
 using std::map;
+using std::list;
 
 typedef pair<u64, int>  PositionPair;
 typedef map<u64, int>   PositionMap; 
@@ -174,6 +176,8 @@ extern ThirdRep thirdRep;
 //forward declaration
 class Node; 
 
+typedef list<Node*> NodeList;
+
 //typedef map<u64, Node*> TTpair;
 //typedef map<u64, Node*> TTmap;
 
@@ -184,6 +188,6 @@ class Node;
  * "key(position signature, player, move - tree depth ) ---> 
  *    pointer to the node in the tree"
  */
-typedef HashTableBoard<Node *> TT;
+typedef HashTableBoard<NodeList *> TT;
 
 typedef HashTable<float> EvalTT;
