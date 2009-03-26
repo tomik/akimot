@@ -286,17 +286,21 @@ void Node::removeChild(Node* child)
 
 //---------------------------------------------------------------------
 
-void Node::fetchChildrenRec(NodeSet & ns)
+void Node::delChildrenRec()
 {
+  //somebody else will take care
+  if (ttRep_ && ttRep_->front() != this) {
+    return;
+  }
+
   Node* actNode = firstChild_;
   Node* sibling;
   while(actNode != NULL){
     sibling = actNode->sibling_;
-    actNode->fetchChildrenRec(ns);
-    ns.insert(actNode);
+    actNode->delChildrenRec();
+    delete actNode;
     actNode = sibling;
   }
-  //delete actNode;
 }
 
 //---------------------------------------------------------------------
@@ -631,11 +635,7 @@ Tree::Tree(player_t firstPlayer)
 
 Tree::~Tree()
 {
-  NodeSet ns;
-  history[0]->fetchChildrenRec(ns);
-  for (NodeSet::iterator it = ns.begin(); it != ns.end(); it++) {
-    delete (*it);
-  }
+  history[0]->delChildrenRec();
   delete history[0];
   delete tt_;
 }

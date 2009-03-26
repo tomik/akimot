@@ -181,7 +181,7 @@ class Node
      * Fetches children to given node set. 
      * useful for instance for final cleanup. 
      */
-    void  fetchChildrenRec(NodeSet& ns);
+    void  delChildrenRec();
 
     /**
      * Update after playout. 
