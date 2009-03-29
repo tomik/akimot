@@ -257,6 +257,7 @@ class Node
     float       value_; 
     /**Heuristic value - purely position dependent.*/
     float       heur_;
+    float       squareSum_;
     int         visits_;
     TWstep*     twStep_;
 

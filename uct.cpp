@@ -154,6 +154,7 @@ Node::Node(TWstep* twStep, int level, float heur)
   father_     = NULL;  
   visits_     = 0;
   value_      = 0; 
+  squareSum_  = 0;
   heur_       = heur; 
   twStep_     = twStep;
   level_      = level;
@@ -172,7 +173,8 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
 
-  float exploreCoeff = cfg.exploreRate() * log(realFather->visits_);
+  //float exploreCoeff = log(realFather->visits_);
+  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log(realFather->visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
@@ -232,13 +234,15 @@ Node* Node::findMostExploredChild() const
 
 float Node::ucb(float exploreCoeff) const
 {
-  //nasty trick ! for first run returns inf ( infinity ) since visits_ == 0   
+  double v = (squareSum_/visits_) + sqrt(2 * exploreCoeff/visits_); 
+  if (v > 0.2){
+    v = 0.2;
+  }
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
-         + sqrt((exploreCoeff/visits_)) 
+         + sqrt((exploreCoeff/visits_) * (cfg.ucbTuned() ? v : 1))
          + heur_/visits_ 
          + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
          ;
-  
 }
 
 //---------------------------------------------------------------------
@@ -307,6 +311,7 @@ void Node::delChildrenRec()
 
 void Node::update(float sample)
 {
+  float old_value = value_;
   if (cfg.uctRelativeUpdate() && isMature()){
     //int diff = abs(int((sample - value_ ) * sqrt(visits_)));
     //int weight = min(max(diff, 1), 100);
@@ -319,7 +324,7 @@ void Node::update(float sample)
   }else{
     value_ += (sample - value_)/++visits_;         
   }
-
+  squareSum_ += (sample - old_value)* (sample - value_);
   //value update in ttNodes
   if (ttRep_) {
     for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){

@@ -153,12 +153,16 @@ inline float random01()
   return (double)grand()/((double)(GRAND_MAX) + (double)(1));
 }
 
-int max(int a, int b);
+template<typename T> T max(T a, T b){
+  return a > b ? a : b;
+}
 
-int min(int a, int b);
+template<typename T> T min(T a, T b){
+  return a < b ? a : b;
+}
 
 /**
- * String to int converter.
+} String to int converter.
  */
 int str2int(const string& str);
 
