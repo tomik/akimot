@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     engine->doSearch(&board);
     cout << engine->getBestMove() << endl;
     cerr << engine->getStats();
-    cerr << engine->getAdditionalInfo();
+    //cerr << engine->getAdditionalInfo();
     return 0;
   } 
 

@@ -776,6 +776,15 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
 
 //--------------------------------------------------------------------- 
 
+float ContextMove::urgency(player_t player, int total) const
+{
+  //cerr << value_ << " " << total << " " << visits_ << endl;
+  return (player == GOLD ? 1 : -1) * value_; // + sqrt(0.15 * log(total)/visits_);
+}
+
+
+//--------------------------------------------------------------------- 
+
 bool ContextMove::applicable(const Bitboard& bitboard, int stepsLeft) const
 {
   if (stepsLeft < move_.getStepCount()) {
@@ -816,6 +825,13 @@ void ContextMove::update(float sample) {
 //  section MoveAdviser
 //---------------------------------------------------------------------
 
+MoveAdvisor::MoveAdvisor() 
+{ 
+  used_ = 0;
+}
+
+//--------------------------------------------------------------------- 
+
 bool MoveAdvisor::getMove(player_t player, const Bitboard& bitboard, int stepsLeft, Move* move)
 {
   return getMoveRand(player, bitboard, stepsLeft, move);
@@ -842,10 +858,13 @@ bool MoveAdvisor::getMoveRand(player_t player, const Bitboard& bitboard, int ste
   int sample = len;
   float bestValue = INT_MIN;
   int bestIndex = -1;
+  //cerr << " ---- " << endl;
   for (int i = 0; i < sample; i++) {
     int index = i; //grand() % len; 
-    if (contextMoves[player][index].getValue() > bestValue
-        && contextMoves[player][index].applicable(bitboard, stepsLeft))
+
+    if ( contextMoves[player][index].applicable(bitboard, stepsLeft)
+     && contextMoves[player][index].urgency(player, used_) > bestValue
+      )
         {
       bestIndex = index;
       bestValue = contextMoves[player][index].getValue();
@@ -863,12 +882,14 @@ bool MoveAdvisor::getMoveRand(player_t player, const Bitboard& bitboard, int ste
 
 //--------------------------------------------------------------------- 
 
-void MoveAdvisor::addMove(const Move & move, const Bitboard& bitboard)
+bool MoveAdvisor::addMove(const Move & move, const Bitboard& bitboard)
 {
   if (! hasMove(move, bitboard)) {
     //cerr << move.toString() << " " << move.getStepCount() << endl;
     contextMoves[move.getPlayer()].push_back(ContextMove(move, bitboard));
+    return true;
   }
+  return false;
 }
 
 //--------------------------------------------------------------------- 
@@ -881,6 +902,7 @@ void MoveAdvisor::update(float sample) {
     for (list<int>::const_iterator it = playedCMs[player].begin(); 
           it != playedCMs[player].end(); it++){
       contextMoves[player][*it].update(sample);
+      used_++;
     }
     playedCMs[player].clear();
   }
@@ -1406,7 +1428,7 @@ bool Board::trapCheck(player_t player, MoveList* moves, SoldierList* soldiers) c
   coord_t trap;
   bool found = false;
   while ((trap = bits::lix(t)) != BIT_EMPTY){
-    found = trapCheck(player, trap, STEPS_IN_MOVE, moves, soldiers) || found;
+    found = trapCheck(player, trap, getStepCountLeft(), moves, soldiers) || found;
   }
   return found;
 }

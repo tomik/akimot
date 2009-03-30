@@ -543,6 +543,11 @@ class ContextMove
     float getValue() const;
 
     void update(float sample); 
+
+    /**
+     * Ucb-like urgency.
+     */
+    float urgency(player_t player, int total) const;
   private: 
     ContextMove(){};
     Move move_;
@@ -563,6 +568,7 @@ typedef ContextMoves::iterator ContextMovesIter;
 class MoveAdvisor 
 {
   public: 
+    MoveAdvisor(); 
     /**
      * Get move for given conditions.
      */
@@ -575,7 +581,7 @@ class MoveAdvisor
      * If there is no such move already, then
      * creates context move for given move and position and stores it.
      */
-    void addMove(const Move & move, const Bitboard& bitboard);
+    bool addMove(const Move & move, const Bitboard& bitboard);
 
     /**
      * Check existence of such a move.
@@ -594,6 +600,8 @@ class MoveAdvisor
 
     /**Flag saying whether update is needed*/
     bool update_;
+    
+    int used_;
 };
     
 

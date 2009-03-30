@@ -175,7 +175,7 @@ Node* Node::findUctChild(Node* realFather)
   float actUrgency = 0;
   
   //float exploreCoeff = log(realFather->visits_);
-  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log(realFather->visits_);
+  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log2(realFather->visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
@@ -567,7 +567,7 @@ string Node::toString() const
   stringstream ss;
 
   ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
-    << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
+    << (father_ != NULL ? ucb(cfg.exploreRate() * log2(father_->visits_)) : 1 )
     << endl;
   return ss.str();
 }
@@ -1381,9 +1381,14 @@ void Uct::fill_advisor(const Board * playBoard) {
 
   //opponent trapCheck
   MoveList moves;
+  moves.clear();
   if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
     for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
       advisor_->addMove((*it), playBoard->getBitboard());
+      //if (advisor_->addMove((*it), playBoard->getBitboard())){
+      //  cerr << playBoard->toString();
+      //  cerr << it->toString() << endl;
+      //}
     }
   }
 
@@ -1394,8 +1399,6 @@ void Uct::fill_advisor(const Board * playBoard) {
     for (MoveList::const_iterator it = moves.begin(); 
                                   it != moves.end(); it++){ 
       advisor_->addMove((*it), playBoard->getBitboard());
-      //cerr << playBoard->toString();
-      //cerr << playBoard->moveToStringWithKills(*it) << endl;
     }
   }
 }

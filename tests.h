@@ -400,23 +400,38 @@ class DebugTestSuite : public CxxTest::TestSuite
         }
       );
 
+      set<string> t1;
+      set<string> t2;
+
       while (ss.good()) { 
         string pieceStr;
-        int steps_num;
         ss >> pieceStr;    
         if (pieceStr == ""){
           continue;
         }
+        t1.insert(trim(pieceStr));
+        int steps_num;
         ss >> steps_num;
-        bool found = false;
-        for (SoldierList::iterator it = trapable.begin(); it != trapable.end(); it++) {
-          if (it->toString() == pieceStr){
-            found = true;
-            break;
-          }
-        }
-        assert(found);
       }
+
+      for (SoldierList::iterator it = trapable.begin(); it != trapable.end(); it++) {
+        t2.insert(it->toString());
+      }
+
+      /*
+      cerr << endl;
+      for (set<string>::iterator it = t1.begin(); it != t1.end(); it++) {
+        cerr << *it << " ";
+      }
+      cerr << endl;
+      for (set<string>::iterator it = t2.begin(); it != t2.end(); it++) {
+        cerr << *it << " ";
+      }
+      */
+
+      //check bijection
+      assert(t1 == t2);
+
       delete b;
     }
 

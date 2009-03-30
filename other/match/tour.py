@@ -48,6 +48,8 @@ def run(bots, opt):
         log = "%s/%s_%d" % (opt.game_dir, LOG_FILE, i) 
         tmp_record = "/tmp/%s_%d.%s" % (RECORD_FILE, i, os.getpid())
         tmp_log = "/tmp/%s_%d.%s" % (LOG_FILE, i, os.getpid())
+        if opt.silent:
+          tmp_log = "/dev/null"
         cmdline = "./match %s %s 1>%s 2>%s" % (bots[0], bots[1], tmp_record, tmp_log)
 
         if os.system(cmdline) == 2:
@@ -56,7 +58,8 @@ def run(bots, opt):
         results.append(get_result(tmp_record))
 
         shutil.move(tmp_record, record)
-        shutil.move(tmp_log, log)
+        if not opt.silent:
+          shutil.move(tmp_log, log)
 
 def finish(opt):
     #copy configuration files
@@ -91,6 +94,7 @@ if __name__ == "__main__":
     parser.add_option("--game_dir", "-d", help="use given dir to store game records", default=default_game_dir())
     parser.add_option("--start_from", "-s", help="start numbering games from ...", default=1, type="int")
     parser.add_option("--mode", "-m", help="What mode running in ... options are [standalone(implicit), master, slave]", default=MODES[0])
+    parser.add_option("--silent", "-t", help="No log information.", action='store_true', default=False)
 
     (options, args) = parser.parse_args()
     
