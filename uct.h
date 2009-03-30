@@ -152,6 +152,11 @@ class Node
     Node* findUctChild(Node * realFather);
 
     /**
+     * Prunes out unpromising nodes.
+     */
+    void latePruning();
+
+    /**
      * Finds random child.
      *
      * Mostly for testing.
@@ -259,6 +264,7 @@ class Node
     float       heur_;
     float       squareSum_;
     int         visits_;
+    int         childrenNum_;
     TWstep*     twStep_;
 
     /**Transposition tables representant*/

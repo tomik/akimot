@@ -98,6 +98,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("uct_transposition_tables", IT_BOOL, (void*)&uct_tt_,"1"));
   items_.push_back(CfgItem("fpu", IT_FLOAT, (void*)&fpu_,"1.1"));
   items_.push_back(CfgItem("ucb_tuned", IT_BOOL, (void*)&ucbTuned_,"0"));
+  items_.push_back(CfgItem("late_pruning", IT_BOOL, (void*)&latePruning_,"0"));
   items_.push_back(CfgItem("knowledge_in_tree", IT_BOOL, (void*)&knowledgeInTree_,"0"));
   items_.push_back(CfgItem("uct_relative_update", IT_BOOL, (void*)&uctRelativeUpdate_,"1"));
   items_.push_back(CfgItem("history_heuristic", IT_BOOL, (void*)&historyHeuristic_,"0"));

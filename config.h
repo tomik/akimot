@@ -73,7 +73,8 @@ class Cfg
     inline bool extensionsInEval() { return extensionsInEval_; }
     inline bool uct_tt() { return uct_tt_; }
     inline float fpu() { return fpu_; }
-    inline float ucbTuned() { return ucbTuned_; }
+    inline bool ucbTuned() { return ucbTuned_; }
+    inline bool latePruning() { return latePruning_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline bool uctRelativeUpdate() { return uctRelativeUpdate_;}
     inline bool historyHeuristic() { return historyHeuristic_;}
@@ -105,7 +106,9 @@ class Cfg
     /**FPU value*/
     float fpu_;
     /**Use ucb tuned formula.*/
-    float ucbTuned_;
+    bool ucbTuned_;
+    /**Use aggresive late pruning.*/
+    bool latePruning_;
     /**Use knowledge in uct tree.*/
     bool knowledgeInTree_;
     /**In playout go by moves or steps.*/

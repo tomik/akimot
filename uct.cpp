@@ -159,6 +159,7 @@ Node::Node(TWstep* twStep, int level, float heur)
   twStep_     = twStep;
   level_      = level;
   ttRep_      = NULL;
+  childrenNum_ = 0;
 }
 
 //---------------------------------------------------------------------
@@ -172,7 +173,7 @@ Node* Node::findUctChild(Node* realFather)
   Node* best = firstChild_;
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
-
+  
   //float exploreCoeff = log(realFather->visits_);
   float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log(realFather->visits_);
 
@@ -187,6 +188,39 @@ Node* Node::findUctChild(Node* realFather)
   }
 
   return best;
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::latePruning()
+{
+
+  //late pruning
+  float minPruneVisits = 128;
+  if (visits_ < minPruneVisits) {
+    return;
+  }
+  float allowed = 17 - max(0,(int(log2(visits_)) - int(log2(minPruneVisits))));
+  if (allowed >= 3 && allowed < childrenNum_ ){
+    //cerr << int(log2(visits_)) << " " << int(log2(minPruneVisits)) << endl;
+    for (int i = 0; i < childrenNum_ - allowed; i++){
+      Node** pp = &firstChild_;
+      Node** worst = &firstChild_;
+      float worstVal = INT_MAX;   
+
+      while (*pp != NULL) {
+        if ( (*pp)->visits_ < worstVal ){
+          worst = pp;
+          worstVal = (*pp)->visits_;
+        }
+        pp = &((*pp)->sibling_);
+      }
+      //Node* pom = *worst;
+      //memory cleanup !
+      *worst = (*worst)->sibling_; 
+      childrenNum_--;
+    }
+  }
 }
 
 //---------------------------------------------------------------------
@@ -255,6 +289,7 @@ void Node::addChild(Node* newChild)
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild;
   newChild->father_ = this;
+  childrenNum_++;
 }
  
 //---------------------------------------------------------------------
@@ -694,6 +729,9 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
 void Tree::uctDescend()
 {
   assert(actNode()->hasChildren());
+  if (cfg.latePruning()){
+    actNode()->latePruning();
+  }
   history[historyTop + 1]= actNode()->findUctChild(history[historyTop]);
   historyTop++;
   assert(actNode() != NULL);
