@@ -664,6 +664,12 @@ class Board
      */
 		bool operator== (const Board& board) const;
 
+
+    /**
+     * Updates third repetition table with actual position.
+     */
+    void updateThirdRep();
+
      /**
      * Performs whole move. 
      *
@@ -687,14 +693,14 @@ class Board
      *  @param step given step 
      *  @return true if commited false otherwise
      */
-	bool makeStepTryCommit(const Step&);
+    bool makeStepTryCommit(const Step&);
 
     /**
      * Commits the move.
      *
      * Handles switching the sides, updating preMoveSignature.
      */
-	void commit();
+	  void commit();
 
     /**
      * Repetition check.

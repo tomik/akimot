@@ -2041,7 +2041,7 @@ bool Board::initFromRecord(const char* fn, bool init_repetitions)
     assert(moveCount == moveCount_);
     makeMove(getStreamRest(ss));
     if (init_repetitions) {
-      thirdRep_->update( signature_, toMove_);
+      updateThirdRep();
     }
   }
 
@@ -2339,6 +2339,13 @@ bool Board::checkKillForward(coord_t from, coord_t to, KillInfo* killInfo) const
     }
   }
   return false;
+}
+
+//--------------------------------------------------------------------- 
+
+void Board::updateThirdRep()
+{
+  thirdRep_->update(signature_, toMove_);
 }
 
 //--------------------------------------------------------------------- 

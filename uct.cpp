@@ -1150,7 +1150,6 @@ void Uct::refineResults(const Board* board)
   //TODO IS THIS NECCESSARY - use new position loading - AEI ? 
   Board* playBoard = new Board(*board);
   playBoard->makeMove(bestMove);
-  thirdRep.update(playBoard->getSignature(), playBoard->getPlayerToMove()) ;
 }
 
 //---------------------------------------------------------------------

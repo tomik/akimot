@@ -312,6 +312,8 @@ void Aei::handleInput(const string& line)
                     stopSearch();
                   }
                   board_->makeMove(lineRest);
+                  board_->updateThirdRep();
+              
                   aeiLog("Making move: " + lineRest, AL_DEBUG);
                   break;
     case AA_MAKE_MOVE_REC:
