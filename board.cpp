@@ -747,7 +747,6 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
   //TODO
   for (StepListIter it = steps.begin(); it != steps.end(); it++){
     assert(it->pieceMoved());
-    //mask_ |= BIT_ON(it->from_) | (it->piece_ == ELEPHANT ? 0ULL : bits::neighborsOne(it->from_));
     mask_ |= BIT_ON(it->to_) | bits::neighborsOne(it->to_);
     mask_ |= BIT_ON(it->from_) | bits::neighborsOne(it->from_);
     if (it->isPushPull()){
@@ -779,7 +778,7 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
 float ContextMove::urgency(player_t player, int total) const
 {
   //cerr << value_ << " " << total << " " << visits_ << endl;
-  return (player == GOLD ? 1 : -1) * value_; // + sqrt(0.15 * log(total)/visits_);
+  return value_ * (player == GOLD ? 1 : -1);// + sqrt(0.1 * log(total)/visits_);
 }
 
 
@@ -867,7 +866,7 @@ bool MoveAdvisor::getMoveRand(player_t player, const Bitboard& bitboard, int ste
       )
         {
       bestIndex = index;
-      bestValue = contextMoves[player][index].getValue();
+      bestValue = contextMoves[player][index].urgency(player, used_);
     }
   }  
   if (bestIndex != -1){
@@ -1428,7 +1427,7 @@ bool Board::trapCheck(player_t player, MoveList* moves, SoldierList* soldiers) c
   coord_t trap;
   bool found = false;
   while ((trap = bits::lix(t)) != BIT_EMPTY){
-    found = trapCheck(player, trap, getStepCountLeft(), moves, soldiers) || found;
+    found = trapCheck(player, trap, STEPS_IN_MOVE/*getStepCountLeft()*/, moves, soldiers) || found;
   }
   return found;
 }

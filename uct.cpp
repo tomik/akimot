@@ -175,7 +175,7 @@ Node* Node::findUctChild(Node* realFather)
   float actUrgency = 0;
   
   //float exploreCoeff = log(realFather->visits_);
-  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log2(realFather->visits_);
+  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log(realFather->visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
@@ -200,9 +200,9 @@ void Node::latePruning()
   if (visits_ < minPruneVisits) {
     return;
   }
-  float allowed = 17 - max(0,(int(log2(visits_)) - int(log2(minPruneVisits))));
+  float allowed = 17 - max(0,(int(log(visits_)) - int(log(minPruneVisits))));
   if (allowed >= 3 && allowed < childrenNum_ ){
-    //cerr << int(log2(visits_)) << " " << int(log2(minPruneVisits)) << endl;
+    //cerr << int(log(visits_)) << " " << int(log(minPruneVisits)) << endl;
     for (int i = 0; i < childrenNum_ - allowed; i++){
       Node** pp = &firstChild_;
       Node** worst = &firstChild_;
@@ -567,7 +567,7 @@ string Node::toString() const
   stringstream ss;
 
   ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
-    << (father_ != NULL ? ucb(cfg.exploreRate() * log2(father_->visits_)) : 1 )
+    << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
     << endl;
   return ss.str();
 }
@@ -1378,6 +1378,7 @@ void Uct::fill_advisor(const Board * playBoard) {
     }
   }
 
+/*  
   //opponent trapCheck
   MoveList moves;
   moves.clear();
@@ -1400,6 +1401,7 @@ void Uct::fill_advisor(const Board * playBoard) {
       advisor_->addMove((*it), playBoard->getBitboard());
     }
   }
+  */
 }
 
 //--------------------------------------------------------------------- 
