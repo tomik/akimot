@@ -174,11 +174,12 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
   
-  //float exploreCoeff = log(realFather->visits_);
-  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) * log(realFather->visits_);
+  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) 
+                       * log(realFather->visits_);
 
   while (act != NULL) {
-    actUrgency = (act->visits_ == 0 ? cfg.fpu() : act->ucb(exploreCoeff));
+    actUrgency = (act->visits_ == 0 ? cfg.fpu() : 
+                  act->exploreFormula(exploreCoeff));
 
     if ( actUrgency > bestUrgency ){
       best = act;
@@ -264,19 +265,35 @@ Node* Node::findMostExploredChild() const
   return best;
 }
 
+//--------------------------------------------------------------------- 
+
+float Node::exploreFormula(float exploreCoeff) const
+{
+ return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
+        + heur_/visits_
+        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0)
+        ;
+}
+
 //---------------------------------------------------------------------
 
 float Node::ucb(float exploreCoeff) const
 {
-  double v = (squareSum_/visits_) + sqrt(2 * exploreCoeff/visits_); 
-  if (v > 0.2){
-    v = 0.2;
-  }
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
-         + sqrt((exploreCoeff/visits_) * (cfg.ucbTuned() ? v : 1))
-         + heur_/visits_ 
-         + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0);
-         ;
+         + sqrt(exploreCoeff/visits_) ;
+}
+
+//---------------------------------------------------------------------
+
+float Node::ucbTuned(float exploreCoeff) const
+{
+  double v = max(float(0.03), min(float(0.2), float((squareSum_/visits_) + sqrt(0.2 * exploreCoeff/visits_))));
+  //double val = (value_ + 1) / 2;
+  //double v = max(0.01, val * (1- val));
+  //cerr << v << endl;
+
+  return (nodeType_ == NODE_MAX ? value_ : - value_) 
+         + sqrt(v * exploreCoeff/visits_);
 }
 
 //---------------------------------------------------------------------
@@ -292,37 +309,6 @@ void Node::addChild(Node* newChild)
   childrenNum_++;
 }
  
-//---------------------------------------------------------------------
-
-//TODO REMOVE ?
-void Node::removeChild(Node* child)
-{
-  assert(this->firstChild_ != NULL);
-  Node* previous = NULL;
-  Node* toDelete = firstChild_;
-
-  while(toDelete != child && toDelete != NULL){
-    previous = toDelete;
-    toDelete = toDelete->sibling_;
-  }
-  assert(toDelete == child);
-  if (toDelete == NULL)
-    return;
-
-  if (previous == NULL)
-    firstChild_ = toDelete->sibling_;
-  else
-    previous->sibling_ = toDelete->sibling_;
-  
-  //handle number of visits/wins num in ancestors
-  //value_ = (value_ * visits_ - toDelete->value_ * toDelete->visits_)/TODO;
-  visits_ -= toDelete->visits_;
-  assert(visits_ >= 0);
-  //wins_ -= toDelete->wins_;
-  
-  delete toDelete;
-}
-
 //---------------------------------------------------------------------
 
 void Node::delChildrenRec()
@@ -359,7 +345,7 @@ void Node::update(float sample)
   }else{
     value_ += (sample - value_)/++visits_;         
   }
-  squareSum_ += (sample - old_value)* (sample - value_);
+  squareSum_ += (sample - old_value) * (sample - value_);
   //value update in ttNodes
   if (ttRep_) {
     for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
@@ -566,9 +552,7 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << "/" << twStep_->value << " -> " 
-    << (father_ != NULL ? ucb(cfg.exploreRate() * log(father_->visits_)) : 1 )
-    << endl;
+  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << endl;
   return ss.str();
 }
 
@@ -1084,6 +1068,7 @@ Uct::Uct(const Board* board, Uct* ucts[], int uctsNum)
   for (int i = 0; i < uctsNum; i++){
     trees[i] = ucts[i]->getTree();
     playouts_ += ucts[i]->getPlayoutsNum();
+    uctDescends_ += ucts[i]->uctDescends_;
   }
 
   //delete tree initialized in init
@@ -1112,6 +1097,7 @@ void Uct::init(const Board* board)
   bestMoveNode_ = NULL;
   bestMoveRepr_ = "";
   playouts_ = 0;
+  uctDescends_ = 0; 
 
 
 }
@@ -1158,13 +1144,10 @@ void Uct::doPlayout(const Board* board)
 {
   Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;
-  int descendNum = 0;
-
-  playouts_++;
 
   StepArray steps;    
   uint      stepsNum;
-  
+
   tree_->historyReset();     //point tree's actNode to the root 
 
   logDDebug(board->toString().c_str());
@@ -1235,12 +1218,7 @@ void Uct::doPlayout(const Board* board)
       int base = 1 + (grand() % cfg.playoutLen());
       int playoutLen = base + (tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ? 1 : 0);
            
-      AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, 
-          //cfg.playoutLen(),
-          //TODO CHECK THIS !!!
-          playoutLen,
-          advisor_
-          );
+      AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, playoutLen, advisor_);
 
       playoutStatus = playoutManager.doPlayout();
       float sample = decidePlayoutWinner(playBoard);
@@ -1252,7 +1230,7 @@ void Uct::doPlayout(const Board* board)
     }
 
     tree_->uctDescend(); 
-    descendNum++;
+    uctDescends_++;
 
     Step step = tree_->actNode()->getStep();
 
@@ -1266,7 +1244,8 @@ void Uct::doPlayout(const Board* board)
     }
 
   } while(true);
-  
+
+  playouts_++; 
   delete playBoard;
 }
 
@@ -1285,6 +1264,7 @@ string Uct::getStats(float seconds) const
         << "  " << tree_->getNodesExpandedNum() << " nodes expanded" << endl 
         //<< "  " << tree_->getLongestVariant() << " nodes in longest path" << endl
         << "  " << tree_->getNodesPruned() << " nodes pruned" << endl 
+        << "  " << uctDescends_/float(playouts_) << " average descends in playout" << endl 
         << "  " << "best move: " << getBestMoveRepr() << endl 
         << "  " << "best move visits: " << getBestMoveVisits() << endl 
         << "  " << "win condidence: " << getWinRatio() << endl 

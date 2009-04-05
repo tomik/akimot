@@ -169,22 +169,27 @@ class Node
     Node* findMostExploredChild() const;
 
     /**
+     * Core of UCT algorithm.
+     */
+    float exploreFormula(float) const;
+
+    /**
      * The UCB1 formula.
-     *
-     * Core of the UCT algorithm. 
      */
     float ucb(float) const;
 
-    void  addChild(Node*);
-
     /**
-     * Removes one child. 
+     * The UCB-tuned formula.
      */
-    void removeChild(Node* child);
+    float ucbTuned(float) const;
 
     /**
-     * Fetches children to given node set. 
-     * useful for instance for final cleanup. 
+     * Childre addition during node expansion.
+     */
+    void  addChild(Node* child);
+
+    /**
+     * Deletes children recursively. 
      */
     void  delChildrenRec();
 
@@ -619,6 +624,8 @@ class Uct
     string bestMoveRepr_;  
     /**Total number of playouts.*/
     int playouts_;
+    /**Total number of uct descends through the tree.*/
+    int uctDescends_;
     
     /*Move advisor is filled here and used in playouts.*/
     MoveAdvisor * advisor_;

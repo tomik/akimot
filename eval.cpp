@@ -694,6 +694,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   
   //check opp-kill
   if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
+    cerr << step.toString() << endl;
     eval += 5;   
   }
 
