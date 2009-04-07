@@ -75,6 +75,7 @@ class Cfg
     inline float fpu() { return fpu_; }
     inline bool ucbTuned() { return ucbTuned_; }
     inline bool latePruning() { return latePruning_; }
+    inline bool childrenCache() { return childrenCache_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline bool uctRelativeUpdate() { return uctRelativeUpdate_;}
     inline bool historyHeuristic() { return historyHeuristic_;}
@@ -109,6 +110,8 @@ class Cfg
     bool ucbTuned_;
     /**Use aggresive late pruning.*/
     bool latePruning_;
+    /**Children caching for perfomance boost.*/
+    bool childrenCache_;
     /**Use knowledge in uct tree.*/
     bool knowledgeInTree_;
     /**In playout go by moves or steps.*/

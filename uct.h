@@ -21,6 +21,7 @@ using std::make_pair;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define UCT_MAX_DEPTH 50
+#define CHILDREN_CACHE_SIZE 3
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
 
 #define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 2 : -1 )
@@ -174,6 +175,17 @@ class Node
     float exploreFormula(float) const;
 
     /**
+     * Updating children Cache. Selects appropriate nodes 
+     * and places them into cache.
+     */
+    void cCacheUpdate(float exploreCoeff);
+
+    /**
+     * DRY-purpose method.
+     */
+    void uctOneChild(Node* act, Node* & best, float & bestUrgency, float exploreCoeff) const;
+
+    /**
      * The UCB1 formula.
      */
     float ucb(float) const;
@@ -280,6 +292,8 @@ class Node
     Node*       father_;
     nodeType_e  nodeType_;
     int         level_;
+    int         cCacheLastUpdate_;
+    Node*       cCache_[CHILDREN_CACHE_SIZE];
 };
 
 /**Tree equivalent node.*/

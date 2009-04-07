@@ -123,12 +123,12 @@ step(s), value(val), visits(vis)
 
 TWstep& TWsteps::operator[](const Step& step)
 { 
-  TWstepsMap::iterator it = TWstepsMap::find(step);
-  if (it != TWstepsMap::end()){
+  TWsteps::iterator it = find(step);
+  if (it != end()){
     return it->second;
   }
 
-  pair< TWstepsMap::iterator, bool> p;
+  pair< TWsteps::iterator, bool> p;
   p = insert(make_pair(step, TWstep(step, 0, 0)));
   assert(p.second);
   return p.first->second;
@@ -160,6 +160,10 @@ Node::Node(TWstep* twStep, int level, float heur)
   level_      = level;
   ttRep_      = NULL;
   childrenNum_ = 0;
+  for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
+    cCache_[i] = NULL;
+  }
+  cCacheLastUpdate_ = 0;
 }
 
 //---------------------------------------------------------------------
@@ -172,22 +176,24 @@ Node* Node::findUctChild(Node* realFather)
   Node* act = firstChild_;
   Node* best = firstChild_;
   float bestUrgency = INT_MIN;   
-  float actUrgency = 0;
   
   //dynamic exploreRate tuning ? 
   float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.001, 1/(2 * log(realFather->visits_))));
   //float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
   float exploreCoeff = exploreRate * log(realFather->visits_);
 
-  while (act != NULL) {
-    actUrgency = (act->visits_ == 0 ? cfg.fpu() : 
-                  act->exploreFormula(exploreCoeff));
-
-    if ( actUrgency > bestUrgency ){
-      best = act;
-      bestUrgency = actUrgency;
+  if (cfg.childrenCache() && visits_ > 3 * childrenNum_){
+    //using children cache
+    cCacheUpdate(exploreCoeff); 
+    for (int i = 0; i < CHILDREN_CACHE_SIZE && cCache_[i]; i++){
+      act = cCache_[i];   
+      uctOneChild(act, best, bestUrgency, exploreCoeff);
     }
-    act = act->sibling_;
+  }else{
+    while (act != NULL) {
+      uctOneChild(act, best, bestUrgency, exploreCoeff);
+      act = act->sibling_;
+    }
   }
 
   return best;
@@ -269,8 +275,63 @@ Node* Node::findMostExploredChild() const
 
 //--------------------------------------------------------------------- 
 
+void Node::cCacheUpdate(float exploreCoeff)
+{
+  if (floor(sqrt(visits_)) <= cCacheLastUpdate_)
+    return;
+
+  cCacheLastUpdate_ = int(floor(sqrt(visits_)));
+  
+  //nullify cache
+  for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
+    cCache_[i] = NULL;
+  }
+
+  Node * act = firstChild_;
+  float actUrgency = 0;
+
+  float urgencies[CHILDREN_CACHE_SIZE];
+
+  //fill cache
+  while (act != NULL) {
+    actUrgency = act->exploreFormula(exploreCoeff);
+    for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
+      if (! cCache_[i] || 
+          urgencies[i] < actUrgency ){
+        //bubbling
+        for (int j = CHILDREN_CACHE_SIZE - 1; j > i ;j--){ 
+          cCache_[j] = cCache_[j - 1]; 
+          urgencies[j] = urgencies[j - 1];
+        }
+        cCache_[i] = act;
+        urgencies[i] = actUrgency;
+        break;
+      }
+    }
+    act = act->sibling_;
+  }
+}
+
+//---------------------------------------------------------------------
+
+void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float exploreCoeff) const
+{
+  assert(act);
+  float actUrgency = act->exploreFormula(exploreCoeff);
+
+  if ( actUrgency > bestUrgency ){
+    best = act;
+    bestUrgency = actUrgency;
+  }
+}
+
+//--------------------------------------------------------------------- 
+
 float Node::exploreFormula(float exploreCoeff) const
 {
+ if (visits_ == 0)
+   return cfg.fpu();
+
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
         + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0)

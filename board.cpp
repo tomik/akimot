@@ -334,7 +334,7 @@ bool Step::pieceMoved() const
 bool Step::operator== ( const Step& other) const
 {
   if  ( stepType_ == other.stepType_ ){ // necessary condition ! 
-    if ((stepType_ == STEP_PASS || stepType_ == STEP_NULL ) && player_ == other.player_)
+    if ((stepType_ == STEP_PASS && player_ == other.player_) ||  stepType_ == STEP_NULL ) 
       return true;
     if ( other.player_ == player_ && other.piece_ == piece_ && other.from_ == from_ && other.to_ == to_ ) {
       if ( stepType_ == STEP_SINGLE ) 
@@ -357,8 +357,9 @@ bool Step::operator< ( const Step& other) const
     return false;
   }
 
-  int items[] = {stepType_ - other.stepType_, from_ - other.from_, to_ - other.to_, 
-            piece_ - other.piece_, player_ - other.player_, 
+  int items[] = {stepType_ - other.stepType_, player_ - other.player_, 
+            from_ - other.from_, to_ - other.to_, 
+            piece_ - other.piece_, 
             oppFrom_ - other.oppFrom_, oppTo_ - other.oppTo_, 
             oppPiece_ - other.oppPiece_};
   const int itemsNum = sizeof(items)/sizeof(int);
