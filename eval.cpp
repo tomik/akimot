@@ -112,24 +112,6 @@ void Values::mirrorPiecePositions()
     }
   }
 
-
-/*
-  for (int i = 0; i < PIECE_NUM + 1; i++){
-    cerr << "piece " << i << endl;
-    for (int k = 0; k < 2; k++ ){
-      for (int r = 0; r < 8; r++ ){
-        for (int c = 0; c < 8; c++ ){
-          cerr.width(4);
-          cerr << piecePos[GS_LATE][k][i][r * 8 + c];
-        }
-        cerr << endl;
-      } 
-       cerr << endl;
-    }
-     cerr << endl;
-  }
-*/
-
 }
 
 
@@ -285,7 +267,7 @@ void Eval::init()
 }
 
 //--------------------------------------------------------------------- 
- 
+
 float Eval::evaluateInPercent(const Board* b) const
 {
   /*
@@ -311,6 +293,13 @@ float Eval::evaluateInPercent(const Board* b) const
   //evalTT_->insertItem(b->getSignature(), p);
 
   return p;
+}
+
+//--------------------------------------------------------------------- 
+ 
+float Eval::getPieceValue(piece_t piece) const
+{
+  return vals_->pieceValue[piece];
 }
 
 //--------------------------------------------------------------------- 
@@ -626,24 +615,31 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   float eval = 0; 
 
   if (step.isPass()){
-    eval -= 0.5 * (STEPS_IN_MOVE - b->stepCount_);
+    eval -= 0.2 * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
 
   assert(step.pieceMoved());
-  //assert(IS_PLAYER(b[step.from_]));
   
   //we don't like inverse steps 
-  //TODO ... inverse step is reasonable when something dies in the trap
-  /*
-  if (step.inversed(lastStep_)){
-    eval -= 5;
+  if (step.inversed(b->lastStep())){
+    eval -= 0.5;
     return eval;
   }
-  */
+  
 
   if (step.piece_ == ELEPHANT ) {
     eval += 0.1;
+    //elephant the savior :)
+    /*
+    if (random01() < 0.25){
+      coord_t trap = TRAP_INDEX_TO_TRAP(glob.mostLosesTrapIndex[step.player_]);
+      if (SQUARE_DISTANCE(trap, step.from_) < SQUARE_DISTANCE(trap, step.to_)){
+        //cerr << trap << " " << step.toString() << endl;
+        eval -= 0.15;
+      }
+    }
+    */
   }
 /*
   switch (step.piece_) { 
@@ -661,7 +657,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     //push opponent to the goal :( not impossible ? )
     if (step.oppPiece_ == RABBIT && 
         BIT_ON(step.oppTo_) & bits::winRank[(step.player_)]) {
-      eval -= 10;
+      eval -= 1;
     }
     //otherwise push/pulls are encouraged
     else{
@@ -670,19 +666,21 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   } 
 
   //check self-kill
-  if (step.isSingleStep() && b->checkKillForward(step.from_, step.to_)){
+  if (b->checkKillForward(step.from_, step.to_)){
     //leave buddy in opponent trap
-    if (! IS_TRAP(step.to_) && 
+    if (! IS_TRAP(step.to_) && step.piece_ == RABBIT && 
         ((step.player_ == GOLD && ROW(step.from_) >= 4) ||
         (step.player_ == SILVER && ROW(step.from_) <= 5))){
-      eval -= 1;
+      eval -= 0.2;
     }
     else{
-      eval -= 5;   
+
+      eval -= 0.9;   
     }
   }
 
   //step into potentially dangerous trap
+  /*
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
     eval -= 0.5;
   }
@@ -691,11 +689,12 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (step.isPushPull() && IS_TRAP(step.oppTo_)){
     eval += 0.2;
   }
+  */
   
-  //check opp-kill
+  //check killing opponent
   if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
-    cerr << step.toString() << endl;
-    eval += 5;   
+   // cerr << step.toString() << endl;
+    eval += 0.7;   
   }
 
   //rabbit movements 
@@ -703,9 +702,9 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -1.2;
+      case GS_BEGIN: eval += -0.3;
                 break;
-      case GS_MIDDLE: eval += -0.2; 
+      case GS_MIDDLE: eval += -0.1; 
                 break;
       case GS_LATE: eval += 0.2; 
                 break;
@@ -716,7 +715,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (cfg.localPlayout() && 
       b->lastStep().stepType_ != STEP_NULL){
     int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
-    eval += d <= 3 ? (3 - d) * 0.1 : 0;
+    eval += d <= 2 ? (2 - d) * 0.1 : 0;
   }
 
   return eval;

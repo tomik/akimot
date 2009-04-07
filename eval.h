@@ -162,6 +162,11 @@ class Eval
     float evaluateInPercent(const Board*) const;
 
     /**
+     * Value getter for piece.
+     */
+    float getPieceValue(piece_t piece) const;
+
+    /**
      * Evaluates one step.
      *
      * In this play game knowledge is applied.

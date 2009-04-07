@@ -103,8 +103,14 @@ namespace bits{
   #define MSB         0x8000000000000000ULL
   #define TRAPS       0x0000240000240000ULL
   #define FPARITY     0x5555555555555555ULL
+  #define FULL        0xffffffffffffffffULL
+  #define EMPTY       0x0ULL
   #define IS_TRAP(coord) (BIT_ON(coord) & TRAPS)
+  #define TRAPS_NUM   4
   extern u64 zobrist[2][7][64];     
+  const int TRAP_COORDS[TRAPS_NUM] = {45, 42, 21, 18};
+  #define TRAP_INDEX_TO_TRAP(index) (bits::TRAP_COORDS[index])
+//  #define TRAP_INDEX_TO_TRAP(index) (assert(index < TRAPS_NUM && index >= 0), bits::TRAP_COORDS[index])
 
   /**
    * Init zobrist table.
@@ -142,6 +148,12 @@ namespace bits{
    * Bit count.
    */
   int  bitCount(u64 b);
+
+  /**
+   * What is the order of given bit 
+   * among "on" bits in given bitset.
+   */
+  int  bitOnOrder(uint index, u64 b);
 
   /**
    * Bit getter. 
@@ -504,6 +516,11 @@ class Glob {
     void init();
     inline Bpool* bpool() {return bpool_[tti()];}
     inline ThirdRep* thirdRep() {return thirdRep_[tti()];}
+
+    //friend class Board;
+    float losesValue[2][TRAPS_NUM];
+    int losesCount[2][TRAPS_NUM];
+    int mostLosesTrapIndex[2];
   private:
     /**
      * Thread to index.

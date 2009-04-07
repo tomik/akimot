@@ -174,8 +174,10 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   float actUrgency = 0;
   
-  float exploreCoeff = (cfg.ucbTuned() ? 1 : cfg.exploreRate()) 
-                       * log(realFather->visits_);
+  //dynamic exploreRate tuning ? 
+  float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.001, 1/(2 * log(realFather->visits_))));
+  //float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
+  float exploreCoeff = exploreRate * log(realFather->visits_);
 
   while (act != NULL) {
     actUrgency = (act->visits_ == 0 ? cfg.fpu() : 
@@ -1269,6 +1271,15 @@ string Uct::getStats(float seconds) const
         << "  " << "best move visits: " << getBestMoveVisits() << endl 
         << "  " << "win condidence: " << getWinRatio() << endl 
       ;
+
+  /*
+  for (int player = 0; player < 2; player++){
+    for (int i = 0; i < TRAPS_NUM; i++){
+       ss << glob.losesValue[player][i]/glob.losesCount[player][i] << "/" << glob.losesCount[player][i] << " ";
+    }
+    ss << endl;
+  }
+  */
 
   return ss.str();
 }
