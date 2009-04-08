@@ -632,7 +632,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     eval += 0.1;
     //elephant the savior :)
     /*
-    if (random01() < 0.25){
+    if (glob.grand()->get01() < 0.25){
       coord_t trap = TRAP_INDEX_TO_TRAP(glob.mostLosesTrapIndex[step.player_]);
       if (SQUARE_DISTANCE(trap, step.from_) < SQUARE_DISTANCE(trap, step.to_)){
         //cerr << trap << " " << step.toString() << endl;

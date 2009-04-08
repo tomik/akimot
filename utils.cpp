@@ -6,10 +6,6 @@
 string logLevelStr[10] = { "debug", "warning", "error", "info", "", "ddebug" };
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
-Grand grand;
-int smallPrimes[] = {17, 23, 29, 31, 37, 41, 43, 47, 53, 59};
-const int smallPrimesNum = 10; 
-
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...)
 {
 
@@ -123,6 +119,11 @@ Grand::Grand() {
 
 //--------------------------------------------------------------------- 
 
+Grand::Grand(unsigned int seed) {
+  this->seed(seed);
+}
+//--------------------------------------------------------------------- 
+
 void Grand::seed(unsigned int seed) {
   high_ = seed;
   low_ = high_ ^ PAIR_SEED;
@@ -130,11 +131,26 @@ void Grand::seed(unsigned int seed) {
 
 //--------------------------------------------------------------------- 
 
-unsigned int Grand::operator()() {
+unsigned int Grand::operator()() 
+{
+  return getOne();
+}
+
+//--------------------------------------------------------------------- 
+
+unsigned int Grand::getOne() 
+{
   high_ = (high_ << 16) + (high_ >> 16);
   high_ += low_;
   low_ += high_;
   return high_;
+}
+
+//--------------------------------------------------------------------- 
+
+float Grand::get01() 
+{
+  return (double)getOne()/((double)(GRAND_MAX) + (double)(1));
 }
 
 //--------------------------------------------------------------------- 

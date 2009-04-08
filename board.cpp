@@ -59,11 +59,16 @@ void Glob::init()
       delete thirdRep_[i];
       thirdRep_[i] = NULL;
     }
+    if (grand_[i] != NULL){
+      delete grand_[i];
+      grand_[i] = NULL;
+    }
   }
   threadsNum_ = 0;
 
 
   //casualties system init
+  /*(
   for (int player = 0; player < 2; player++){
     mostLosesTrapIndex[player] = 0;
     for (int i = 0; i < 2; i++){
@@ -71,6 +76,7 @@ void Glob::init()
       losesCount[player][i] = 0;
     }
   }
+  */
 }
 
 //--------------------------------------------------------------------- 
@@ -95,6 +101,7 @@ int Glob::add_thread() {
   threadIds_[threadsNum_] = pthread_self();
   bpool_[threadsNum_] = new Bpool();
   thirdRep_[threadsNum_] = new ThirdRep();
+  grand_[threadsNum_] = new Grand(rand());
   int ret = threadsNum_;
   threadsNum_++;
   pthread_mutex_unlock(&lock);
@@ -108,7 +115,6 @@ void randomStructuresInit()
 
   srand((unsigned) time(NULL));
   //srand(0);
-  grand.seed(rand());
   bits::initZobrist();
 }
 
@@ -1232,7 +1238,7 @@ Step Board::findMCstep()
   }
 
   assert(len > 0);
-  int index = grand() % len;
+  int index = glob.grand()->getOne() % len;
   assert( index >= 0 && index < len );
 
   return(steps[index]); 
@@ -1308,7 +1314,7 @@ void Board::makeStep(const Step& step){
         int trap = bits::lix(dieHard);             
         if ( trap != BIT_EMPTY){
           //update statistics on pieces killed by opponent
-          //
+          /*
           if (step.isPushPull()){
             int order = bits::bitOnOrder(trap, TRAPS);
             glob.losesValue[player][order] +=  
@@ -1319,6 +1325,7 @@ void Board::makeStep(const Step& step){
               glob.mostLosesTrapIndex[player] = order; 
             }
           }
+          */
           delSquare(trap, player);
           //no more than one dead per player
           assert(bits::lix(dieHard) == BIT_EMPTY); 
@@ -2212,21 +2219,17 @@ void Board::findMCmoveAndMake()
   intList p; 
   
   for (int i = 0; i < BIT_LEN/2; i++){
-    int pos = grand() % BIT_LEN;
+    int pos = glob.grand()->getOne() % BIT_LEN;
     if (bits::getBit(bitboard_[toMove_][0], pos)){
       p.push_back(pos);
       if (p.size() >= 3){
         break;
       }
-      /*if (random01() < 0.4 ) {
-          break;
-      }
-      */
     }
   }
 
   /*
-  if (random01() < 0.5){
+  if (glob.grand()->get01() < 0.5){
     u64 phant_bb = bitboard_[toMove_][ELEPHANT];
     int phant_pos = bits::lix(phant_bb);
     if (phant_pos != BIT_EMPTY){
@@ -2256,7 +2259,7 @@ void Board::findMCmoveAndMake()
       step = chooseStepWithKnowledge(steps, len);
     }
     else{
-      step = steps[grand() % len];
+      step = steps[glob.grand()->getOne() % len];
     }
     if (! step.isPass()){
       p.remove(step.from_);
@@ -2594,7 +2597,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
   if ( cfg.knowledgeTournamentSize() == 0){
     for (uint i = 0; i < stepsNum; i++){
       //take only half of steps into account 
-      if (random01() <= 0.5)
+      if (glob.grand()->get01() <= 0.5)
         continue;
       const Step& step = steps[i];
       eval = eval_->evaluateStep(this, step); 
@@ -2611,7 +2614,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
 
     //for (uint i = 0; i < cfg.knowledgeTournamentSize(); i++){
     for (uint i = 0; i < min(stepsNum/2, cfg.knowledgeTournamentSize()); i++){
-      uint r = grand() % stepsNum;
+      uint r = glob.grand()->getOne() % stepsNum;
       const Step& step = steps[r];
       eval = eval_->evaluateStep(this, step); 
       //cerr << " eval: " << step.toString() << " " << eval;
@@ -2621,7 +2624,7 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
       } 
       else
       //TODO improve ! - roulette ? 
-      if ( eval == bestEval && random01() > 0.5) { 
+      if ( eval == bestEval && glob.grand()->get01() > 0.5) { 
         bestIndex = r;
       }
 

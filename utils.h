@@ -121,16 +121,24 @@ class Grand
 {
   public:
     Grand();
+    Grand(unsigned int seed);
     void seed(unsigned int seed);
     unsigned int operator()();
+    unsigned int getOne();
+    float get01();
   private:
     unsigned int high_;
     unsigned int low_;
 };
 
-extern Grand grand;
-extern int smallPrimes[];
-extern const int smallPrimesNum; 
+
+/**
+ * This function is obsolete ! use grand->get01.
+ */
+inline double rand01()
+{
+  return (double)rand()/((double)(RAND_MAX) + (double)(1));
+}
 
 /**
  * Logistic sigmoid.
@@ -141,16 +149,6 @@ inline double log_sig(double param, double value)
   double ret = 1/(1 + pow(E, -1 * param * value));
   assert(ret < 1 && ret > 0);
   return ret;
-}
-
-inline int smallRandomPrime()
-{
-  return smallPrimes[grand() % smallPrimesNum];
-}
-
-inline float random01()
-{
-  return (double)grand()/((double)(GRAND_MAX) + (double)(1));
 }
 
 template<typename T> T max(T a, T b){

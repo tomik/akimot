@@ -619,7 +619,7 @@ bool OB_Board::findRandomStep(Step& step) const
   for ( int i = 0; i < 5; i++){ 
     assert(pieceArray[toMoveIndex_].getLen() != 0);
 
-    if (tryLocal and random01() > 0.2){
+    if (tryLocal and rand01() > 0.2){
       tryLocal = false;
       step.from_ = lastStep_.to_;
     } 
@@ -710,7 +710,7 @@ Step OB_Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
   if ( cfg.knowledgeTournamentSize() == 0){
     for (uint i = 0; i < stepsNum; i++){
       //index = ((i+1)*r) % stepsNum;
-      if (random01() >= 0.5)
+      if (rand01() >= 0.5)
         continue;
       const Step& step = steps[i];
       eval = evaluateStep(step); 

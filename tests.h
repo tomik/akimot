@@ -129,9 +129,11 @@ class DebugTestSuite : public CxxTest::TestSuite
     void testRandom(void){
 
       #define SAMPLE 100000000
+      srand((unsigned) time(NULL));
+      Grand* g = new Grand(rand());
       float avg = 0;
       for (int i = 1; i < SAMPLE; i++){
-        float f =random01();
+        float f =g->get01();
         TS_ASSERT(f <= 1 && f >= 0);
         avg += (f - avg)/++i;
       }

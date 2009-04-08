@@ -516,6 +516,7 @@ class Glob {
     void init();
     inline Bpool* bpool() {return bpool_[tti()];}
     inline ThirdRep* thirdRep() {return thirdRep_[tti()];}
+    inline Grand* grand() {return grand_[tti()];}
 
     //friend class Board;
     float losesValue[2][TRAPS_NUM];
@@ -534,6 +535,7 @@ class Glob {
 
     Bpool * bpool_[MAX_THREADS];
     ThirdRep * thirdRep_[MAX_THREADS];
+    Grand * grand_[MAX_THREADS];
 };
 
 extern Glob glob;

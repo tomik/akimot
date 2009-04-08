@@ -94,7 +94,7 @@ AdvisorPlayout::AdvisorPlayout(Board* board, uint maxPlayoutLength, uint evalAft
 void AdvisorPlayout::playOne()
 {
   Move move;
-  if (cfg.moveAdvisor() && random01() < cfg.moveAdvisor() && 
+  if (cfg.moveAdvisor() && glob.grand()->get01() < cfg.moveAdvisor() && 
       advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
       board_->getStepCountLeft(), &move)){
     //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
@@ -1278,7 +1278,7 @@ void Uct::doPlayout(const Board* board)
       } //< UCT_MAX_DEPTH check
 
 
-      int base = 1 + (grand() % cfg.playoutLen());
+      int base = 1 + (glob.grand()->getOne() % cfg.playoutLen());
       int playoutLen = base + (tree_->actNode()->getNodeType() == tree_->root()->getNodeType() ? 1 : 0);
            
       AdvisorPlayout playoutManager(playBoard, MAX_PLAYOUT_LENGTH, playoutLen, advisor_);
@@ -1409,7 +1409,7 @@ double Uct::decidePlayoutWinner(const Board* playBoard) const
   if (cfg.exactPlayoutValue()){
     return 2 * (evalGold - 0.5);
   }
-  double r = (double)grand()/((double)(RAND_MAX) + (double)(1));
+  double r = (double)glob.grand()->getOne()/((double)(RAND_MAX) + (double)(1));
   if (r < evalGold)
     return 1;
   else
