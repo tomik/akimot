@@ -1,0 +1,24 @@
+[settings]
+
+comment =
+     Activate Ha1 or Cb3.
+position =  
+    2w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . . c . . c r h |
+    6| . . x r . x d . |
+    5| . . M . . . . . |
+    4| . . . . r h . . |
+    3| . C x . R r e D |
+    2| H . . E . C . H |
+    1| R R R R . R R R |
+     +-----------------+
+       a b c d e f g h  
+tags = positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Hb5 : 1 | Hb6 : 1 | Cb6 : 1 | Hb4 : 0.8 

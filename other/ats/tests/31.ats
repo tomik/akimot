@@ -1,0 +1,26 @@
+[settings]
+
+comment =
+    Proper way of killing c4 rabbit.
+
+position =  
+    2w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . r c . . c r h |
+    6| h . x . . x d . |
+    5| . . . . . . . . |
+    4| . . r . r r e . |
+    3| . D x E M x D . |
+    2| H C . m . C . H |
+    1| R R R R R R R R |
+     +-----------------+
+       a b c d e f g h  
+
+tags = capture, positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Ed3 Db3 rc3x : 1 | Ed3 Dc4 rc3x : 0.3

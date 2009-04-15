@@ -1,0 +1,26 @@
+[settings]
+
+comment =
+    Killing rabbit at f3 trap. 
+
+position =  
+    10w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . . . . . . . . |
+    6| . c x . . x h . |
+    5| . e . . . . . . |
+    4| . . . . . r . . |
+    3| . . x . . x C . |
+    2| R . . . R E m . |
+    1| . H . R . R R R |
+     +-----------------+
+       a b c d e f g h  
+   
+tags = capture, positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = rf3x Ef2

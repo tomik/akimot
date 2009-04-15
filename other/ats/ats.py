@@ -64,6 +64,8 @@ def is_kill(piece_pos):
 
 
 def check_piece_pos(piece_pos, pos):
+    if piece_pos[0] == '*': 
+      piece_pos = piece_pos[1:]
     try: 
         pos.index(piece_pos)
         return True
@@ -128,7 +130,15 @@ class Test(object):
             pieces_str = "%s %s" % ( wpieces[2:], bpieces[2:])
             for item in after_pp.split('|'):
                 case, sep, reward = item.partition(':') 
+                neg = False
                 for e in case.split(' '):
+                    if len(e) == 0:
+                      continue
+
+                    if e[0] == '!' : 
+                      e = e[1:]
+                      neg = True
+
                     #check kills
                     if is_kill(e) and check_piece_pos(e, bestmove):
                         continue 

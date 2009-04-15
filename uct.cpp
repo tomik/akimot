@@ -178,8 +178,8 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   
   //dynamic exploreRate tuning ? 
-  float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.001, 1/(2 * log(realFather->visits_))));
-  //float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
+  //float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.001, 1/(2 * log(realFather->visits_))));
+  float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
   float exploreCoeff = exploreRate * log(realFather->visits_);
 
   if (cfg.childrenCache() && visits_ > 3 * childrenNum_){

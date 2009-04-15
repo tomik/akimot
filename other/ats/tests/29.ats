@@ -1,0 +1,26 @@
+[settings]
+
+comment =
+    Rabbit positioning.  
+
+position =  
+    10w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . . c . . h . . |
+    6| . . x r . x r . |
+    5| . . . . . . . . |
+    4| . . . . . c . . |
+    3| D . R E R x C . |
+    2| R . e m . . . . |
+    1| . H R R . R R R |
+     +-----------------+
+       a b c d e f g h  
+   
+tags = positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Rb3 Ed3 : 1 | !Rc5 !Rb6 : 0.8

@@ -1,0 +1,25 @@
+[settings]
+
+comment =
+    Decent play around c3 trap. 
+position =  
+    10w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . . c . . c r h |
+    6| . . x r . x d . |
+    5| . . . . . . . . |
+    4| . . r . e . . . |
+    3| . h x E D x . . |
+    2| H D C m M C . H |
+    1| R R R R R R R R |
+     +-----------------+
+       a b c d e f g h  
+   
+tags = frame, positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Cc2 rc3 

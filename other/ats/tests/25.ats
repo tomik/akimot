@@ -1,0 +1,25 @@
+[settings]
+
+comment =
+    Hf5 must not leave kidnapped dog. 
+position =  
+    10w
+     +-----------------+
+    8| . . . . . r . . |
+    7| . . c r . d D . |
+    6| d . x . c x h r |
+    5| h . . r . H . r |
+    4| E r e r r . R . |
+    3| m D x M R x . . |
+    2| . R H R . . C . |
+    1| R C R . . R R . |
+     +-----------------+
+       a b c d e f g h  
+   
+tags = hostage, positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Hf5 : 1 | He6 : 0.7 

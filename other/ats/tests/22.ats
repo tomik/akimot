@@ -1,0 +1,27 @@
+[settings]
+
+comment =
+    Prevent capture of camel at c6 with elephant. 
+    Resist capturing the dog.
+
+position =  
+    2w
+     +-----------------+
+    8| r r r r r r r r |
+    7| h d c m   c   h |
+    6| M e X     X     |
+    5|                 |
+    4|           d     |
+    3|   D X     X H   |
+    2| H   C E   C   D |
+    1| R R R R R R R R |
+     +-----------------+
+       a b c d e f g h
+
+tags = prevent, capture 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Ec5 | Ed6 | Dc5 : 0.1 | Cc5: 0.15

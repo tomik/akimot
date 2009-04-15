@@ -1,0 +1,26 @@
+[settings]
+
+comment =
+    Elephant maneouvering. 
+
+position =  
+    10w
+     +-----------------+
+    8| r . . . . r . r |
+    7| . . c . . h . . |
+    6| . . x r . x r . |
+    5| . . . . . . . . |
+    4| . . . . . c . . |
+    3| D e x . . x C . |
+    2| R H R E m R . . |
+    1| . . R R . R R R |
+     +-----------------+
+       a b c d e f g h  
+   
+tags = positional 
+
+[criteria]
+
+condition = piece_position
+
+after_piece_position = Ee3 Rd3 Rc2 

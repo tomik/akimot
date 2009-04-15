@@ -2239,9 +2239,9 @@ void Board::findMCmoveAndMake()
   */
 
   do { 
-    int len = 1;
-    steps[0] = Step(STEP_PASS, toMove_);
-    //int len = 0;
+    //int len = 1;
+    //steps[0] = Step(STEP_PASS, toMove_);
+    int len = 0;
 
     for (intList::iterator it = p.begin(); it != p.end(); it++) { 
       //piece might have fallen into trap -> must check is there
@@ -2250,10 +2250,9 @@ void Board::findMCmoveAndMake()
       }
     }
 
-    /*if (len == 0){
+    if (len == 0){
       steps[len++] = Step(STEP_PASS, toMove_);
     }
-  */
 
     if (cfg.knowledgeInPlayout()){
       step = chooseStepWithKnowledge(steps, len);
@@ -2612,18 +2611,46 @@ Step Board::chooseStepWithKnowledge(StepArray& steps, uint stepsNum) const
   }
   else {
 
-    //for (uint i = 0; i < cfg.knowledgeTournamentSize(); i++){
-    for (uint i = 0; i < min(stepsNum/2, cfg.knowledgeTournamentSize()); i++){
+    uint size = min(stepsNum/2, cfg.knowledgeTournamentSize());
+  /*
+    int* rouletteSteps = new int[size];
+    float* rouletteEval = new float[size];
+    float sum = 0;
+    float min = 0;
+
+    for (uint i = 0; i < size; i++){
+      rouletteSteps[i] = glob.grand()->getOne() % stepsNum;
+      rouletteEval[i] = eval_->evaluateStep(this, steps[rouletteSteps[i]]); 
+      if (rouletteEval[i] < min){
+        min = rouletteEval[i]; 
+      }
+    }
+    for (uint i = 0; i < size; i++){
+      rouletteEval[i] -= min; 
+      sum += rouletteEval[i];
+    }
+    float r = glob.grand()->get01() * sum;
+    float acc = 0;
+
+    for (uint i = 0; i < size; i++){
+      acc += rouletteEval[i];
+      if (acc >= r){ 
+        bestIndex = rouletteSteps[i];
+        break;
+      }
+    } 
+
+    */
+
+    for (uint i = 0; i < size; i++){
       uint r = glob.grand()->getOne() % stepsNum;
       const Step& step = steps[r];
       eval = eval_->evaluateStep(this, step); 
-      //cerr << " eval: " << step.toString() << " " << eval;
       if (eval > bestEval){
         bestEval = eval;
         bestIndex = r;
       } 
       else
-      //TODO improve ! - roulette ? 
       if ( eval == bestEval && glob.grand()->get01() > 0.5) { 
         bestIndex = r;
       }

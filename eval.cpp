@@ -112,6 +112,24 @@ void Values::mirrorPiecePositions()
     }
   }
 
+
+/*
+  for (int i = 0; i < PIECE_NUM + 1; i++){
+    cerr << "piece " << i << endl;
+    for (int k = 0; k < 2; k++ ){
+      for (int r = 0; r < 8; r++ ){
+        for (int c = 0; c < 8; c++ ){
+          cerr.width(4);
+          cerr << piecePos[GS_LATE][k][i][r * 8 + c];
+        }
+        cerr << endl;
+      } 
+       cerr << endl;
+    }
+     cerr << endl;
+  }
+*/
+
 }
 
 
@@ -267,7 +285,7 @@ void Eval::init()
 }
 
 //--------------------------------------------------------------------- 
-
+ 
 float Eval::evaluateInPercent(const Board* b) const
 {
   /*
@@ -296,7 +314,7 @@ float Eval::evaluateInPercent(const Board* b) const
 }
 
 //--------------------------------------------------------------------- 
- 
+
 float Eval::getPieceValue(piece_t piece) const
 {
   return vals_->pieceValue[piece];
@@ -615,21 +633,25 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   float eval = 0; 
 
   if (step.isPass()){
-    eval -= 0.2 * (STEPS_IN_MOVE - b->stepCount_);
+    eval -= 0.5 * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
 
   assert(step.pieceMoved());
+  //assert(IS_PLAYER(b[step.from_]));
   
   //we don't like inverse steps 
-  if (step.inversed(b->lastStep())){
-    eval -= 0.5;
+  //TODO ... inverse step is reasonable when something dies in the trap
+  /*
+  if (step.inversed(lastStep_)){
+    eval -= 5;
     return eval;
   }
-  
+  */
 
   if (step.piece_ == ELEPHANT ) {
     eval += 0.1;
+
     //elephant the savior :)
     /*
     if (glob.grand()->get01() < 0.25){
@@ -640,6 +662,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
       }
     }
     */
+
   }
 /*
   switch (step.piece_) { 
@@ -657,7 +680,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     //push opponent to the goal :( not impossible ? )
     if (step.oppPiece_ == RABBIT && 
         BIT_ON(step.oppTo_) & bits::winRank[(step.player_)]) {
-      eval -= 1;
+      eval -= 10;
     }
     //otherwise push/pulls are encouraged
     else{
@@ -666,21 +689,19 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   } 
 
   //check self-kill
-  if (b->checkKillForward(step.from_, step.to_)){
+  if (step.isSingleStep() && b->checkKillForward(step.from_, step.to_)){
     //leave buddy in opponent trap
-    if (! IS_TRAP(step.to_) && step.piece_ == RABBIT && 
+    if (! IS_TRAP(step.to_) && 
         ((step.player_ == GOLD && ROW(step.from_) >= 4) ||
         (step.player_ == SILVER && ROW(step.from_) <= 5))){
-      eval -= 0.2;
+      eval -= 1;
     }
     else{
-
-      eval -= 0.9;   
+      eval -= 5;   
     }
   }
 
   //step into potentially dangerous trap
-  /*
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
     eval -= 0.5;
   }
@@ -689,12 +710,10 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (step.isPushPull() && IS_TRAP(step.oppTo_)){
     eval += 0.2;
   }
-  */
   
-  //check killing opponent
+  //check opp-kill
   if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
-   // cerr << step.toString() << endl;
-    eval += 0.7;   
+    eval += 5;   
   }
 
   //rabbit movements 
@@ -702,9 +721,9 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -0.3;
+      case GS_BEGIN: eval += -1.2;
                 break;
-      case GS_MIDDLE: eval += -0.1; 
+      case GS_MIDDLE: eval += -0.2; 
                 break;
       case GS_LATE: eval += 0.2; 
                 break;
@@ -715,7 +734,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (cfg.localPlayout() && 
       b->lastStep().stepType_ != STEP_NULL){
     int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
-    eval += d <= 2 ? (2 - d) * 0.1 : 0;
+    eval += d <= 3 ? (3 - d) * 0.1 : 0;
   }
 
   return eval;
