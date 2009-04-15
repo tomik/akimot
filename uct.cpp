@@ -178,7 +178,7 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   
   //dynamic exploreRate tuning ? 
-  //float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.001, 1/(2 * log(realFather->visits_))));
+  //float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.01, 1.15/(log(realFather->visits_))));
   float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
   float exploreCoeff = exploreRate * log(realFather->visits_);
 
@@ -585,11 +585,11 @@ int Node::getDepth() const
 int Node::getLocalDepth() const
 {
   int depth = 0;
-  Node* node = this->father_;
+  const Node* node = this;
 
-  while (node != NULL && node->getNodeType() == nodeType_){
+  while (node->father_ != NULL && node->getNodeType() == nodeType_){
+    depth += max(1, node->getStep().count());
     node = node->getFather();
-    depth++;
   }
   return depth;
 }
