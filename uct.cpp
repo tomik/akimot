@@ -152,7 +152,7 @@ Node::Node(TWstep* twStep, int level, float heur)
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
-  visits_     = 0;
+  visits_     = (cfg.fpu() == 0) ? 1 : 0;
   value_      = 0; 
   squareSum_  = 0;
   heur_       = heur; 
@@ -178,9 +178,15 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   
   //dynamic exploreRate tuning ? 
-  //float exploreRate = cfg.ucbTuned() ? 1 : min(0.2, max(0.01, 1.15/(log(realFather->visits_))));
-  float exploreRate = cfg.ucbTuned() ? 1 : cfg.exploreRate();
+  float exploreRate = cfg.ucbTuned() ? 1 : 
+                                  (cfg.dynamicExploration() ? 
+                                 // min(0.25, max(0.01, 0.7/(log(realFather->visits_)))) 
+                                  max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_))))
+                                  : cfg.exploreRate());
   float exploreCoeff = exploreRate * log(realFather->visits_);
+
+
+//cerr << max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_)))) << endl;
 
   if (cfg.childrenCache() && visits_ > 3 * childrenNum_){
     //using children cache
@@ -350,9 +356,7 @@ float Node::ucb(float exploreCoeff) const
 
 float Node::ucbTuned(float exploreCoeff) const
 {
-  double v = max(float(0.03), min(float(0.2), float((squareSum_/visits_) + sqrt(0.2 * exploreCoeff/visits_))));
-  //double val = (value_ + 1) / 2;
-  //double v = max(0.01, val * (1- val));
+  double v = max(float(0.03), min(float(0.25), float((squareSum_/visits_) + sqrt(0.2 * exploreCoeff/visits_))));
   //cerr << v << endl;
 
   return (nodeType_ == NODE_MAX ? value_ : - value_) 
