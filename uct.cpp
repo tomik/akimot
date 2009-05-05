@@ -335,12 +335,10 @@ void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float explo
 
 float Node::exploreFormula(float exploreCoeff) const
 {
- if (visits_ == 0)
-   return cfg.fpu();
 
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/sqrt(visits_)) : 0)
+        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value) * 5/sqrt(visits_)) : 0)
         ;
 }
 
