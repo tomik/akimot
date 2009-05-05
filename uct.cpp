@@ -129,7 +129,7 @@ TWstep& TWsteps::operator[](const Step& step)
   }
 
   pair< TWsteps::iterator, bool> p;
-  p = insert(make_pair(step, TWstep(step, 0, 0)));
+  p = insert(make_pair(step, TWstep(step, 0, 1)));
   assert(p.second);
   return p.first->second;
 }
@@ -338,7 +338,7 @@ float Node::exploreFormula(float exploreCoeff) const
 
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value) * 5/sqrt(visits_)) : 0)
+        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value) * 5/float(sqrt(visits_))) : 0)
         ;
 }
 
