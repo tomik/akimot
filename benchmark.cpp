@@ -196,8 +196,8 @@ void Benchmark::benchmarkUct()
         tree->updateHistory(winValue[(random() % 2)]);
         break;
       }
-      tree->uctDescend(); 
-      //tree->randomDescend();
+      //tree->uctDescend(); 
+      tree->randomDescend();
     } 
   }
 

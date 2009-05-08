@@ -2042,6 +2042,17 @@ u64 Board::weaker(player_t player, piece_t piece) const
 
 //--------------------------------------------------------------------- 
 
+u64 Board::stronger(player_t player, piece_t piece) const
+{
+  u64 res = 0ULL;
+  for (int i = piece + 1; i < PIECE_NUM + 1; i++){
+    res |= bitboard_[player][i];
+  }
+  return res;
+}
+
+//--------------------------------------------------------------------- 
+
 bool Board::isMoveBeginning() const 
 {
   return stepCount_ == 0;
@@ -2217,6 +2228,13 @@ void Board::findMCmoveAndMake()
 
   Step step;
   intList p; 
+  MoveVector moves;
+
+  if (cfg.activeTrapping() && glob.grand()->get01() < cfg.activeTrapping() && findActiveTrapping(moves)){
+    //make a random move
+    makeMove(moves[glob.grand()->getOne() % moves.size()]);
+    return;
+  }
   
   for (int i = 0; i < BIT_LEN/2; i++){
     int pos = glob.grand()->getOne() % BIT_LEN;
@@ -2313,6 +2331,14 @@ void Board::init(bool newGame)
   //signature is generated after the position is loaded
 }
 
+//--------------------------------------------------------------------- 
+
+void Board::afterPositionLoad()
+{
+  makeSignature();    //(unique) position identification
+  preMoveSignature_ = signature_;
+}
+
 //---------------------------------------------------------------------
 
 player_t Board::sideCharToPlayer(char side) const
@@ -2331,11 +2357,41 @@ player_t Board::sideCharToPlayer(char side) const
 }
 
 //--------------------------------------------------------------------- 
-
-void Board::afterPositionLoad()
+    
+bool Board::findActiveTrapping(MoveVector& moves)
 {
-  makeSignature();    //(unique) position identification
-  preMoveSignature_ = signature_;
+  assert(move);
+  u64 movable = calcMovable(toMove_);
+  for (int i = 0; i < TRAPS_NUM; i++){
+    coord_t trapCoord = bits::TRAP_COORDS[i];
+    if (getPlayer(trapCoord) != NO_PLAYER){
+      continue;
+    }
+    u64 guards = bits::neighborsOne(trapCoord) & bitboard_[OPP(toMove_)][0];
+    int guardsNum = bits::bitCount(guards);
+    //push/pull 
+    if (guardsNum == 1) {
+      u64 victim = guards;
+      coord_t victimCoord = bits::lix(victim);
+      assert(victimCoord != -1 && bits::lix(victim) == -1);
+      u64 stronger = Board::stronger(toMove_, getPiece(victimCoord, OPP(toMove_)));
+      u64 killers = bits::neighborsOne(victimCoord) & movable & stronger;// & ~BIT_ON(trapCoord);
+
+      int killerCoord = 0;
+      while ((killerCoord = bits::lix(killers)) != -1){
+        //construct the move
+        Move m; 
+        m.appendStep(Step( STEP_PUSH, toMove_, getPiece(killerCoord, toMove_), killerCoord, victimCoord, 
+                                          getPiece(victimCoord, OPP(toMove_)), victimCoord, trapCoord));
+        moves.push_back(m);
+        //cerr << toString() << endl << m.toString();
+      }
+    }
+    //push and pull combination
+    if (guardsNum == 0) {
+    }
+  }
+  return !moves.empty();  
 }
 
 //--------------------------------------------------------------------- 

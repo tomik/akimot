@@ -498,6 +498,8 @@ class Move
 
 typedef list<Move> MoveList;
 typedef MoveList::iterator MoveListIter;
+typedef vector<Move> MoveVector;
+typedef MoveVector::iterator MoveVectorIter;
 
 //steps
 typedef Step  StepArray[MAX_STEPS];
@@ -670,7 +672,6 @@ class Board
      */
 		Step findMCstep();
 
-
     /**
      * Move generation in Monte Carlo playouts. 
      */
@@ -682,7 +683,6 @@ class Board
      * Check signatures and moveCount.
      */
 		bool operator== (const Board& board) const;
-
 
     /**
      * Updates third repetition table with actual position.
@@ -997,6 +997,16 @@ class Board
      * @return Mask of player pieces weaker than reference piece.
      */
     u64 weaker(player_t player, piece_t piece) const;
+
+    /**
+     * Stronger mask getter.
+     * Analogical to weaker mask getter.
+     *
+     * @param player Target player.
+     * @param piece Reference piece.
+     * @return Mask of player pieces stronger than reference piece.
+     */
+    u64 stronger(player_t player, piece_t piece) const;
   
     /**
      * General init - nullifies variables.
@@ -1020,6 +1030,15 @@ class Board
      */
     player_t sideCharToPlayer(char side) const; 
 
+    /**
+     * Tries to find a trapping move in current position.
+     * It's only a heuristic used in move generation. 
+     * Must be very fast (aka desicion tree).
+     *
+     * @param moveVector - Found moves are inserted here.
+     * @return True if found anything, false otherwise.
+     */
+    bool findActiveTrapping(MoveVector& moves);
 
     /**
      * Take (hopefully) unique signature of position - u64 number. 

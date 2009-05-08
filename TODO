@@ -9,6 +9,7 @@
 [3, board] optimize step comparison
 [3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
 [3, uct] (+1) playoutlen issue 
+[3, board] stronger refactoring 
 
   === Done  ===
   [5,gen] implement hashing and step correctness check in uct 
