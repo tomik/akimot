@@ -338,7 +338,7 @@ float Node::exploreFormula(float exploreCoeff) const
 
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value) * 5/float(sqrt(visits_))) : 0)
+        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/float(sqrt(visits_))) : 0)
         ;
 }
 
@@ -1197,10 +1197,9 @@ void Uct::refineResults(const Board* board)
   Move bestMove = tree_->findBestMove(bestMoveNode_);
   bestMoveRepr_ = board->moveToStringWithKills(bestMove);
 
-  //add signature of final position ! -> for future thirdRepetitionCheck
-  //TODO IS THIS NECCESSARY - use new position loading - AEI ? 
-  Board* playBoard = new Board(*board);
-  playBoard->makeMove(bestMove);
+  //TODO add signature of final position ! -> for future thirdRepetitionCheck
+  /*Board* playBoard = new Board(*board);
+  playBoard->makeMove(bestMove);*/
 }
 
 //---------------------------------------------------------------------
