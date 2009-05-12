@@ -75,7 +75,6 @@ class Cfg
     inline float fpu() { return fpu_; }
     inline bool ucbTuned() { return ucbTuned_; }
     inline bool dynamicExploration() { return dynamicExploration_; }
-    inline bool latePruning() { return latePruning_; }
     inline bool childrenCache() { return childrenCache_; }
     inline bool knowledgeInTree() { return knowledgeInTree_;}
     inline bool uctRelativeUpdate() { return uctRelativeUpdate_;}
@@ -112,8 +111,6 @@ class Cfg
     bool ucbTuned_;
     /**Dynamic exploration rate..*/
     bool dynamicExploration_;
-    /**Use aggresive late pruning.*/
-    bool latePruning_;
     /**Children caching for perfomance boost.*/
     bool childrenCache_;
     /**Use knowledge in uct tree.*/

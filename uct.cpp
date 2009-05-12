@@ -145,10 +145,9 @@ Node::Node()
 
 //---------------------------------------------------------------------
 
-Node::Node(TWstep* twStep, int level, float heur)
+Node::Node(TWstep* twStep, float heur)
 {
   assert(IS_PLAYER(twStep->step.getPlayer()));
-  nodeType_ = ( twStep->step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
@@ -157,13 +156,10 @@ Node::Node(TWstep* twStep, int level, float heur)
   squareSum_  = 0;
   heur_       = heur; 
   twStep_     = twStep;
-  level_      = level;
   ttRep_      = NULL;
-  childrenNum_ = 0;
-  for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
-    cCache_[i] = NULL;
-  }
-  cCacheLastUpdate_ = 0;
+  //full cCache_ initialization in node::expand
+  cCache_     = NULL;
+
 }
 
 //---------------------------------------------------------------------
@@ -188,8 +184,9 @@ Node* Node::findUctChild(Node* realFather)
 
 //cerr << max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_)))) << endl;
 
-  if (cfg.childrenCache() && visits_ > 3 * childrenNum_){
+  if (cCache_ &&  visits_ > 50){
     //using children cache
+    assert(cCache_);
     cCacheUpdate(exploreCoeff); 
     for (int i = 0; i < CHILDREN_CACHE_SIZE && cCache_[i]; i++){
       act = cCache_[i];   
@@ -206,39 +203,6 @@ Node* Node::findUctChild(Node* realFather)
 }
 
 //--------------------------------------------------------------------- 
-
-void Node::latePruning()
-{
-
-  //late pruning
-  float minPruneVisits = 128;
-  if (visits_ < minPruneVisits) {
-    return;
-  }
-  float allowed = 17 - max(0,(int(log(visits_)) - int(log(minPruneVisits))));
-  if (allowed >= 3 && allowed < childrenNum_ ){
-    //cerr << int(log(visits_)) << " " << int(log(minPruneVisits)) << endl;
-    for (int i = 0; i < childrenNum_ - allowed; i++){
-      Node** pp = &firstChild_;
-      Node** worst = &firstChild_;
-      float worstVal = INT_MAX;   
-
-      while (*pp != NULL) {
-        if ( (*pp)->visits_ < worstVal ){
-          worst = pp;
-          worstVal = (*pp)->visits_;
-        }
-        pp = &((*pp)->sibling_);
-      }
-      //Node* pom = *worst;
-      //memory cleanup !
-      *worst = (*worst)->sibling_; 
-      childrenNum_--;
-    }
-  }
-}
-
-//---------------------------------------------------------------------
 
 Node* Node::findRandomChild() const
 {
@@ -277,6 +241,17 @@ Node* Node::findMostExploredChild() const
     act = act->sibling_;
   }
   return best;
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::cCacheInit(){
+  cCache_ = new Node*[CHILDREN_CACHE_SIZE];
+  assert(cCache_);
+  for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
+    cCache_[i] = NULL;
+  }
+  cCacheLastUpdate_ = 0;
 }
 
 //--------------------------------------------------------------------- 
@@ -338,7 +313,7 @@ float Node::exploreFormula(float exploreCoeff) const
 
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((nodeType_ == NODE_MAX ? twStep_->value : - twStep_->value)/float(sqrt(visits_))) : 0)
+        + (cfg.historyHeuristic() ? ((getNodeType() == NODE_MAX ? twStep_->value : - twStep_->value)/float(sqrt(visits_))) : 0)
         ;
 }
 
@@ -346,7 +321,7 @@ float Node::exploreFormula(float exploreCoeff) const
 
 float Node::ucb(float exploreCoeff) const
 {
-  return (nodeType_ == NODE_MAX ? value_ : - value_) 
+  return (getNodeType() == NODE_MAX ? value_ : - value_) 
          + sqrt(exploreCoeff/visits_) ;
 }
 
@@ -357,7 +332,7 @@ float Node::ucbTuned(float exploreCoeff) const
   double v = max(float(0.03), min(float(0.25), float((squareSum_/visits_) + sqrt(0.2 * exploreCoeff/visits_))));
   //cerr << v << endl;
 
-  return (nodeType_ == NODE_MAX ? value_ : - value_) 
+  return (getNodeType() == NODE_MAX ? value_ : - value_) 
          + sqrt(v * exploreCoeff/visits_);
 }
 
@@ -371,7 +346,6 @@ void Node::addChild(Node* newChild)
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild;
   newChild->father_ = this;
-  childrenNum_++;
 }
  
 //---------------------------------------------------------------------
@@ -564,7 +538,7 @@ void Node::setValue(float value)
 
 nodeType_e Node::getNodeType() const
 {
-  return nodeType_;
+  return ( twStep_->step.getPlayer() == GOLD ? NODE_MAX : NODE_MIN );
 }
 
 //---------------------------------------------------------------------
@@ -589,7 +563,7 @@ int Node::getLocalDepth() const
   int depth = 0;
   const Node* node = this;
 
-  while (node->father_ != NULL && node->getNodeType() == nodeType_){
+  while (node->father_ != NULL && node->getNodeType() == getNodeType()){
     depth += max(1, node->getStep().count());
     node = node->getFather();
   }
@@ -601,7 +575,18 @@ int Node::getLocalDepth() const
 
 int Node::getLevel() const
 {
-  return level_;
+  Node * act = father_;
+  nodeType_e lastNodeType = getNodeType();
+  int level = 0;
+
+  while (act != NULL){
+    if (act->getNodeType() != lastNodeType) {
+      level++;
+      lastNodeType = act->getNodeType();
+    }
+    act = act->father_;
+  }
+  return level;
 }
 
 //--------------------------------------------------------------------- 
@@ -617,7 +602,7 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( nodeType_  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << endl;
+  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( getNodeType()  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << endl;
   return ss.str();
 }
 
@@ -736,11 +721,9 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
   Node* newChild;
   assert(len);
   assert(node);
-  int level = len ? calcNodeLevel(node, steps[0]) : 0;
   assert(steps[0].getPlayer() == steps[len-1].getPlayer());
   for (uint i = 0; i < len; i++){
-    newChild = new Node(&(twSteps_[steps[i]]), level,  
-                          heurs ? (*heurs)[i] : 0);  
+    newChild = new Node(&(twSteps_[steps[i]]), heurs ? (*heurs)[i] : 0);  
     node->addChild(newChild);
     nodesNum_++;
   }
@@ -751,6 +734,11 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
     for (NodeList::iterator it = node->getTTrep()->begin(); it != node->getTTrep()->end(); it++){
       (*it)->setFirstChild(node->getFirstChild());
     }
+  }
+
+  //ccache init
+  if (cfg.childrenCache()){
+    node->cCacheInit();
   }
 }
 
@@ -763,9 +751,8 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
   StepList stepList = move.getStepList();
   assert(! stepList.empty());
   assert(node);
-  int level = ! stepList.empty() ? calcNodeLevel(node, *stepList.begin()) : 0;
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
-    newChild = new Node(&twSteps_[*it], level);
+    newChild = new Node(&twSteps_[*it]);
     node->addChild(newChild);
     node = newChild;
     nodesNum_++;
@@ -778,9 +765,6 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
 void Tree::uctDescend()
 {
   assert(actNode()->hasChildren());
-  if (cfg.latePruning()){
-    actNode()->latePruning();
-  }
   history[historyTop + 1]= actNode()->findUctChild(history[historyTop]);
   historyTop++;
   assert(actNode() != NULL);
@@ -922,8 +906,7 @@ Node* Tree::mergeTrees(EqNode* eqNode, Node* father,
 
   //TODO bindings to foreign TWsteps are made - tree should create 
   //it's own twsteps and make bindings to them.
-  int level = father ? calcNodeLevel(father, eqNode->node->getTWstep()->step) : 0;
-  Node * node = new Node(eqNode->node->getTWstep(), level);
+  Node * node = new Node(eqNode->node->getTWstep());
                          
   nodesNum++;
   node->setFather(father);
@@ -1223,8 +1206,8 @@ void Uct::doPlayout(const Board* board)
       if (tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
         if (tree_->actNode()->isJustMature()) {
           //goalCheck 
-          
           Move move;
+
           if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
             float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
             tree_->expandNodeLimited(tree_->actNode(), move);

@@ -145,17 +145,12 @@ class Node
     /**
      * Constructor with step and heuristic 
      */
-    Node(TWstep*, int level, float heur=0);
+    Node(TWstep*,  float heur=0);
 
     /**
      * Finds child with highest UCB1 value.
      */
     Node* findUctChild(Node * realFather);
-
-    /**
-     * Prunes out unpromising nodes.
-     */
-    void latePruning();
 
     /**
      * Finds random child.
@@ -173,6 +168,13 @@ class Node
      * Core of UCT algorithm.
      */
     float exploreFormula(float) const;
+
+    /**
+     * Children Cache init. 
+     * 
+     * Cache array is created and filled with nulls. 
+     */
+    void cCacheInit();
 
     /**
      * Updating children Cache. Selects appropriate nodes 
@@ -281,7 +283,6 @@ class Node
     float       heur_;
     float       squareSum_;
     int         visits_;
-    int         childrenNum_;
     TWstep*     twStep_;
 
     /**Transposition tables representant*/
@@ -290,10 +291,8 @@ class Node
     Node*       sibling_;
     Node*       firstChild_;  
     Node*       father_;
-    nodeType_e  nodeType_;
-    int         level_;
     int         cCacheLastUpdate_;
-    Node*       cCache_[CHILDREN_CACHE_SIZE];
+    Node**      cCache_; 
 };
 
 /**Tree equivalent node.*/
