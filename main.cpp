@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   cerr << "ARGUMENTS : " << ss.str();
   */
 
-  randomStructuresInit();
+  globalStructuresInit();
 
   options.parse(argc, (const char **) (argv));
   //options.printAll();

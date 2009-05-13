@@ -66,17 +66,6 @@ void Glob::init()
   }
   threadsNum_ = 0;
 
-
-  //casualties system init
-  /*(
-  for (int player = 0; player < 2; player++){
-    mostLosesTrapIndex[player] = 0;
-    for (int i = 0; i < 2; i++){
-      losesValue[player][i] = 0;
-      losesCount[player][i] = 0;
-    }
-  }
-  */
 }
 
 //--------------------------------------------------------------------- 
@@ -110,12 +99,13 @@ int Glob::add_thread() {
 
 //--------------------------------------------------------------------- 
 
-void randomStructuresInit()
+void globalStructuresInit()
 {
 
   srand((unsigned) time(NULL));
   //srand(0);
   bits::initZobrist();
+  initCachedFunctions();
 }
 
 //--------------------------------------------------------------------- 
@@ -1313,19 +1303,6 @@ void Board::makeStep(const Step& step){
       if (dieHard){
         int trap = bits::lix(dieHard);             
         if ( trap != BIT_EMPTY){
-          //update statistics on pieces killed by opponent
-          /*
-          if (step.isPushPull()){
-            int order = bits::bitOnOrder(trap, TRAPS);
-            glob.losesValue[player][order] +=  
-                eval_->getPieceValue(getPiece(trap, player));
-            ++(glob.losesCount[player][order]);
-            if (glob.losesValue[player][order] > 
-                glob.losesValue[player][glob.mostLosesTrapIndex[player]] ){
-              glob.mostLosesTrapIndex[player] = order; 
-            }
-          }
-          */
           delSquare(trap, player);
           //no more than one dead per player
           assert(bits::lix(dieHard) == BIT_EMPTY); 
@@ -2245,16 +2222,6 @@ void Board::findMCmoveAndMake()
       }
     }
   }
-
-  /*
-  if (glob.grand()->get01() < 0.5){
-    u64 phant_bb = bitboard_[toMove_][ELEPHANT];
-    int phant_pos = bits::lix(phant_bb);
-    if (phant_pos != BIT_EMPTY){
-      p.push_back(phant_pos);
-    }
-  }
-  */
 
   do { 
     //int len = 1;

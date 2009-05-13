@@ -62,6 +62,7 @@ void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, c
   #endif 
 #endif 
 
+
 /**
  * Simpler file read.
  */
@@ -114,6 +115,7 @@ class FileRead
 };
 
 
+
 /**
  * (game) random generator.
  */
@@ -159,8 +161,19 @@ template<typename T> T min(T a, T b){
   return a < b ? a : b;
 }
 
+#define SQRT_CACHE_SIZE 10000
+#define LOG_CACHE_SIZE 10000
+extern float sqrtCache[SQRT_CACHE_SIZE];     
+extern float logCache[LOG_CACHE_SIZE];     
+
+void initCachedFunctions();
+float mylog(int arg);
+float mysqrt(int arg);
+inline float mylog(double arg) {return mylog(int(arg));}
+inline float mysqrt(double arg){return mysqrt(int(arg));}
+
 /**
-} String to int converter.
+String to int converter.
  */
 int str2int(const string& str);
 

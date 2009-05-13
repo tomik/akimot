@@ -6,6 +6,9 @@
 string logLevelStr[10] = { "debug", "warning", "error", "info", "", "ddebug" };
 string logSectionStr[10] = { "uct", "board", "hash", "test", "aei", "eval", "other"};
 
+float   sqrtCache[SQRT_CACHE_SIZE];     
+float   logCache[LOG_CACHE_SIZE];     
+
 void logFunction(logLevel_e logLevel, const char* timestamp, const char* file, const char* function, int line, ...)
 {
 
@@ -151,6 +154,29 @@ unsigned int Grand::getOne()
 float Grand::get01() 
 {
   return (double)getOne()/((double)(GRAND_MAX) + (double)(1));
+}
+
+//--------------------------------------------------------------------- 
+
+void initCachedFunctions(){
+  for (int i = 0; i < SQRT_CACHE_SIZE; i++)
+    sqrtCache[i] = sqrt(i);
+
+  for (int i = 0; i < LOG_CACHE_SIZE; i++)
+    logCache[i] = log(i);
+  
+}
+
+//--------------------------------------------------------------------- 
+
+float mysqrt(int arg){
+  return arg < SQRT_CACHE_SIZE ? sqrtCache[arg] : sqrt(arg);
+}
+
+//--------------------------------------------------------------------- 
+
+float mylog(int arg){
+  return arg < LOG_CACHE_SIZE ? logCache[arg] : log(arg);
 }
 
 //--------------------------------------------------------------------- 

@@ -40,7 +40,7 @@ class DebugTestSuite : public CxxTest::TestSuite
 
     void setUp() { 
       cfg.loadFromFile(string(DEFAULT_CFG));
-      randomStructuresInit();
+      globalStructuresInit();
     }
 
     /*

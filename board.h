@@ -27,7 +27,7 @@ using std::bitset;
 
 //max number of pieces per player 
 #define MAX_PIECES  16      
-#define MAX_STEPS  200
+#define MAX_STEPS  80
 
 #define STEPS_IN_MOVE 4
 
@@ -202,6 +202,7 @@ namespace bits{
   u64 circle(int center, int radius);
 }
 
+
 /**
  * Record action as parsed from the game record (file).
  *
@@ -213,7 +214,7 @@ enum recordAction_e {ACTION_PLACEMENT, ACTION_STEP, ACTION_TRAP_FALL, ACTION_ERR
 /**
  * Zobrist and random numbers init;
  */
-void randomStructuresInit();
+void globalStructuresInit();
 
 /**
 * Parsing piece char (e.g. R,H,c,m, ... ) 
@@ -520,10 +521,6 @@ class Glob {
     inline ThirdRep* thirdRep() {return thirdRep_[tti()];}
     inline Grand* grand() {return grand_[tti()];}
 
-    //friend class Board;
-    float losesValue[2][TRAPS_NUM];
-    int losesCount[2][TRAPS_NUM];
-    int mostLosesTrapIndex[2];
   private:
     /**
      * Thread to index.

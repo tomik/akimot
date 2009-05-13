@@ -179,12 +179,11 @@ Node* Node::findUctChild(Node* realFather)
                                  // min(0.25, max(0.01, 0.7/(log(realFather->visits_)))) 
                                   max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_))))
                                   : cfg.exploreRate());
-  float exploreCoeff = exploreRate * log(realFather->visits_);
-
+  float exploreCoeff = exploreRate * mylog(realFather->visits_);
 
 //cerr << max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_)))) << endl;
 
-  if (cCache_ &&  visits_ > 50){
+  if (cCache_ &&  visits_ > CCACHE_START_THRESHOLD){
     //using children cache
     assert(cCache_);
     cCacheUpdate(exploreCoeff); 
@@ -310,10 +309,9 @@ void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float explo
 
 float Node::exploreFormula(float exploreCoeff) const
 {
-
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((getNodeType() == NODE_MAX ? twStep_->value : - twStep_->value)/float(sqrt(visits_))) : 0)
+        + (cfg.historyHeuristic() ? ((getNodeType() == NODE_MAX ? twStep_->value : - twStep_->value)/mysqrt(visits_)) : 0)
         ;
 }
 
@@ -322,7 +320,7 @@ float Node::exploreFormula(float exploreCoeff) const
 float Node::ucb(float exploreCoeff) const
 {
   return (getNodeType() == NODE_MAX ? value_ : - value_) 
-         + sqrt(exploreCoeff/visits_) ;
+         + sqrt(exploreCoeff)/mysqrt(visits_);
 }
 
 //---------------------------------------------------------------------
@@ -333,7 +331,7 @@ float Node::ucbTuned(float exploreCoeff) const
   //cerr << v << endl;
 
   return (getNodeType() == NODE_MAX ? value_ : - value_) 
-         + sqrt(v * exploreCoeff/visits_);
+         + sqrt(v * exploreCoeff)/mysqrt(visits_);
 }
 
 //---------------------------------------------------------------------
@@ -1192,9 +1190,6 @@ void Uct::doPlayout(const Board* board)
   Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;
 
-  StepArray steps;    
-  uint      stepsNum;
-
   tree_->historyReset();     //point tree's actNode to the root 
 
   logDDebug(board->toString().c_str());
@@ -1224,6 +1219,9 @@ void Uct::doPlayout(const Board* board)
           if (cfg.moveAdvisor()){
             fill_advisor(playBoard); 
           } 
+
+          StepArray steps;    
+          uint      stepsNum;
 
           stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
           stepsNum = playBoard->filterRepetitions(steps, stepsNum);

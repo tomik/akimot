@@ -22,6 +22,7 @@ using std::make_pair;
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define UCT_MAX_DEPTH 50
 #define CHILDREN_CACHE_SIZE 3
+#define CCACHE_START_THRESHOLD 50 
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
 
 #define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 2 : -1 )
@@ -190,12 +191,12 @@ class Node
     /**
      * The UCB1 formula.
      */
-    float ucb(float) const;
+    float ucb(float exploreCoeff) const;
 
     /**
      * The UCB-tuned formula.
      */
-    float ucbTuned(float) const;
+    float ucbTuned(float exploreCoeff) const;
 
     /**
      * Childre addition during node expansion.
