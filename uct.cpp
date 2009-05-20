@@ -151,7 +151,7 @@ Node::Node(TWstep* twStep, float heur)
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
-  visits_     = (cfg.fpu() == 0) ? 1 : 0;
+  visits_     = (cfg.fpu() == 0) ? 5 : 0;
   value_      = 0; 
   squareSum_  = 0;
   heur_       = heur; 
@@ -174,14 +174,19 @@ Node* Node::findUctChild(Node* realFather)
   float bestUrgency = INT_MIN;   
   
   //dynamic exploreRate tuning ? 
+  //int father_visits = realFather->father_ ? realFather->father_->visits_ : 3 * visits_;
   float exploreRate = cfg.ucbTuned() ? 1 : 
                                   (cfg.dynamicExploration() ? 
-                                 // min(0.25, max(0.01, 0.7/(log(realFather->visits_)))) 
-                                  max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_))))
+                                  max(0.01, min(0.25, 3.5 * (double(squareSum_)/visits_)))
                                   : cfg.exploreRate());
-  float exploreCoeff = exploreRate * mylog(realFather->visits_);
+  float exploreCoeff = exploreRate * log(realFather->visits_);
 
-//cerr << max(float(0.01), min(float(0.25), float((squareSum_/visits_) + 5/float(1 + visits_)))) << endl;
+  /*
+  if (getDepth() == 1) {
+    cerr << exploreRate << endl;
+  }
+  */
+  //cerr << exploreRate << " " << sqrt(log(father_visits)/visits_) << endl;
 
   if (cCache_ &&  visits_ > CCACHE_START_THRESHOLD){
     //using children cache
@@ -309,9 +314,13 @@ void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float explo
 
 float Node::exploreFormula(float exploreCoeff) const
 {
+ if (visits_ == 0)
+   return cfg.fpu();
+  
+
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
         + heur_/visits_
-        + (cfg.historyHeuristic() ? ((getNodeType() == NODE_MAX ? twStep_->value : - twStep_->value)/mysqrt(visits_)) : 0)
+        + (cfg.historyHeuristic() ? ((getNodeType() == NODE_MAX ? twStep_->value : - twStep_->value) * 1.1 /mysqrt(visits_)) : 0)
         ;
 }
 
@@ -327,8 +336,9 @@ float Node::ucb(float exploreCoeff) const
 
 float Node::ucbTuned(float exploreCoeff) const
 {
-  double v = max(float(0.03), min(float(0.25), float((squareSum_/visits_) + sqrt(0.2 * exploreCoeff/visits_))));
-  //cerr << v << endl;
+  double v = max(0.01, min(0.25, 2 * double(squareSum_)/visits_ + 0.2 * sqrt(exploreCoeff/visits_)));
+  //if (v < 0.25)
+   // cerr << v << " ";
 
   return (getNodeType() == NODE_MAX ? value_ : - value_) 
          + sqrt(v * exploreCoeff)/mysqrt(visits_);
@@ -371,9 +381,10 @@ void Node::update(float sample)
 {
   float old_value = value_;
   if (cfg.uctRelativeUpdate() && isMature()){
-    //int diff = abs(int((sample - value_ ) * sqrt(visits_)));
-    //int weight = min(max(diff, 1), 100);
-    int weight = min(max(int(sqrt(visits_)), 1), 10);
+    double diff = (sample - value_ ) * log(visits_);
+    diff = diff < 0 ? -1 * diff : diff;
+    double weight = min(max(diff, 1.0), 100.0);
+    //float weight = min(max(log(sqrt(visits_)), 1.0), 10.0);
     float added = ((sample - value_) * weight)/(visits_ + weight);
     visits_ += 1;
     //cerr << sample - value_ << "/" << visits_ << "/" << weight << " ";
@@ -600,7 +611,7 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( getNodeType()  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << endl;
+  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( getNodeType()  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << " " << squareSum_/visits_ << endl;
   return ss.str();
 }
 
