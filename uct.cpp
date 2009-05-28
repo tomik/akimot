@@ -1,7 +1,6 @@
 /** 
  *  @file uct.cpp
- *  @brief Uct algorithm. 
- *  @full Uct algorithm implementation.
+ *  @brief Uct algorithm implemenation.
  */
 
 #include "engine.h"
@@ -97,9 +96,6 @@ void AdvisorPlayout::playOne()
   if (cfg.moveAdvisor() && glob.grand()->get01() < cfg.moveAdvisor() && 
       advisor_->getMove(board_->getPlayerToMove(), board_->getBitboard(), 
       board_->getStepCountLeft(), &move)){
-    //cerr << "APPLYING MOVE IN PLAYOUT " << endl;
-    //cerr << board_->toString();
-    //cerr << board_->moveToStringWithKills(move) << endl;
     board_->makeMove(move);
   }  
   else{
@@ -173,20 +169,12 @@ Node* Node::findUctChild(Node* realFather)
   Node* best = firstChild_;
   float bestUrgency = INT_MIN;   
   
-  //dynamic exploreRate tuning ? 
-  //int father_visits = realFather->father_ ? realFather->father_->visits_ : 3 * visits_;
+  //dynamic exploreRate tuning 
   float exploreRate = cfg.ucbTuned() ? 1 : 
                                   (cfg.dynamicExploration() ? 
                                   max(0.01, min(0.25, 3.5 * (double(squareSum_)/visits_)))
                                   : cfg.exploreRate());
   float exploreCoeff = exploreRate * log(realFather->visits_);
-
-  /*
-  if (getDepth() == 1) {
-    cerr << exploreRate << endl;
-  }
-  */
-  //cerr << exploreRate << " " << sqrt(log(father_visits)/visits_) << endl;
 
   if (cCache_ &&  visits_ > CCACHE_START_THRESHOLD){
     //using children cache
@@ -267,7 +255,7 @@ void Node::cCacheUpdate(float exploreCoeff)
 
   cCacheLastUpdate_ = int(floor(sqrt(visits_)));
   
-  //nullify cache
+  //empty cache
   for (int i = 0; i < CHILDREN_CACHE_SIZE; i++){ 
     cCache_[i] = NULL;
   }
@@ -337,8 +325,6 @@ float Node::ucb(float exploreCoeff) const
 float Node::ucbTuned(float exploreCoeff) const
 {
   double v = max(0.01, min(0.25, 2 * double(squareSum_)/visits_ + 0.2 * sqrt(exploreCoeff/visits_)));
-  //if (v < 0.25)
-   // cerr << v << " ";
 
   return (getNodeType() == NODE_MAX ? value_ : - value_) 
          + sqrt(v * exploreCoeff)/mysqrt(visits_);
@@ -381,19 +367,15 @@ void Node::update(float sample)
 {
   float old_value = value_;
   if (cfg.uctRelativeUpdate() && isMature()){
-    double diff = (sample - value_ ) * log(visits_);
-    diff = diff < 0 ? -1 * diff : diff;
-    double weight = min(max(diff, 1.0), 100.0);
-    //float weight = min(max(log(sqrt(visits_)), 1.0), 10.0);
+    float weight = min(max(sqrt(visits_), 1.0), 10.0);
     float added = ((sample - value_) * weight)/(visits_ + weight);
     visits_ += 1;
-    //cerr << sample - value_ << "/" << visits_ << "/" << weight << " ";
-    //cerr << value_ << "/" << visits_ << "/" << diff << "/" << added << "/" << (sample - value_)/visits_ << " ";
     value_ += added;
   }else{
     value_ += (sample - value_)/++visits_;         
   }
   squareSum_ += (sample - old_value) * (sample - value_);
+
   //value update in ttNodes
   if (ttRep_) {
     for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
@@ -562,7 +544,6 @@ int Node::getDepth() const
     depth++;
   }
   return depth;
-  
 }
 
 //--------------------------------------------------------------------- 
@@ -611,7 +592,8 @@ string Node::toString() const
 {
   stringstream ss;
 
-  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( getNodeType()  == NODE_MAX ? "+" : "-" )  << ") " << value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << " " << squareSum_/visits_ << endl;
+  ss << getStep().toString() << "(" << getDepthIdentifier() << " " <<  ( getNodeType()  == NODE_MAX ? "+" : "-" )  << ") " << 
+        value_ << "/" << visits_ << " twstep " << twStep_->value << "/" << twStep_->visits << " " << endl;
   return ss.str();
 }
 
@@ -691,7 +673,7 @@ Tree::Tree(Tree* trees[], int treesNum)
     head = en;
     nodesPruned_ += trees[i]->nodesPruned_;  
   }
-  //TODO nodesPruned_ simple average now ...
+  //TODO nodesPruned_ simple average now ... do better ? 
   nodesPruned_ /= treesNum;
 
   //tree from merged trees
@@ -702,7 +684,6 @@ Tree::Tree(Tree* trees[], int treesNum)
   }else{
     history[0] = Tree::mergeTrees(head, NULL, nodesNum_, nodesExpandedNum_);
   }
-
 }
 
 //--------------------------------------------------------------------- 
@@ -813,11 +794,8 @@ Node* Tree::findBestMoveNode(Node* subTreeRoot)
     act = act->findMostExploredChild();
   }
 
-  //return act;
-
   //Now we have some good solution - DFS in the 
   //first layer of the tree follows
-   
   Node * best = act;
   list<Node *> stack;
   stack.clear();
@@ -991,21 +969,21 @@ Node* Tree::actNode()
 
 int Tree::getNodesNum() 
 {
-    return nodesNum_;
+  return nodesNum_;
 }
 
 //--------------------------------------------------------------------- 
 
 int Tree::getNodesPruned() 
 {
-    return nodesPruned_;
+  return nodesPruned_;
 }
 
 //--------------------------------------------------------------------- 
 
 int Tree::getNodesExpandedNum() 
 {
-    return nodesExpandedNum_;
+  return nodesExpandedNum_;
 }
 
 //--------------------------------------------------------------------- 
@@ -1084,12 +1062,7 @@ Tree::Tree()
 void Tree::init()
 {
   tt_ = new TT();
-
-  //root is NOT saved 
-  /*tt_->insertItem(board->getSignature(),
-                  board->getPlayerToMove(), 
-                  tree_->root());
-  */
+  //root is NOT saved in tt
 
   history[0] = NULL; 
   twSteps_.clear();
@@ -1155,8 +1128,6 @@ void Uct::init(const Board* board)
   bestMoveRepr_ = "";
   playouts_ = 0;
   uctDescends_ = 0; 
-
-
 }
 
 //---------------------------------------------------------------------
@@ -1189,9 +1160,7 @@ void Uct::refineResults(const Board* board)
   Move bestMove = tree_->findBestMove(bestMoveNode_);
   bestMoveRepr_ = board->moveToStringWithKills(bestMove);
 
-  //TODO add signature of final position ! -> for future thirdRepetitionCheck
-  /*Board* playBoard = new Board(*board);
-  playBoard->makeMove(bestMove);*/
+  //TODO future thirdRepetitionCheck - add signature of final position to thirdRep ?
 }
 
 //---------------------------------------------------------------------
@@ -1201,7 +1170,8 @@ void Uct::doPlayout(const Board* board)
   Board *playBoard = new Board(*board);
   playoutStatus_e playoutStatus;
 
-  tree_->historyReset();     //point tree's actNode to the root 
+  //point tree's actNode to the root 
+  tree_->historyReset();    
 
   logDDebug(board->toString().c_str());
   logDDebug("===== Playout :===== ");
@@ -1211,9 +1181,10 @@ void Uct::doPlayout(const Board* board)
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
         if (tree_->actNode()->isJustMature()) {
-          //goalCheck 
+
           Move move;
 
+          //goalCheck 
           if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
             float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
             tree_->expandNodeLimited(tree_->actNode(), move);
@@ -1226,7 +1197,6 @@ void Uct::doPlayout(const Board* board)
           }
           
           //tactics in playouts extension
-         
           if (cfg.moveAdvisor()){
             fill_advisor(playBoard); 
           } 
@@ -1237,12 +1207,12 @@ void Uct::doPlayout(const Board* board)
           stepsNum = playBoard->genStepsNoPass(playBoard->getPlayerToMove(), steps);
           stepsNum = playBoard->filterRepetitions(steps, stepsNum);
 
-          if (playBoard->canPass()) { //add pass if possible
+          //add pass if possible
+          if (playBoard->canPass()) { 
             steps[stepsNum++] = Step(STEP_PASS, playBoard->getPlayerToMove());
           }
 
           if (stepsNum > 0) {
-
             if (cfg.knowledgeInTree()){
               HeurArray heurs;
               playBoard->getHeuristics(steps, stepsNum, heurs);
@@ -1318,22 +1288,12 @@ string Uct::getStats(float seconds) const
         << "  " << int(playouts_ / seconds) << " playouts per second" << endl
         << "  " << tree_->getNodesNum() << " nodes in the tree" << endl 
         << "  " << tree_->getNodesExpandedNum() << " nodes expanded" << endl 
-        //<< "  " << tree_->getLongestVariant() << " nodes in longest path" << endl
         << "  " << tree_->getNodesPruned() << " nodes pruned" << endl 
         << "  " << uctDescends_/float(playouts_) << " average descends in playout" << endl 
         << "  " << "best move: " << getBestMoveRepr() << endl 
         << "  " << "best move visits: " << getBestMoveVisits() << endl 
         << "  " << "win condidence: " << getWinRatio() << endl 
       ;
-
-  /*
-  for (int player = 0; player < 2; player++){
-    for (int i = 0; i < TRAPS_NUM; i++){
-       ss << glob.losesValue[player][i]/glob.losesCount[player][i] << "/" << glob.losesCount[player][i] << " ";
-    }
-    ss << endl;
-  }
-  */
 
   return ss.str();
 }
@@ -1423,7 +1383,6 @@ void Uct::fill_advisor(const Board * playBoard) {
     }
   }
 
-/*  
   //opponent trapCheck
   MoveList moves;
   moves.clear();
@@ -1446,7 +1405,7 @@ void Uct::fill_advisor(const Board * playBoard) {
       advisor_->addMove((*it), playBoard->getBitboard());
     }
   }
-  */
+  
 }
 
 //--------------------------------------------------------------------- 

@@ -785,7 +785,7 @@ ContextMove::ContextMove(Move move, const Bitboard& bitboard):
 float ContextMove::urgency(player_t player, int total) const
 {
   //cerr << value_ << " " << total << " " << visits_ << endl;
-  return value_ * (player == GOLD ? 1 : -1);// + sqrt(0.1 * log(total)/visits_);
+  return value_ * (player == GOLD ? 1 : -1) + sqrt(0.2 * log(total)/visits_);
 }
 
 
@@ -828,7 +828,7 @@ void ContextMove::update(float sample) {
 }
 
 //---------------------------------------------------------------------
-//  section MoveAdviser
+//  section MoveAdvisor
 //---------------------------------------------------------------------
 
 MoveAdvisor::MoveAdvisor() 

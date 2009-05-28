@@ -1,9 +1,8 @@
 /**
  * @file uct.h
  *
- * Implementation of uct algorithm. 
+ * @brief Uct algorithm and playouts management. 
  */
-
 
 #pragma once 
 
@@ -21,7 +20,7 @@ using std::make_pair;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
 #define UCT_MAX_DEPTH 50
-#define CHILDREN_CACHE_SIZE 3
+#define CHILDREN_CACHE_SIZE 5
 #define CCACHE_START_THRESHOLD 50 
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
 
@@ -43,9 +42,9 @@ enum nodeType_e {NODE_MAX, NODE_MIN};
 #define PLAYER_TO_NODE_TYPE(player) (player == GOLD ? NODE_MAX : NODE_MIN)
 
 /**
- * Simple random playout.
+ * Simple playout.
  *
- * Performs random playout from position given in constructor.
+ * Performs (pseudo)random playout from position given in constructor.
  * Playout returns playout status.
  */
 class SimplePlayout
@@ -87,13 +86,24 @@ class SimplePlayout
 
     SimplePlayout();
 
+    /**Board for playout.*/
     Board*		  board_;
+    /**Actual length of the playout.*/
     uint        playoutLength_;
+    /**Maximal length - if tresspased playout is invalid.*/
     uint        maxPlayoutLength_;
+    /**How deep perform the evaluation.*/
     uint        evalAfterLength_;
 
 };
 
+/**
+ * Playouting class using Move Advisor.
+ *
+ * If the Move Advisor is allowed, dice is rolled and depending 
+ * on the outcome Advisor is used instead of move generation in the 
+ * playout.
+ */
 class AdvisorPlayout : public SimplePlayout
 {
   public:
@@ -109,10 +119,17 @@ class AdvisorPlayout : public SimplePlayout
     void playOne();
 
   private: 
+    /** Advisor to use*/
      MoveAdvisor * advisor_;
 };
 
-/**Tree wide step.*/
+/**
+ * Tree wide step.
+ *
+ * Storing the step across the tree.
+ * Also used for gathering statistics on the step 
+ * and utilizing these in history heuristic.
+ * */
 class TWstep
 {
   public:
@@ -124,6 +141,12 @@ class TWstep
 
 typedef map<Step, TWstep> TWstepsMap;
 
+/**
+ * Structure to hold TWsteps.
+ *
+ * Derived from Map with custom []operator - if step is not 
+ * in the map, adequate TWstep instance is created and saved.  
+ */
 class TWsteps: public TWstepsMap
 {
   public: 
@@ -131,12 +154,10 @@ class TWsteps: public TWstepsMap
   private:
 };
 
-//typedef map<Step, TWstep> TWsteps;
-
 typedef set<Node*> NodeSet;
 
 /**
- * Node in uct tree. 
+ * Node in the Uct tree. 
  */
 class Node
 {
@@ -502,8 +523,11 @@ class Tree
      */
     static int calcNodeLevel(Node* father, const Step& step);
 
-
+    /**Simulation history
+     *
+     * Hardcoded length for speedup - in playout check for overflow.*/
     Node*      history[UCT_MAX_DEPTH];
+    /**Index of actual node in the history*/
     uint       historyTop;
     /**Expanded nodes.*/
     int   nodesExpandedNum_;
@@ -546,8 +570,6 @@ class Uct
      * Runs the doPlayout loop.
      */
      void searchTree(const Board*, const Engine*);
-    //void searchTree(const Board*, const Engin*, 
-     //               bool (Engine::* checkSearchStop) () const);
 
     /**
      * Results refinement after search.
@@ -573,7 +595,7 @@ class Uct
     string getAdditionalInfo() const;
 
     /**
-     * String representation of best move.
+     * String representation of the best move.
      */
     string getBestMoveRepr() const;
 
@@ -640,8 +662,7 @@ class Uct
     int playouts_;
     /**Total number of uct descends through the tree.*/
     int uctDescends_;
-    
-    /*Move advisor is filled here and used in playouts.*/
+    /*Move advisor is filled during the expansion process and is used in th playouts.*/
     MoveAdvisor * advisor_;
 };
 
