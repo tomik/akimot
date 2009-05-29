@@ -723,34 +723,6 @@ Tree::Tree(Node* root)
 
 //--------------------------------------------------------------------- 
 
-Tree::Tree(Tree* trees[], int treesNum) 
-{
-  init();
-  EqNode * head = NULL;
-  EqNode * en; 
-
-  for (int i = 0; i < treesNum; i++){
-    en = new EqNode();
-    en->node = trees[i]->root();
-    en->next = head;
-    head = en;
-    nodesPruned_ += trees[i]->nodesPruned_;  
-  }
-  //TODO nodesPruned_ simple average now ... do better ? 
-  nodesPruned_ /= treesNum;
-
-  //tree from merged trees
-  if (treesNum == 1){
-    history[0] = trees[0]->root();
-    nodesNum_ = trees[0]->nodesNum_;
-    nodesExpandedNum_ = trees[0]->nodesExpandedNum_;
-  }else{
-    history[0] = Tree::mergeTrees(head, NULL, nodesNum_, nodesExpandedNum_);
-  }
-}
-
-//--------------------------------------------------------------------- 
-
 Tree::Tree(player_t firstPlayer)
 {
   init();
@@ -945,95 +917,6 @@ Move Tree::findBestMove(Node* bestMoveNode)
   return bestMove;
 } 
 
-//---------------------------------------------------------------------
-
-Node* Tree::mergeTrees(EqNode* eqNode, Node* father,
-                       int& nodesNum, int& nodesExpandedNum)
-{
-  assert(eqNode != NULL);
-  if (eqNode == NULL){
-    return NULL;
-  }
-
-  //for going through the eqnode
-  EqNode * en = eqNode;
-  //blocks for children 
-  EqNodeBlock * eqNodeBlocks = NULL;
-  int visits = 0;
-  float value = 0;
-
-  while (en != NULL ){
-    assert(en->node != NULL);
-    visits += en->node->getVisits();
-    value += en->node->getValue() * en->node->getVisits();
-    Node* child = en->node->getFirstChild();
-    while (child != NULL){
-      EqNodeBlock* enb = eqNodeBlocks;
-      while (enb != NULL){
-        assert(enb->eqNode != NULL);
-        if (enb->eqNode->node->getStep() == child->getStep()){
-          break;
-        }
-        enb = enb->next;
-      }
-      if (enb != NULL){
-        //some nodes with such a step already exist in eqNodeBlock
-        EqNode * e = new EqNode();     
-        e->next = enb->eqNode;
-        enb->eqNode = e;
-        e->node = child;
-      }
-      else {
-        enb = new EqNodeBlock();
-        enb->next = eqNodeBlocks;
-        eqNodeBlocks = enb;
-        enb->eqNode = new EqNode();
-        enb->eqNode->next = NULL;
-        enb->eqNode->node = child;
-      }
-      child = child->getSibling();
-    }
-    en = en->next;
-  }
-
-  //TODO bindings to foreign TWsteps are made - tree should create 
-  //it's own twsteps and make bindings to them.
-  Node * node = new Node(eqNode->node->getTWstep());
-                         
-  nodesNum++;
-  node->setFather(father);
-  node->setVisits(visits);
-  node->setValue(visits == 0 ? 0 : value/visits);
-
-  //go through nodes on given level and recurse
-  EqNodeBlock* enb = eqNodeBlocks;
-  Node * child = NULL;
-  Node * firstChild = NULL;
-
-  while (enb != NULL) {
-    //create new node
-    EqNode * en = enb->eqNode;    
-    if (en == NULL) {
-      assert(false);
-      break;
-    }
-    assert(en != NULL);
-    //recurse
-    child = mergeTrees(en, node, nodesNum, nodesExpandedNum);
-    child->setSibling(firstChild);
-    firstChild = child;
-    enb = enb->next;
-  }
-
-
-  node->setFirstChild(firstChild);
-  if (firstChild){
-    nodesExpandedNum++;
-  }
-  return node;
-  
-}
-
 //--------------------------------------------------------------------- 
 
 void Tree::updateHistory(float sample)
@@ -1191,27 +1074,6 @@ int Tree::calcNodeLevel(Node* father, const Step& step)
 Uct::Uct() 
 {
   assert(false);
-}
-
-//--------------------------------------------------------------------- 
-
-Uct::Uct(const Board* board, Uct* ucts[], int uctsNum)
-{
-  init(board);
-  Tree** trees = new Tree*[uctsNum];
-  
-  for (int i = 0; i < uctsNum; i++){
-    trees[i] = ucts[i]->getTree();
-    playouts_ += ucts[i]->getPlayoutsNum();
-    uctDescends_ += ucts[i]->uctDescends_;
-  }
-
-  //delete tree initialized in init
-  delete tree_;
-  //tree from merged trees
-  tree_ = new Tree(trees, uctsNum);
-
-  refineResults(board);
 }
 
 //--------------------------------------------------------------------- 

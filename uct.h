@@ -359,18 +359,6 @@ class Node
     pthread_mutex_t mutex;
 };
 
-/**Tree equivalent node.*/
-struct EqNode {
-  Node* node;
-  struct EqNode * next;
-};
-
-/**List of Tree equivalent nodes.*/
-struct EqNodeBlock {
-  EqNode * eqNode;
-  struct EqNodeBlock* next;
-};
-
 /**
  * Uct tree. 
  */
@@ -391,14 +379,6 @@ class Tree
      * Root node is created(bottom of history stack) with given player.
      */
     Tree(player_t firstPlayer);   
-
-    /**
-     * Mocking up constructor. 
-     * 
-     * Used for mocking up the tree from multiple trees
-     * after search in multiple threads.
-     */
-    Tree(Tree* trees[], int treesNum );
 
     /**
      * Destructor.
@@ -459,7 +439,6 @@ class Tree
      */
     void firstChildDescend();
 
-
     /**
      * Finds the best move node.
      *
@@ -476,14 +455,6 @@ class Tree
      * @return best move in search. 
      */
     Move findBestMove(Node* bestMoveNode);
-
-    /**
-     * Merging trees. 
-     *
-     * Not fixed to instance.
-     */
-    static Node* mergeTrees(EqNode* eqNode, Node* father, 
-                            int& nodesNum, int& nodesExpandedNum);
 
     /**
      * Backpropagation of playout sample.
@@ -611,11 +582,6 @@ class Uct
      * root node in the actual tree.
      */
     Uct(const Board* board, const Uct* masterUct);
-
-    /**
-     * Constructor for results mockup.
-     */
-    Uct(const Board* board, Uct* ucts[],int uctsNum);
 
     ~Uct();
 
