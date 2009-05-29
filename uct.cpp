@@ -143,6 +143,7 @@ Node::Node()
 
 Node::Node(TWstep* twStep, float heur)
 {
+  pthread_mutex_init(&mutex, NULL);
   assert(IS_PLAYER(twStep->step.getPlayer()));
   firstChild_ = NULL;
   sibling_    = NULL;
@@ -153,6 +154,7 @@ Node::Node(TWstep* twStep, float heur)
   heur_       = heur; 
   twStep_     = twStep;
   ttRep_      = NULL;
+  master_     = NULL;
   //full cCache_ initialization in node::expand
   cCache_     = NULL;
 
@@ -361,6 +363,39 @@ void Node::delChildrenRec()
   }
 }
 
+//--------------------------------------------------------------------- 
+
+void Node::commitToMaster()
+{
+  assert(master_);
+  master_->lock();
+  float mValue  = master_->getValue();
+  int   mVisits = master_->getVisits();
+
+  int newVisits = mVisits + visits_;
+  float newValue = (value_ * visits_ + mValue * mVisits) / newVisits;
+  master_->setVisits(newVisits);
+  master_->setValue(newValue);
+  master_->unlock();
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::recCommitToMaster()
+{
+  if (! master_){
+    return;
+  }
+    
+  commitToMaster();
+
+  Node* child = firstChild_;
+  while(child != NULL){
+    child->recCommitToMaster();
+    child = child->getSibling();
+  }
+}
+
 //---------------------------------------------------------------------
 
 void Node::update(float sample)
@@ -523,6 +558,34 @@ float Node::getValue() const
 void Node::setValue(float value) 
 {
   value_ = value;
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::setMaster(Node* master)
+{
+  master_ = master;
+}
+
+//--------------------------------------------------------------------- 
+
+Node* Node::getMaster()
+{
+  return master_;
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::lock()
+{
+  pthread_mutex_lock(&mutex);
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::unlock()
+{
+  pthread_mutex_unlock(&mutex);
 }
 
 //--------------------------------------------------------------------- 
@@ -706,8 +769,50 @@ Tree::~Tree()
 
 //--------------------------------------------------------------------- 
 
+void Tree::findMaster(Node* node)
+{
+  //master already known
+  if (! node->getFather() || ! node->getFather()->getMaster()){
+    return;
+  }
+
+  Node* masterFather = node->getFather()->getMaster(); 
+  masterFather->lock();
+  Node* child = masterFather->getFirstChild();
+
+  while (child != NULL){
+    if (child->getStep() == node->getStep()){
+      //add link only
+      node->setMaster(child);
+      masterFather->unlock();
+      return;
+    }
+    child = child->getSibling();
+  }
+
+  //if not found - create node and add to the master father
+  child = new Node(&twSteps_[node->getStep()], 0);  
+  masterFather->addChild(child);
+  node->setMaster(child);
+  masterFather->unlock();
+  return ;
+}
+
+//--------------------------------------------------------------------- 
+
+void Tree::commitToMaster(){
+  root()->recCommitToMaster();
+}
+
+//--------------------------------------------------------------------- 
+
 void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs)
 {
+  //if parallel then create master
+  if (cfg.searchThreadsNum() > 1){
+    findMaster(node);
+  }
+
   Node* newChild;
   assert(len);
   assert(node);
@@ -1118,6 +1223,16 @@ Uct::Uct(const Board* board)
 
 //--------------------------------------------------------------------- 
 
+Uct::Uct(const Board* board, const Uct* masterUct)
+{
+  init(board);
+  if (masterUct){
+    tree_->root()->setMaster(masterUct->tree_->root());
+  }
+}
+
+//--------------------------------------------------------------------- 
+
 void Uct::init(const Board* board)
 {
   eval_  = new Eval(board);
@@ -1139,6 +1254,15 @@ Uct::~Uct()
   delete advisor_;
 }
 
+//--------------------------------------------------------------------- 
+
+void Uct::updateStatistics(Uct* ucts[], int uctsNum)
+{
+  for (int i = 0; i < uctsNum; i++){
+    playouts_ += ucts[i]->getPlayoutsNum();
+    uctDescends_ += ucts[i]->uctDescends_;
+  }
+}
 
 //---------------------------------------------------------------------
 
@@ -1149,13 +1273,14 @@ void Uct::searchTree(const Board* refBoard, const Engine* engine)
     doPlayout(board);
   }
   delete(board);
+
+  tree_->commitToMaster();
 }
 
 //--------------------------------------------------------------------- 
 
 void Uct::refineResults(const Board* board) 
 {
-  
   bestMoveNode_ = tree_->findBestMoveNode(tree_->root());
   Move bestMove = tree_->findBestMove(bestMoveNode_);
   bestMoveRepr_ = board->moveToStringWithKills(bestMove);

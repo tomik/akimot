@@ -173,7 +173,7 @@ class Engine
     /**
      * Takes care of mocking the results from search.
      */
-    void mockupSearchResults(const Board* board, Uct* uct[], int resultsNum);
+    void mockupSearchResults(const Board* board, Uct* uct[], Uct* masterUct, int resultsNum);
 
   	static void * searchTreeWrapper(void * searchTreeInfo);		
 
@@ -191,13 +191,19 @@ class Engine
     bool stopRequest_;
 };
 
+/**
+ * Wrapper class for parallel search. 
+ */
 class SearchStartKit {
   public:
     SearchStartKit(const Board*, Engine*, Uct*);
   
   private:
+    /**Board to search on.*/
     const Board*  board_;
+    /**On which instance to start the search.*/
     Engine* engineInstance_;
+    /**Uct instance to use for the search.*/
     Uct*    uct_; 
     friend class Engine;
 };

@@ -230,6 +230,20 @@ class Node
     void  delChildrenRec();
 
     /**
+     * Recursive commit to master.
+     *
+     * Commits itself and the whole subtree.
+     */
+    void recCommitToMaster();
+
+    /**
+     * One node commit. 
+     *
+     * Commits it's statistics to master.
+     */
+    void commitToMaster();
+
+    /**
      * Update after playout. 
      *
      * Updates value/visits.
@@ -247,13 +261,24 @@ class Node
      * Maturity test.
      *
      * Checks whether number of descends through node passed 
-     * some given threshold (around number of legal steps from average position) 
+     * some constant threshold 
+     * (around number of legal steps from average position) 
      */
     bool  isMature() const;
+
+    /**
+     * On the edge of maturity test.
+     *
+     * Tests whether the node just became mature. Only in this 
+     * case the node can be expanded.
+     */
     bool  isJustMature() const;
 
     bool  hasChildren() const;
     bool  hasOneChild() const;
+    
+    //getters/setters
+    
     Node* getFather() const;
     void  setFather(Node*);
     Node* getFirstChild() const;
@@ -269,6 +294,10 @@ class Node
     void  setVisits(int visits); 
     float getValue() const;
     void setValue(float value);
+    void setMaster(Node* master);
+    Node* getMaster();
+    void lock();
+    void unlock();
     nodeType_e getNodeType() const;
 
     /**
@@ -291,6 +320,9 @@ class Node
      */
     int getDepthIdentifier() const;
 
+    /**
+     * Representation.
+     */
     string toString() const; 
 
     /**
@@ -303,8 +335,11 @@ class Node
     float       value_; 
     /**Heuristic value - purely position dependent.*/
     float       heur_;
+    /**For calculationg variance.*/
     float       squareSum_;
+    /**Number of simulations throught the node.*/
     int         visits_;
+    /**Pointer to corresponding twStep (carrying the actual step to make).*/
     TWstep*     twStep_;
 
     /**Transposition tables representant*/
@@ -313,8 +348,15 @@ class Node
     Node*       sibling_;
     Node*       firstChild_;  
     Node*       father_;
+    /**Holds the number of visit when the ccache was last updated.*/
     int         cCacheLastUpdate_;
+    /**Node's ccache. Actual allocation is performed when ccache is first used.*/
     Node**      cCache_; 
+    /**Mirror of the node in the master tree.*/
+    Node*       master_;
+
+    //todo remove !? 
+    pthread_mutex_t mutex;
 };
 
 /**Tree equivalent node.*/
@@ -328,12 +370,6 @@ struct EqNodeBlock {
   EqNode * eqNode;
   struct EqNodeBlock* next;
 };
-
-
-/**Value visit pair.*/
-/*typedef pair<float, int> ValueVisitPair;
-typedef map<Step, ValueVisitPair> TreeWideSteps;
-*/
 
 /**
  * Uct tree. 
@@ -370,6 +406,17 @@ class Tree
      * Recursively deletes the tree.
      */
     ~Tree();
+
+    /**Finds the master for given node (for parallel search).
+     *
+     * Finds the master node in the master tree (using information 
+     * from the father). Sets the master_ pointer to the master node.*/
+    void findMaster(Node* node);
+
+    /**
+     * Commits the tree to the master tree.
+     */
+    void commitToMaster();
 
     /**
      * Node expansion.
@@ -558,11 +605,27 @@ class Uct
     Uct(const Board* board);
 
     /**
+     * Constructor for parallel search.
+     *
+     * Uses masterUct pointer to assign master brother to the 
+     * root node in the actual tree.
+     */
+    Uct(const Board* board, const Uct* masterUct);
+
+    /**
      * Constructor for results mockup.
      */
     Uct(const Board* board, Uct* ucts[],int uctsNum);
 
     ~Uct();
+
+    /**
+     * Updates statistics after parallel search.
+     *
+     * This is called in the masterUct to update information on 
+     * number of playouts, descends, ... and refine the results.
+     */
+    void updateStatistics(Uct* ucts[], int uctsNum);
 
     /**
      * Crucial method implementing search.

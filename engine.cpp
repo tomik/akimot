@@ -150,8 +150,10 @@ void Engine::doSearch(const Board* board)
   stopRequest_ = false;
   timeManager_->startClock();
 
+  Uct* masterUct  = cfg.searchThreadsNum() > 1 ? new Uct(board) : NULL;
+
   for(t=0; t<threadsNum; t++){
-    ucts[t] = new Uct(board);
+    ucts[t] = new Uct(board, masterUct);
     SearchStartKit * s = new SearchStartKit(board, this, ucts[t]);
     rc = pthread_create(&threads[t], &attr, Engine::searchTreeWrapper,(void*) s); 
     if (rc) {
@@ -172,7 +174,7 @@ void Engine::doSearch(const Board* board)
     }
   }
   timeManager_->stopClock();
-  mockupSearchResults(board, ucts, threadsNum); 
+  mockupSearchResults(board, ucts, masterUct, threadsNum); 
 
   for(t=0; t<threadsNum; t++){
     delete ucts[t];
@@ -244,10 +246,17 @@ bool Engine::checkSearchStop() const
 
 //--------------------------------------------------------------------- 
 
-void Engine::mockupSearchResults(const Board* board, Uct* ucts[], int resultsNum)
+void Engine::mockupSearchResults(const Board* board, Uct* ucts[], Uct* masterUct, int resultsNum)
 {
+  assert(resultsNum);
 
-  Uct * uct = new Uct(board, ucts, resultsNum);
+  Uct * uct = ucts[0]; 
+  if (masterUct) {
+    uct = masterUct; 
+    uct->updateStatistics(ucts, resultsNum);
+  }
+  uct->refineResults(board);
+  //Uct * uct = new Uct(board, ucts, resultsNum);
   //get stuff from the search 
   bestMove_ = uct->getBestMoveRepr();
   stats_ = uct->getStats(timeManager_->secondsElapsed());

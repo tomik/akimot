@@ -1,3 +1,10 @@
+/**
+ * @file eval.h
+ *
+ * @brief Knowledge management and evaluation.
+ */
+
+
 #pragma once
 
 #include "board.h"
@@ -22,6 +29,9 @@ enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
 class Eval;
 class Values;
 
+/**One evaluation element.
+ *
+ * Loaded from configuration file.*/
 class ValueItem { 
   public: 
     ValueItem() {};
@@ -78,6 +88,9 @@ class Values
      */
     void mirrorPiecePositions();
 
+    /**
+     * For mirroring.
+     */
     static void baseMirrorIndexes(int & player, int & coord);
 
     /**
@@ -88,20 +101,18 @@ class Values
      */
     bool getItemForToken(string token, ValueItem& valueItem) const;
 
-
     ValueList values;
     friend class Eval;
 
-    //static piece values  
+    /**Static piece values.*/
     int pieceValue[PIECE_NUM + 1];
 
-    //penalties for few rabbits 0 .. 8 
+    /**Penalties for few rabbits 0 .. 8.*/
     int rabbitPenalty[RABBITS_NUM + 1]; 
 
-    //penalty for being frozen per piece percentage from value of piece
+    /**Penalty for being frozen in piece value percentage.*/
     float frozenPenaltyRatio;
 
-    //traps
     int trapSoleVal;  
     int trapMoreThanOneVal;
     int trapSafeVal;  
@@ -109,18 +120,13 @@ class Values
     int trapPotVal;
 
     int activeTrapBlockedPenalty;
-
-    //ratio substracted from piece value if framed 
     float framePenaltyRatio;  
-
     int camelHostagePenalty;
-
     int elephantBlockadePenalty;
 
-    //ratio substracted from piece value if supports framed piece (not mobile)
     float pinnedPenaltyRatio;  
 
-    //int piecePos[2][PIECE_NUM + 1][BIT_LEN];
+    /**Piece positioning evaluation.*/
     int piecePos[GS_NUM][2][PIECE_NUM + 1][BIT_LEN];
 
 };
@@ -169,12 +175,15 @@ class Eval
     /**
      * Evaluates one step.
      *
-     * In this play game knowledge is applied.
+     * Used in the playout and for bias in the tree.
      */
     float evaluateStep(const Board*, const Step& step) const;
 
   private: 
 
+    /**
+     * Calculates gamestage based on number of pieces.
+     */
     gameStage_e determineGameStage(const Bitboard& bitboard) const;
     
     bool blocked(player_t player, piece_t piece, coord_t coord, const Board* b) const;
@@ -187,6 +196,7 @@ class Eval
 
     /**Base evaluation ... for relative evaluation.*/
     double base_eval_;
+    /**Maximal evaluation given as constant depending on used evaluation method.*/
     double eval_max_;
 
 };

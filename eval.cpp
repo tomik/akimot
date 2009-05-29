@@ -111,25 +111,6 @@ void Values::mirrorPiecePositions()
       }
     }
   }
-
-
-/*
-  for (int i = 0; i < PIECE_NUM + 1; i++){
-    cerr << "piece " << i << endl;
-    for (int k = 0; k < 2; k++ ){
-      for (int r = 0; r < 8; r++ ){
-        for (int c = 0; c < 8; c++ ){
-          cerr.width(4);
-          cerr << piecePos[GS_LATE][k][i][r * 8 + c];
-        }
-        cerr << endl;
-      } 
-       cerr << endl;
-    }
-     cerr << endl;
-  }
-*/
-
 }
 
 

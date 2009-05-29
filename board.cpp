@@ -2327,7 +2327,6 @@ player_t Board::sideCharToPlayer(char side) const
     
 bool Board::findActiveTrapping(MoveVector& moves)
 {
-  assert(move);
   u64 movable = calcMovable(toMove_);
   for (int i = 0; i < TRAPS_NUM; i++){
     coord_t trapCoord = bits::TRAP_COORDS[i];
