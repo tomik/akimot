@@ -293,20 +293,12 @@ class Node
      *
      * Checks whether number of descends through node passed 
      * some constant threshold 
-     * (around number of legal steps from average position) 
+     * (around number of legal steps from average position).
+     * Being mature is prerequisite for expansion.
      */
     bool  isMature() const;
 
-    /**
-     * On the edge of maturity test.
-     *
-     * Tests whether the node just became mature. Only in this 
-     * case the node can be expanded.
-     */
-    bool  isJustMature() const;
-
     bool  hasChildren() const;
-    bool  hasOneChild() const;
     
     //getters/setters
     

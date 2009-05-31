@@ -253,6 +253,13 @@ bool Step::isPass() const
   return stepType_ == STEP_PASS;
 }
 
+//--------------------------------------------------------------------- 
+
+bool Step::isNull() const
+{
+  return stepType_ == STEP_NULL;
+}
+
 //---------------------------------------------------------------------
 
 bool Step::isSingleStep() const
@@ -1270,6 +1277,7 @@ void Board::makeStep(const Step& step){
     lastStep_ = step;
 
     if (step.stepType_ == STEP_NULL){
+      winner_ = OPP(toMove_);
       return;
     }
 
@@ -1309,7 +1317,6 @@ void Board::makeStep(const Step& step){
         }
       }
     } 
-
 }
 
 //--------------------------------------------------------------------- 
@@ -2477,23 +2484,27 @@ int Board::filterRepetitions(StepArray& steps, int stepsNum) const
   //check virtual passes ( immediate repetetitions ) 
   //these might be checked and pruned even if the move is not over yet 
   //e.g. (Eg5n) (Eg5s) is pruned 
-  
   int i = 0;
-  while (i < stepsNum) 
-    if (stepIsVirtualPass(steps[i]))
+  while (i < stepsNum) {
+    if (stepIsVirtualPass(steps[i])){
       steps[i] = steps[--stepsNum];
-    else
+    }
+    else{
       i++;  
+    }
+  }
+
+  //TODO add lastStep filter
 
   //check third time repetitions
   //this can be checked only for steps that finish the move
   //these are : pass, step_single for stepCount == 3, push/pull for stepCount == 2 
   
-  i = 0;
+ i = 0;
   while (i < stepsNum){
     if (steps[i].stepType_ == STEP_PASS && stepIsThirdRepetition(steps[i])){
       steps[i] = steps[--stepsNum];
-      break;
+      continue;
     }
     i++;
   }

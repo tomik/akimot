@@ -1,34 +1,36 @@
-# akimot todo file 
+# akimot TODO file 
 # [urgency, category] item 
 
 === Actual ===
-[5, eval] better SUICIDES management 
-[4, uct] tree merge is inconsistent with nodesNum count (because of TT)
-[4, uct] virtual passes and semi passes and inverse steps handling in uct (handle in TT)?
-[4, eval] relative position evaluation - now in good positions program stops playing 
-[3, board] optimize step comparison
-[3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
-[3, uct] (+1) playoutlen issue 
-[3, board] stronger refactoring 
+[5, uct] refactor inverse step filter to use signatures 
+         add inverse step filter into filter repetitions
+[4, uct] check if more weight to the piece position in evaluation helps
+[4, uct] refactor knowledge in step (add pulling rabbits/weak figures in the beginning, ...)
+[4, uct] issues with virtual passes and tt tables (children sharing) 
+[3, uct] (+1) playoutlen issue - check it's working
+[3, uct] is third time repetition check working properly (even on the server ?)
+[2, board] optimize step comparison (step signatures ?)
+[2, board] stronger (function) refactoring 
 
   === Done  ===
-  [5,gen] implement hashing and step correctness check in uct 
-  [5,gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
+  [5, gen] implement hashing and step correctness check in uct 
+  [5, gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
   [3, uct] node which cannot expand must be deleted straightaway
-  [5,log] refactor logging through macro ! 
+  [5, log] refactor logging through macro ! 
   [3, uct] remove node consistency - is it working properly ? 
-  [28.11][4,uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
-  [29.11][4,aei] add init from file 
-  [29.11][5,config] refactor not to use config, but only aei 
-  [10.12][5,*] smoothen headers (privatexpublic, comments)
-  [12.12][5, board] create class for Move ( list of steps )
-  [14.12][5, board] refactor quickGoalCheck and backtrackFlagBoard
+  [4, uct] thirdRep still has issues - needs testing ! ( failed assert positionVisited < 2 )  
+  [4, aei] add init from file 
+  [5, config] refactor not to use config, but only aei 
+  [5, *] smoothen headers (privatexpublic, comments)
+  [5, board] create class for Move ( list of steps )
+  [5, board] refactor quickGoalCheck and backtrackFlagBoard
          [2, board] makeMove method -> initstep from string & board->makestepwithcommit + tests !!!
   [3, board] randomness too slow in choosestepwithknowledge
   [3, eval] mapping evaluation -> win percentage is dummy -> improve
   [4, hash] position hashing - add moveIndex - now earlier move kills later move
   [5, eval] make values init global 
-  [24.03][5, uct] remove tactical code from uct::playout -> move to method
+  [5, uct] remove tactical code from uct::playout -> move to method
+  [3, uct] review code and remove unneccesarry stuff (i.e. removeChild method)
 
   === Won't do ===
   [4, board] refactor steps - divide steps to singlesteps pushpulls, killsNum initialization needs optimalization
@@ -39,18 +41,19 @@
   [3, uct] change treeWideSteps from map to hashtable ! 
 
 === Small Issues ===
-[3,board-hash] move playerSignatures to board and update it in commitMove ? 
+[3, board-hash] move playerSignatures to board and update it in commitMove ? 
 [1, uct]  history has a fixed size - change to dynamic + reallocation
+
   === Done  ===
-  [28.11][3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
-  [29.11][3, uct] time control should be part of engine not uct 
-  [29.11][3. board] makestep should be private
-  [02.01][3, board] what is testpiecearray doing ? deleted
+  [3, uct] node removal still has issues (cascade removal, recalculating values, root removal)
+  [3, uct] time control should be part of engine not uct 
+  [3, board] makestep should be private
+  [3, board] what is testpiecearray doing ? deleted
          [3,board] refactor board loading - use fromcompactstring
 
   === Won't do ===
   [1, *] add init to repository
 
 === Long Term Ideas === 
-[uct] check and optimize ( pointers vs. objects, ... ) 
-[uct] uctDescend should be FAST ( unlike now :( )
+[eval] relative position evaluation - now in good positions program stops playing 
+[uct]  change the design for the parallel search (now nodes/master nodes mixed together, same goes for trees)

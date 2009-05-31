@@ -298,6 +298,7 @@ class Step
 
     player_t getPlayer() const;
     bool isPass() const;
+    bool isNull() const;
     bool isSingleStep() const;
     bool isPushPull() const;
 
@@ -525,13 +526,20 @@ class Glob {
     /**
      * Thread to index.
      */
-    pthread_mutex_t lock;
     int tti();
+    
+    /**
+     * Adds new thread.
+     *
+     * Creates global objects for given thread and returns 
+     * it's index.
+     */
     int add_thread();
 
     int threadIds_[MAX_THREADS];
     int threadsNum_ ;
 
+    pthread_mutex_t lock;
     Bpool * bpool_[MAX_THREADS];
     ThirdRep * thirdRep_[MAX_THREADS];
     Grand * grand_[MAX_THREADS];

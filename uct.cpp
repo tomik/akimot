@@ -344,6 +344,7 @@ void Node::addChild(Node* newChild)
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild;
   newChild->father_ = this;
+  //obsolete, now using connectChildrenToMaster
   //newChild->connectToMaster();
 }
 
@@ -423,7 +424,7 @@ void Node::connectChildrenToMaster()
   if (! master_){
     return;
   }
-
+  
   master_->lock();
   Node* mChild = master_->getFirstChild();
   Node* child = firstChild_;
@@ -439,15 +440,14 @@ void Node::connectChildrenToMaster()
       child->setMaster(mChildNew);
     }else{
       //connect only
-      if (mChild->getStep() == child->getStep()){
+      if (mChild && mChild->getStep() == child->getStep()){
         child->setMaster(mChild);
+        mChild = mChild->getSibling();
       }else{
-        //this shouldn't happen
-        assert(false);
+        //this shouldn't happen but it MIGHT - for instance because of tt discrepancies
         //use lockless connection to master(father already locked)
         child->connectToMaster(false);
       }
-      mChild = mChild->getSibling();
     }
     child = child->getSibling();
   }
@@ -535,7 +535,7 @@ void Node::update(float sample)
   squareSum_ += (sample - old_value) * (sample - value_);
 
   //updateTTbrothers();
-  if (getMaster() && glob.grand()->get01() < 0.1){
+  if (getMaster() && glob.grand()->get01() < 0.25){
     syncMaster();
   }
 }
@@ -551,28 +551,14 @@ void Node::updateTWstep(float sample)
 
 bool Node::isMature() const
 {
-  return visits_ > cfg.matureLevel();
+  return visits_ >= cfg.matureLevel();
 }
 
 //--------------------------------------------------------------------- 
 
-bool Node::isJustMature() const
-{
-  return visits_ == cfg.matureLevel();
-}
-
-//---------------------------------------------------------------------
-
 bool Node::hasChildren() const
 {
   return firstChild_ != NULL;
-}
-
-//---------------------------------------------------------------------
-
-bool Node::hasOneChild() const
-{
-  return firstChild_ != NULL && firstChild_->sibling_ == NULL;
 }
 
 //---------------------------------------------------------------------
@@ -908,6 +894,8 @@ void Tree::expandNodeLimited(Node* node, const Move& move)
   for (StepListIter it = stepList.begin(); it != stepList.end(); it++){
     newChild = new Node(&twSteps_[*it]);
     node->addChild(newChild);
+    //for parallel mode(otherwise the nodes would not be in the master tree)
+    newChild->connectToMaster();
     node = newChild;
     nodesNum_++;
     nodesExpandedNum_++;
@@ -1091,7 +1079,8 @@ void Tree::updateTT(Node* father, const Board* board)
   Node* repNode = NULL; 
   u64 afterStepSignature;
   while (node != NULL){
-    if (node->getStep().isPass()){
+    //pass is not handled in the TT
+    if (node->getStep().isPass() || node->getStep().isNull()){
       node = node->getSibling();
       continue;
     }
@@ -1104,12 +1093,14 @@ void Tree::updateTT(Node* father, const Board* board)
       assert(rep != NULL);
       repNode = rep->front(); 
       nodesPruned_++;
-      
+
+      //TODO there are issues in children sharing in connection with virtual passes 
+      //what is a virtual pass in one node doesn't have to be a virtual pass in another
       node->setFirstChild(repNode->getFirstChild());
+      //this is obsolete we only share the children now (uct1)
       //node->setValue(repNode->getValue());
       node->setTTrep(rep);
       rep->push_back(node);
-      //cerr << node->toString() << " --- " << ttNode->toString() << endl;
 
     }else{
       //position is not in tt yet -> store it 
@@ -1227,7 +1218,9 @@ void Uct::searchTree(const Board* refBoard, const Engine* engine)
   }
   delete(board);
 
-  tree_->syncMaster();
+  //this slows down a lot (final tree might be big) 
+  //and is virtually useless since syncing is continuous
+  //tree_->syncMaster();
 }
 
 //--------------------------------------------------------------------- 
@@ -1259,7 +1252,6 @@ void Uct::doPlayout(const Board* board)
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
         if (tree_->actNode()->isMature()) {
-
           Move move;
 
           //goalCheck 
@@ -1303,22 +1295,15 @@ void Uct::doPlayout(const Board* board)
               tree_->updateTT(tree_->actNode(), playBoard); 
             }
           }
-          //imobilization
-          //little hack - raise visits_ artificially to break the infinite for loop
+          //imobilization, expand with null step
           else{
-            tree_->actNode()->setVisits(tree_->actNode()->getVisits() + 1);
+            //null step means a loss for player to play it
+            steps[stepsNum++] = Step(STEP_NULL, playBoard->getPlayerToMove());
+            tree_->expandNode(tree_->actNode(), steps, stepsNum);
           }
 
           continue;
         }
-        //check win by immobilization 
-        //TODO !!!
-        /*
-        if (tree_->actNode()->isMature()){
-          tree_->updateHistory(OPP(playBoard->getPlayerToMove()));
-          break;
-        }
-        */
       } //< UCT_MAX_DEPTH check
 
 
@@ -1340,6 +1325,7 @@ void Uct::doPlayout(const Board* board)
     uctDescends_++;
 
     Step step = tree_->actNode()->getStep();
+
 
     //perform the step and try commit
     if (playBoard->makeStepTryCommit(step) )   {
@@ -1470,10 +1456,6 @@ void Uct::fill_advisor(const Board * playBoard) {
   if (playBoard->trapCheck(playBoard->getPlayerToMove(), &moves)){ 
     for (MoveList::const_iterator it = moves.begin(); it != moves.end(); it++){ 
       advisor_->addMove((*it), playBoard->getBitboard());
-      //if (advisor_->addMove((*it), playBoard->getBitboard())){
-      //  cerr << playBoard->toString();
-      //  cerr << it->toString() << endl;
-      //}
     }
   }
 
