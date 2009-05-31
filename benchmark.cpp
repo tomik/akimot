@@ -188,10 +188,12 @@ void Benchmark::benchmarkUct()
     tree->historyReset();     //point tree's actNode to the root 
     while (true) { 
       if (! tree->actNode()->hasChildren()) { 
-        if (tree->actNode()->getVisits() > UCT_NODE_MATURE) {
-          tree->expandNode(tree->actNode(), steps, stepsNum);
-          i++;
-          continue;
+        if (tree->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
+          if (tree->actNode()->getVisits() > UCT_NODE_MATURE) {
+            tree->expandNode(tree->actNode(), steps, stepsNum);
+            i++;
+            continue;
+          }
         }
         tree->updateHistory(winValue[(random() % 2)]);
         break;

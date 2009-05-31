@@ -220,9 +220,14 @@ class Node
     float ucbTuned(float exploreCoeff) const;
 
     /**
-     * Childre addition during node expansion.
+     * Children addition during node expansion.
      */
     void  addChild(Node* child);
+
+    /**
+     * Reverse order of children.
+     */
+    void  reverseChildren();
 
     /**
      * Deletes children recursively. 
@@ -230,32 +235,58 @@ class Node
     void  delChildrenRec();
 
     /**
-     * Recursive commit to master.
+     * Connect the node to its master (in parallel search).
      *
-     * Commits itself and the whole subtree.
+     * Finds the master node in the master tree (using information 
+     * from the father). Sets the master_ pointer to the master node.
+     *
+     * @param lock Use lock on the father tree. Lockless connection 
+     * might be used from within the connectChildrenToMaster.
      */
-    void recCommitToMaster();
+    void connectToMaster(const bool lock=true);
+
+    /**
+     * Atomic children connecting to their masters (in parallel search).
+     *
+     * 
+     * from the father). Sets the master_ pointer to the master node.
+     */
+    void connectChildrenToMaster();
 
     /**
      * One node commit. 
      *
      * Commits it's statistics to master.
      */
-    void commitToMaster();
+    void syncMaster();
+
+    /**
+     * Recursive commit to master.
+     *
+     * Commits itself and the whole subtree.
+     */
+    void recSyncMaster();
+
+    /**
+     * Value update of tt connected nodes. 
+     *
+     * Performed after node update.
+     */
+    void  updateTTbrothers();
 
     /**
      * Update after playout. 
      *
      * Updates value/visits.
      */
-    inline void  update(float);
+    void  update(float);
     
     /**
      * Update after playout. 
      *
      * Updates value/visits of twStep.
      */
-    inline void  updateTWstep(float);
+    void  updateTWstep(float);
 
     /**
      * Maturity test.
@@ -342,6 +373,12 @@ class Node
     /**Pointer to corresponding twStep (carrying the actual step to make).*/
     TWstep*     twStep_;
 
+    /**Master value from last sync.*/
+    float       masterValue_;
+
+    /**Master visits from last sync.*/
+    int         masterVisits_;
+
     /**Transposition tables representant*/
     NodeList*       ttRep_;
 
@@ -387,16 +424,10 @@ class Tree
      */
     ~Tree();
 
-    /**Finds the master for given node (for parallel search).
-     *
-     * Finds the master node in the master tree (using information 
-     * from the father). Sets the master_ pointer to the master node.*/
-    void findMaster(Node* node);
-
     /**
      * Commits the tree to the master tree.
      */
-    void commitToMaster();
+    void syncMaster();
 
     /**
      * Node expansion.

@@ -69,9 +69,9 @@ if do_build:
     for alias, dir in alias_dirs: 
         env.Alias(alias, dir)
         env.Install(dir, akimot)
-    tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
-                   CPPPATH=['.',CXX_INCLUDE_DIR])
-    tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)
+    #tst = Environment(tools = ['default','cxxtest'], CXXTEST=CXX_TEST_PATH, LIBS = AKIMOT_LIBS, CXXTEST_DIR='', 
+    #               CPPPATH=['.',CXX_INCLUDE_DIR])
+    #tst.CxxTest('do_tests', ['tests.h'] + obj_files_test)
     #print "CCCOM is ",  env.subst('$CCCOM')
 
 if do_prof:

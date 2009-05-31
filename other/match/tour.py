@@ -95,6 +95,7 @@ if __name__ == "__main__":
     parser.add_option("--start_from", "-s", help="start numbering games from ...", default=1, type="int")
     parser.add_option("--mode", "-m", help="What mode running in ... options are [standalone(implicit), master, slave]", default=MODES[0])
     parser.add_option("--silent", "-t", help="No log information.", action='store_true', default=False)
+    parser.add_option("--crew", "-w", help="Crew to work on simulations.", default='ms')
 
     (options, args) = parser.parse_args()
     
@@ -114,6 +115,12 @@ if __name__ == "__main__":
     master_options_rest = ""
     if options.silent:
       master_options_rest +=" --silent" 
+      
+    try:
+      from psshlib import work, CREW
+      crew = CREW[options.crew]
+    except ImportError:
+      pass
 
     if options.mode == 'standalone': 
         setup(options)
@@ -125,19 +132,16 @@ if __name__ == "__main__":
     elif options.mode == 'finish_only': 
         finish(options)
     elif options.mode == 'master': 
-        from psshlib import work, MS_CREW
         JOB = 'cd $MATCH;nice -n 19 python %s %s %s --mode slave --game_dir %s --start_from %%d %s' % (sys.argv[0], bots[0], bots[1], options.game_dir, master_options_rest) 
         jobs = [JOB % i for i in xrange(options.start_from, options.start_from + options.games_num)] 
-        work(MS_CREW, 20, jobs);
+        work(crew, 20, jobs);
         job = 'cd $MATCH;python %s %s %s --mode finish_only --game_dir %s --games_num %d --comment "%s"' \
                 % (sys.argv[0], bots[0], bots[1], options.game_dir, options.games_num, options.comment)
-        work(MS_CREW, 1, [job]);
+        work(crew, 1, [job]);
     elif options.mode == 'test': 
-        from psshlib import work, MS_CREW
-        print "MS WORK TEST"
-
+        print "CREW TEST"
         jobs = []
         for i in xrange(10):
             jobs.append('echo "%d"' % i)
-        work(MS_CREW, 3, jobs);
+        work(crew, 3, jobs);
         

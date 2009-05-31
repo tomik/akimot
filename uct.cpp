@@ -157,7 +157,9 @@ Node::Node(TWstep* twStep, float heur)
   master_     = NULL;
   //full cCache_ initialization in node::expand
   cCache_     = NULL;
-
+  
+  masterValue_  = value_;
+  masterVisits_ = visits_;
 }
 
 //---------------------------------------------------------------------
@@ -342,8 +344,24 @@ void Node::addChild(Node* newChild)
   newChild->sibling_ = this->firstChild_;
   this->firstChild_ = newChild;
   newChild->father_ = this;
+  //newChild->connectToMaster();
 }
+
+//--------------------------------------------------------------------- 
  
+void Node::reverseChildren()
+{
+  Node* act = firstChild_;
+  Node* head = NULL;
+  while (act != NULL){
+    firstChild_ = act->sibling_;
+    act->sibling_ = head;
+    head = act;
+    act = firstChild_;
+  }
+  firstChild_ = head;
+}
+
 //---------------------------------------------------------------------
 
 void Node::delChildrenRec()
@@ -365,34 +383,139 @@ void Node::delChildrenRec()
 
 //--------------------------------------------------------------------- 
 
-void Node::commitToMaster()
+void Node::connectToMaster(const bool lock)
 {
-  assert(master_);
-  master_->lock();
-  float mValue  = master_->getValue();
-  int   mVisits = master_->getVisits();
+  if ((! getFather()) || (! getFather()->getMaster())){
+    return;
+  }
 
-  int newVisits = mVisits + visits_;
-  float newValue = (value_ * visits_ + mValue * mVisits) / newVisits;
-  master_->setVisits(newVisits);
-  master_->setValue(newValue);
+  Node* masterFather = getFather()->getMaster(); 
+  if (lock){
+    masterFather->lock();
+  }
+  Node* child = masterFather->getFirstChild();
+
+  while (child != NULL){
+    if (child->getStep() == getStep()){
+      //add link only
+      setMaster(child);
+      if (lock){
+        masterFather->unlock();
+      }
+      return;
+    }
+    child = child->getSibling();
+  }
+
+  //if not found - create node and add to the master father
+  child = new Node(twStep_, 0);  
+  masterFather->addChild(child);
+  setMaster(child);
+  if (lock){
+    masterFather->unlock();
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::connectChildrenToMaster()
+{
+  if (! master_){
+    return;
+  }
+
+  master_->lock();
+  Node* mChild = master_->getFirstChild();
+  Node* child = firstChild_;
+
+  bool addMode = mChild ? false : true;
+
+  while (child != NULL){
+    if (addMode){
+      //add node 
+      //TODO remove the bind to local twStep
+      Node* mChildNew = new Node(child->getTWstep(), 0);  
+      master_->addChild(mChildNew);
+      child->setMaster(mChildNew);
+    }else{
+      //connect only
+      if (mChild->getStep() == child->getStep()){
+        child->setMaster(mChild);
+      }else{
+        //this shouldn't happen
+        assert(false);
+        //use lockless connection to master(father already locked)
+        child->connectToMaster(false);
+      }
+      mChild = mChild->getSibling();
+    }
+    child = child->getSibling();
+  }
+  
+  if (addMode){
+    //small hack to have the same ordering in the master and slave trees
+    master_->reverseChildren();
+  }
+
   master_->unlock();
 }
 
 //--------------------------------------------------------------------- 
 
-void Node::recCommitToMaster()
+void Node::syncMaster()
+{
+  assert(master_);
+  master_->lock();
+  float mCombined  = master_->getValue() * master_->getVisits();
+  float mOldCombined  = masterValue_ * masterVisits_; 
+  float combined = value_ * visits_;
+  int newVisits = visits_ + master_->getVisits() - masterVisits_;
+  float newValue = (combined + mCombined - mOldCombined) / newVisits;
+  master_->setVisits(newVisits);
+  master_->setValue(newValue);
+  master_->unlock();
+
+  assert(newVisits >= visits_);
+
+  /*
+  float twStepCombined = twStep_->visits * twStep_->value;
+  twStep_->visits = twStep_->visits + newVisits - visits_;
+  twStep_->value = 
+    (twStepCombined + newVisits * newValue - combined)/twStep_->visits;
+  */
+
+  value_ = newValue;
+  visits_= newVisits;
+  masterValue_ = newValue;
+  masterVisits_= newVisits;
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::recSyncMaster()
 {
   if (! master_){
     return;
   }
     
-  commitToMaster();
+  syncMaster();
 
   Node* child = firstChild_;
   while(child != NULL){
-    child->recCommitToMaster();
+    child->recSyncMaster();
     child = child->getSibling();
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void Node::updateTTbrothers()
+{
+  //value update in ttNodes
+  if (ttRep_) {
+    for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
+    (*it)->value_ = value_;
+   } 
   }
 }
 
@@ -411,11 +534,9 @@ void Node::update(float sample)
   }
   squareSum_ += (sample - old_value) * (sample - value_);
 
-  //value update in ttNodes
-  if (ttRep_) {
-    for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
-    (*it)->value_ = value_;
-   } 
+  //updateTTbrothers();
+  if (getMaster() && glob.grand()->get01() < 0.1){
+    syncMaster();
   }
 }
 
@@ -741,50 +862,14 @@ Tree::~Tree()
 
 //--------------------------------------------------------------------- 
 
-void Tree::findMaster(Node* node)
-{
-  //master already known
-  if (! node->getFather() || ! node->getFather()->getMaster()){
-    return;
-  }
-
-  Node* masterFather = node->getFather()->getMaster(); 
-  masterFather->lock();
-  Node* child = masterFather->getFirstChild();
-
-  while (child != NULL){
-    if (child->getStep() == node->getStep()){
-      //add link only
-      node->setMaster(child);
-      masterFather->unlock();
-      return;
-    }
-    child = child->getSibling();
-  }
-
-  //if not found - create node and add to the master father
-  child = new Node(&twSteps_[node->getStep()], 0);  
-  masterFather->addChild(child);
-  node->setMaster(child);
-  masterFather->unlock();
-  return ;
-}
-
-//--------------------------------------------------------------------- 
-
-void Tree::commitToMaster(){
-  root()->recCommitToMaster();
+void Tree::syncMaster(){
+  root()->recSyncMaster();
 }
 
 //--------------------------------------------------------------------- 
 
 void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurArray* heurs)
 {
-  //if parallel then create master
-  if (cfg.searchThreadsNum() > 1){
-    findMaster(node);
-  }
-
   Node* newChild;
   assert(len);
   assert(node);
@@ -807,6 +892,8 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
   if (cfg.childrenCache()){
     node->cCacheInit();
   }
+
+  node->connectChildrenToMaster();
 }
 
 //--------------------------------------------------------------------- 
@@ -1019,7 +1106,7 @@ void Tree::updateTT(Node* father, const Board* board)
       nodesPruned_++;
       
       node->setFirstChild(repNode->getFirstChild());
-      node->setValue(repNode->getValue());
+      //node->setValue(repNode->getValue());
       node->setTTrep(rep);
       rep->push_back(node);
       //cerr << node->toString() << " --- " << ttNode->toString() << endl;
@@ -1120,10 +1207,14 @@ Uct::~Uct()
 
 void Uct::updateStatistics(Uct* ucts[], int uctsNum)
 {
+  int pl = 0;
+  int ud = 0;
   for (int i = 0; i < uctsNum; i++){
-    playouts_ += ucts[i]->getPlayoutsNum();
-    uctDescends_ += ucts[i]->uctDescends_;
+    pl += ucts[i]->getPlayoutsNum();
+    ud += ucts[i]->uctDescends_;
   }
+  playouts_ = pl;
+  uctDescends_ = ud;
 }
 
 //---------------------------------------------------------------------
@@ -1136,7 +1227,7 @@ void Uct::searchTree(const Board* refBoard, const Engine* engine)
   }
   delete(board);
 
-  tree_->commitToMaster();
+  tree_->syncMaster();
 }
 
 //--------------------------------------------------------------------- 
@@ -1167,7 +1258,7 @@ void Uct::doPlayout(const Board* board)
   
     if (! tree_->actNode()->hasChildren()) { 
       if (tree_->actNode()->getDepth() < UCT_MAX_DEPTH - 1) {
-        if (tree_->actNode()->isJustMature()) {
+        if (tree_->actNode()->isMature()) {
 
           Move move;
 
@@ -1221,10 +1312,13 @@ void Uct::doPlayout(const Board* board)
           continue;
         }
         //check win by immobilization 
+        //TODO !!!
+        /*
         if (tree_->actNode()->isMature()){
           tree_->updateHistory(OPP(playBoard->getPlayerToMove()));
           break;
         }
+        */
       } //< UCT_MAX_DEPTH check
 
 
@@ -1240,7 +1334,7 @@ void Uct::doPlayout(const Board* board)
         advisor_->update(sample);
       }
       break;
-    }
+    } //no children
 
     tree_->uctDescend(); 
     uctDescends_++;
