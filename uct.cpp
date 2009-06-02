@@ -511,10 +511,15 @@ void Node::recSyncMaster()
 
 void Node::updateTTbrothers()
 {
-  //value update in ttNodes
+  //update in ttNodes
   if (ttRep_) {
     for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
     (*it)->value_ = value_;
+    (*it)->visits_ = visits_;
+
+    //this makes sense only in parallel mode
+    (*it)->masterValue_ = masterValue_;
+    (*it)->masterVisits_ = masterVisits_;
    } 
   }
 }
@@ -534,10 +539,11 @@ void Node::update(float sample)
   }
   squareSum_ += (sample - old_value) * (sample - value_);
 
-  updateTTbrothers();
-  if (getMaster() && glob.grand()->get01() < 0.25){
+  if (getMaster() && glob.grand()->get01() < 0.2){
     syncMaster();
   }
+  //updating brothers comes after potential sync! 
+  updateTTbrothers();
 }
 
 //--------------------------------------------------------------------- 
@@ -1099,6 +1105,7 @@ void Tree::updateTT(Node* father, const Board* board)
       node->setFirstChild(repNode->getFirstChild());
       //this is obsolete we only share the children now (uct1)
       node->setValue(repNode->getValue());
+      node->setVisits(repNode->getVisits());
       node->setTTrep(rep);
       rep->push_back(node);
 
