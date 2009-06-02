@@ -175,6 +175,7 @@ class OptionFather
     virtual void setValueParsed(int){};
     bool parsed() { return parsed_;}
     virtual string toString(){ return "";};
+    virtual string help(){ return "";};
 };
 
 template <typename T> class Option: public OptionFather
@@ -195,7 +196,14 @@ template <typename T> class Option: public OptionFather
       stringstream ss;
       ss << "[" << shortName_ << ", " << longName_ << ", " << description_ << ", " << value_ << "]" << endl;
       return ss.str();
-    }
+    } 
+
+    string help() {
+      stringstream ss;
+      ss << "-" << shortName_ << ", --" << longName_ << ", " << description_ << endl;
+      return ss.str();
+    } 
+
 
 };
 
@@ -207,8 +215,6 @@ typedef list<OptionFather*> OptionList;
 
 /**
  * Management of command line configuration. 
- * 
- * For cases when asi is not used.
  */
 class Options
 {
@@ -226,9 +232,14 @@ class Options
     OptionString fnGameState_;
     /**Configuration file.*/
     OptionString fnCfg_;
+    /**Perform various benchmarks.*/
     OptionBool benchmarkMode_; 
+    /**Switch to getMove mode - used by match script for instance.*/
     OptionBool getMoveMode_; 
+    /**Use extended AEI set.*/
     OptionBool localMode_;
+    /**Print help.*/
+    OptionBool help_;
 
   public:
     Options();
@@ -240,6 +251,7 @@ class Options
     bool benchmarkMode() { return benchmarkMode_.getValue(); }
     bool localMode() { return localMode_.getValue(); }
     bool getMoveMode() { return getMoveMode_.getValue(); }
+    bool help() { return help_.getValue(); }
     string fnAeiInit() { return fnAeiInit_.getValue(); }
     string fnPosition() { return fnPosition_.getValue(); }
     string fnRecord() { return fnRecord_.getValue(); }
@@ -247,6 +259,7 @@ class Options
     string fnCfg() { return fnCfg_.getValue(); }
 
     void printAll();
+    string helpToString();
     
 };
 

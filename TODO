@@ -4,6 +4,7 @@
 === Actual ===
 [5, uct] refactor inverse step filter to use signatures 
          add inverse step filter into filter repetitions
+[5, config/eval] refactor configuration file parsing
 [4, uct] check if more weight to the piece position in evaluation helps
 [4, uct] refactor knowledge in step (add pulling rabbits/weak figures in the beginning, ...)
 [4, uct] issues with virtual passes and tt tables (children sharing) 

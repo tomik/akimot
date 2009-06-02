@@ -534,7 +534,7 @@ void Node::update(float sample)
   }
   squareSum_ += (sample - old_value) * (sample - value_);
 
-  //updateTTbrothers();
+  updateTTbrothers();
   if (getMaster() && glob.grand()->get01() < 0.25){
     syncMaster();
   }
@@ -1098,7 +1098,7 @@ void Tree::updateTT(Node* father, const Board* board)
       //what is a virtual pass in one node doesn't have to be a virtual pass in another
       node->setFirstChild(repNode->getFirstChild());
       //this is obsolete we only share the children now (uct1)
-      //node->setValue(repNode->getValue());
+      node->setValue(repNode->getValue());
       node->setTTrep(rep);
       rep->push_back(node);
 

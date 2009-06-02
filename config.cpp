@@ -135,15 +135,25 @@ void Cfg::loadFromFile(string fn)
     ss >> name;
     if (name[0] == '[' && name[name.length() - 1] == ']'){
       //it is a section
-      //till eof read to evaluation 
+      //different sections => different handling
       if (name == "[evaluation_values]"){
-        vals_ = new Values(getStreamRest(ss));
-        break;
+        string rest = getStreamRest(ss);
+        uint index = rest.length();
+        for (uint i = 0; i < rest.length(); i++){
+          if (rest[i] == '['){
+            index = i;
+            break;
+          }
+        }
+        vals_ = new Values(rest.substr(0, index));
+        ss.str("");
+        if (index < rest.length()){
+          ss.str(rest.substr(index));
+        }
       }
       continue;
     }
     ss >> value; 
-    //cerr << name << " : " << value << endl; 
     bool found = false;
     for (CfgItemListIter it = items_.begin(); it != items_.end(); it++){
       if (it->name_ == name) {
@@ -188,14 +198,15 @@ bool Cfg::checkConfiguration()
 
 Options::Options()
 {
-  fnPosition_ = OptionString("","Position","Position file - in combination with -g", OT_STRING, "");
-  fnRecord_ = OptionString("","Record","Record file - in combination with -g", OT_STRING, "");
-  fnGameState_ = OptionString("","GameState","GameState file - in combination with -g", OT_STRING, "");
-  fnCfg_ = OptionString("c","cfg","Configuration file.", OT_STRING, "");
-  fnAeiInit_ = OptionString("a","aeiinit","Aei init file", OT_STRING, "");
-  benchmarkMode_ = OptionBool("b","benchmark","runs in benchmarkModeing mode",OT_BOOL_POS, false);
-  localMode_ = OptionBool("l","local","runs in localMode - for debugging",OT_BOOL_POS, false);
-  getMoveMode_ = OptionBool("g","getmove","runs in getMove mode",OT_BOOL_POS, false);
+  fnPosition_ = OptionString("","Position","Position file - in combination with -g.", OT_STRING, "");
+  fnRecord_ = OptionString("","Record","Record file - in combination with -g.", OT_STRING, "");
+  fnGameState_ = OptionString("","GameState","GameState file - in combination with -g.", OT_STRING, "");
+  fnCfg_ = OptionString("c","cfg","Configuration file (substitute for default.cfg).", OT_STRING, "");
+  fnAeiInit_ = OptionString("a","aeiinit","Aei init file.", OT_STRING, "");
+  benchmarkMode_ = OptionBool("b","benchmark","Toggle benchmark mode.",OT_BOOL_POS, false);
+  localMode_ = OptionBool("l","local","Use AEI extended set (mostly for debugging).",OT_BOOL_POS, false);
+  getMoveMode_ = OptionBool("g","getmove","Toggle getMove mode.",OT_BOOL_POS, false);
+  help_ = OptionBool("h", "help", "Print this help.", OT_BOOL_POS, false);
 
   options_.clear();
   options_.push_back(&fnAeiInit_);
@@ -203,6 +214,7 @@ Options::Options()
   options_.push_back(&benchmarkMode_);
   options_.push_back(&localMode_);
   options_.push_back(&getMoveMode_);
+  options_.push_back(&help_);
 
   values_.clear();
   //order in which options are expected is important
@@ -219,14 +231,19 @@ bool Options::parse(const int argc, const char ** argv )
   string value = "";
 
   for ( int i = 1; i  < argc ; i++ ) {
-    if ( argv[i][0] == '-' ) { 			// argument is token 
-      if ( token != "" && ! parseToken(token, value) )    //something failed 
+    // argument is token
+    if ( argv[i][0] == '-' ) {
+      //something failed
+      if ( token != "" && ! parseToken(token, value))
         return false;
-      token = argv[i]; // set new actual token 
+      // set new actual token
+      token = argv[i];
       value.clear();
-    }else  {                        //argument is a token's value
+    //argument is a token's value
+    }else {
       value = argv[i];
-      if ( token != "" ){   //there already was a token and it's value => parse them first 
+      //there already was a token and it's value => parse them first 
+      if ( token != "" ){
         if (parseToken(token, value) ){
           token.clear();
           value.clear();
@@ -234,12 +251,14 @@ bool Options::parse(const int argc, const char ** argv )
         else 
           return false;
       }
-      else {                      //token is =="" or value ==""
+      //token is =="" or value ==""
+      else {
         parseValue(value);
       }
     }
   }
-  if ( token != "" && ! parseToken(token, value) )    //something failed 
+  //something failed 
+  if ( token != "" && ! parseToken(token, value))
     return false;
   
 
@@ -299,6 +318,19 @@ void Options::printAll()
   OptionList::iterator it;
   for ( it = options_.begin(); it != options_.end(); it++ ) 
     logRaw(((*it)->toString()).c_str());
+}
+
+//--------------------------------------------------------------------- 
+
+string Options::helpToString()
+{
+  stringstream ss;
+  OptionList::iterator it;
+  ss << "Akimot command line help" << endl << "syntax: akimot [options] [files]" << endl;
+  for (it = options_.begin(); it != options_.end(); it++ ) {
+    ss << (*it)->help();
+  }
+  return ss.str();
 }
 
 //--------------------------------------------------------------------- 

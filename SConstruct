@@ -1,11 +1,11 @@
 #!/usr/bin/python 
 
 from paths import AKIMOT, CXX_TEST_PATH, CXX_INCLUDE_DIR
-AKIMOT_AEI_DIR = AKIMOT + 'other/aei/akimot'
-AKIMOT_ATS_DIR = AKIMOT + 'other/ats/akimot'
-AKIMOT_MATCH_DIR = AKIMOT + 'other/match/bot_akimot'
-RABBITS_TEST_DIR = AKIMOT + 'other/rabbits'
-TAGUI_TEST_DIR = AKIMOT + 'other/tagui'
+AKIMOT_AEI_DIR = AKIMOT + '/other/aei/akimot'
+AKIMOT_ATS_DIR = AKIMOT + '/other/ats/akimot'
+AKIMOT_MATCH_DIR = AKIMOT + '/other/match/bot_akimot'
+RABBITS_TEST_DIR = AKIMOT + '/other/rabbits'
+TAGUI_TEST_DIR = AKIMOT + '/other/tagui'
 
 CXX_TEST_PATH = CXX_TEST_PATH
 CXX_INCLUDE_DIR = CXX_INCLUDE_DIR

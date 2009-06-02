@@ -9,17 +9,15 @@
 int main(int argc, char *argv[]) 
 {
 
-  /*stringstream ss;
-  for (int i = 0; i < argc; i++){
-    ss << argv[i] << " ";
-  }
-  cerr << "ARGUMENTS : " << ss.str();
-  */
-
   globalStructuresInit();
 
   options.parse(argc, (const char **) (argv));
   //options.printAll();
+
+  if (options.help()){
+    cout << options.helpToString();
+    exit(1);
+  }
  
   if (options.fnCfg() != ""){
     cfg.loadFromFile(options.fnCfg());
