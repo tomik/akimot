@@ -1100,11 +1100,14 @@ class Board
     static ThirdRep*  thirdRep_;
     static Eval*      eval_;
 
-    //signature of position from when the current move started
+    /**position signature - for hash tables, corectness checks, etc.*/ 
     u64 signature_;            
 
-    //position signature - for hash tables, corectness checks, etc. 
+    /**position signature from when the current move started*/
     u64 preMoveSignature_;     
+    
+    /**position signature from when the current step started*/
+    u64 preStepSignature_;     
 
     /**Last made step.*/
     Step lastStep_;

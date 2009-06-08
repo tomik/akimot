@@ -515,7 +515,7 @@ void Node::updateTTbrothers()
   if (ttRep_) {
     for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
     (*it)->value_ = value_;
-    (*it)->visits_ = visits_;
+    //(*it)->visits_ = visits_;
 
     //this makes sense only in parallel mode
     (*it)->masterValue_ = masterValue_;
@@ -557,7 +557,7 @@ void Node::updateTWstep(float sample)
 
 bool Node::isMature() const
 {
-  return visits_ >= cfg.matureLevel();
+  return visits_ >= cfg.matureLevel() + getDepth();
 }
 
 //--------------------------------------------------------------------- 
@@ -1102,11 +1102,11 @@ void Tree::updateTT(Node* father, const Board* board)
       //TODO there are issues in children sharing in connection with virtual passes 
       //what is a virtual pass in one node doesn't have to be a virtual pass in another
       node->setFirstChild(repNode->getFirstChild());
-      //this is obsolete we only share the children now (uct1)
-      node->setValue(repNode->getValue());
-      node->setVisits(repNode->getVisits());
       node->setTTrep(rep);
       rep->push_back(node);
+      node->setValue(repNode->getValue());
+      //node->setVisits(repNode->getVisits());
+      repNode->updateTTbrothers();
 
     }else{
       //position is not in tt yet -> store it 

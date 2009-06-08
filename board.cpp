@@ -1274,6 +1274,7 @@ void Board::commit()
 
 void Board::makeStep(const Step& step){
 
+    preStepSignature_ = signature_;
     lastStep_ = step;
 
     if (step.stepType_ == STEP_NULL){
@@ -2302,6 +2303,8 @@ void Board::init(bool newGame)
 
   signature_ = 0;
   preMoveSignature_ = 0; 
+  preStepSignature_ = 0;
+
   //signature is generated after the position is loaded
 }
 
@@ -2311,6 +2314,7 @@ void Board::afterPositionLoad()
 {
   makeSignature();    //(unique) position identification
   preMoveSignature_ = signature_;
+  preStepSignature_ = signature_;
 }
 
 //---------------------------------------------------------------------
@@ -2494,7 +2498,16 @@ int Board::filterRepetitions(StepArray& steps, int stepsNum) const
     }
   }
 
-  //TODO add lastStep filter
+  //last step repetition pruning
+  i = 0;
+  while (i < stepsNum) {
+    if (calcAfterStepSignature(steps[i]) == preStepSignature_) {
+      steps[i] = steps[--stepsNum];
+    }
+    else{
+      i++;  
+    }
+  }
 
   //check third time repetitions
   //this can be checked only for steps that finish the move
