@@ -19,7 +19,7 @@ using std::set;
 using std::make_pair;
 
 #define MAX_PLAYOUT_LENGTH 100  //these are 2 "moves" ( i.e. maximally 2 times 4 steps ) 
-#define UCT_MAX_DEPTH 50
+#define UCT_MAX_DEPTH 30
 #define CHILDREN_CACHE_SIZE 5
 #define CCACHE_START_THRESHOLD 50 
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
@@ -567,7 +567,7 @@ class Tree
     /**Simulation history
      *
      * Hardcoded length for speedup - in playout check for overflow.*/
-    Node*      history[UCT_MAX_DEPTH];
+    Node*      history[2 * UCT_MAX_DEPTH];
     /**Index of actual node in the history*/
     uint       historyTop;
     /**Expanded nodes.*/

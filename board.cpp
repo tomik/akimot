@@ -101,9 +101,9 @@ int Glob::add_thread() {
 
 void globalStructuresInit()
 {
-
-  srand((unsigned) time(NULL));
-  //srand(0);
+  uint seed = (unsigned) time(NULL);
+  //uint seed = 1244026459;
+  srand(seed);
   bits::initZobrist();
   initCachedFunctions();
 }
@@ -126,7 +126,7 @@ bool parsePieceChar(char pieceChar, player_t &player, piece_t& piece)
     case 'c' : piece = CAT;      break;
     case 'r' : piece = RABBIT;   break;
     default:
-      logError("Incorrect piece Character encountered.");
+      //logError("Incorrect piece Character encountered.");
       return false;
       break;
   }
@@ -701,7 +701,7 @@ recordAction_e  Move::parseRecordActionToken(const string& token, player_t& play
 
   //parse player/piece
   if (! parsePieceChar(token[0], player, piece)) {
-    logError("Invalid piece char");
+    //logError("Invalid piece char");
     return ACTION_ERROR;
   }
 
@@ -2184,7 +2184,7 @@ bool Board::initFromPositionCompactString(const string& s)
         player_t player;
         piece_t piece = 0;
         if (! parsePieceChar(c, player, piece)){
-          logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
+          //logError("Unknown character %c encountered while reading board at [%d, %d]\n", c, i, j);
           return false;
         }
         setSquare(8*i + j, player, piece);

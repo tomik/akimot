@@ -127,6 +127,10 @@ sub playGame{
  
       $moveCount = incMove($moveCount);
       $ml = "$ml $m";
+
+      #gameTooLong forces a draw
+      $tooLong = checkGameTooLong($moveCount);
+      if ($tooLong eq 1) { print "d $moveCount     $seed\n"; last; }
     }
   
   
@@ -403,6 +407,19 @@ sub incMove{
   }
   $m = "$n$s";
   return $m;
+}
+
+# Draw if more than 150 moves
+sub checkGameTooLong{
+  local($m) = @_;
+  local($s, $n);
+
+  ($n,$s) = ($m =~ m/(\d+)(\w)/);
+  if ($n eq "100") {
+    return 1;
+  }
+  return 0;
+  
 }
 
 sub checkWin{

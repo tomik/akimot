@@ -892,7 +892,6 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
 
 void Tree::expandNodeLimited(Node* node, const Move& move)
 {
-  
   Node* newChild;
   StepList stepList = move.getStepList();
   assert(! stepList.empty());
@@ -1262,11 +1261,13 @@ void Uct::doPlayout(const Board* board)
           Move move;
 
           //goalCheck 
+          //
           if (playBoard->getStepCount() == 0 && playBoard->goalCheck(&move)){
+            assert(playBoard->getWinner() == NO_PLAYER );
             float value = WINNER_TO_VALUE(playBoard->getPlayerToMove());
             tree_->expandNodeLimited(tree_->actNode(), move);
             //descend to the expanded area
-            while (tree_->actNode()->hasChildren()){
+            while (tree_->actNode() && tree_->actNode()->hasChildren()){
               tree_->firstChildDescend();
             }
             tree_->updateHistory(value);

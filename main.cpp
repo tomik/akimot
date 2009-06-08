@@ -50,16 +50,22 @@ int main(int argc, char *argv[])
     else if (options.fnPosition() != "" ){ 
       logDebug("Loading from position %s.\n", options.fnPosition().c_str());
       if (! board.initFromPosition(options.fnPosition().c_str())){
-        logError("Couldn't read position from file %s.\n", options.fnPosition().c_str());
+        //logError("Couldn't read position from file %s.\n", options.fnPosition().c_str());
+      }
+
+      logDebug("Loading from record %s.\n", options.fnRecord().c_str());
+      //try to read as if it's a record
+      if (! board.initFromRecord(options.fnPosition().c_str(), true)){
+        logError("Couldn't read position or record from file %s.\n", options.fnPosition().c_str());
         return 1;
       }
     } 
 
-    cerr << "=====" << endl;
-    cerr << board.toString();
+    //cerr << "=====" << endl;
+    //cerr << board.toString();
     engine->doSearch(&board);
     cout << engine->getBestMove() << endl;
-    cerr << engine->getStats();
+    //cerr << engine->getStats();
     //cerr << engine->getAdditionalInfo();
     return 0;
   } 
