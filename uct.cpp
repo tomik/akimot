@@ -131,6 +131,31 @@ TWstep& TWsteps::operator[](const Step& step)
 }
 
 //---------------------------------------------------------------------
+// section TTitem
+//---------------------------------------------------------------------
+
+TTitem::TTitem() 
+{ 
+  assert(false);
+}
+
+//--------------------------------------------------------------------- 
+
+TTitem::TTitem(NodeList* nodes) 
+{
+  visits_ = 0; 
+  value_ = 0; 
+  nodes_ = nodes;
+}
+
+//--------------------------------------------------------------------- 
+
+NodeList* TTitem::getNodes() const
+{
+  return nodes_;
+}
+
+//---------------------------------------------------------------------
 // section Node
 //---------------------------------------------------------------------
 
@@ -153,7 +178,7 @@ Node::Node(TWstep* twStep, float heur)
   squareSum_  = 0;
   heur_       = heur; 
   twStep_     = twStep;
-  ttRep_      = NULL;
+  ttItem_      = NULL;
   master_     = NULL;
   //full cCache_ initialization in node::expand
   cCache_     = NULL;
@@ -368,7 +393,7 @@ void Node::reverseChildren()
 void Node::delChildrenRec()
 {
   //somebody else will take care
-  if (ttRep_ && ttRep_->front() != this) {
+  if (getTTitem() && getTTitem()->getNodes()->front() != this) {
     return;
   }
 
@@ -509,17 +534,23 @@ void Node::recSyncMaster()
 
 //--------------------------------------------------------------------- 
 
-void Node::updateTTbrothers()
+void Node::updateTTbrothers(float sample, int size)
 {
   //update in ttNodes
-  if (ttRep_) {
-    for (NodeList::iterator it = ttRep_->begin(); it != ttRep_->end(); it++){
-    (*it)->value_ = value_;
+  if (getTTitem()) {
+      ttItem_->value_ = 
+        (ttItem_->value_ * ttItem_->visits_ + sample)/(ttItem_->visits_ + size);
+      ttItem_->visits_ += size;
+      //cerr << ttItem_->visits_ << " " << ttItem_->value_ << endl;
+      
+    NodeList * nl = getTTitem()->getNodes();
+    for (NodeList::iterator it = nl->begin(); it != nl->end(); it++){
+      (*it)->value_ = ttItem_->value_;
     //(*it)->visits_ = visits_;
 
     //this makes sense only in parallel mode
-    (*it)->masterValue_ = masterValue_;
-    (*it)->masterVisits_ = masterVisits_;
+    //(*it)->masterValue_ = masterValue_;
+    //(*it)->masterVisits_ = masterVisits_;
    } 
   }
 }
@@ -543,7 +574,7 @@ void Node::update(float sample)
     syncMaster();
   }
   //updating brothers comes after potential sync! 
-  updateTTbrothers();
+  updateTTbrothers(sample, 1);
 }
 
 //--------------------------------------------------------------------- 
@@ -604,16 +635,16 @@ void Node::setSibling(Node* node)
 
 //--------------------------------------------------------------------- 
 
-NodeList* Node::getTTrep() const
+TTitem* Node::getTTitem() const
 {
-  return ttRep_;
+  return ttItem_;
 }
 
 //---------------------------------------------------------------------
 
-void Node::setTTrep(NodeList* nodelist) 
+void Node::setTTitem(TTitem* item) 
 { 
-  ttRep_ = nodelist; 
+  ttItem_ = item;
 }
 
 //---------------------------------------------------------------------
@@ -874,8 +905,9 @@ void Tree::expandNode(Node* node, const StepArray& steps, uint len, const HeurAr
   nodesExpandedNum_++;
   
   //expander different from representant
-  if (node->getTTrep()) {
-    for (NodeList::iterator it = node->getTTrep()->begin(); it != node->getTTrep()->end(); it++){
+  if (node->getTTitem()) {
+    NodeList * nl = node->getTTitem()->getNodes();
+    for (NodeList::iterator it = nl->begin(); it != nl->end(); it++){
       (*it)->setFirstChild(node->getFirstChild());
     }
   }
@@ -1102,21 +1134,22 @@ void Tree::updateTT(Node* father, const Board* board)
       //TODO there are issues in children sharing in connection with virtual passes 
       //what is a virtual pass in one node doesn't have to be a virtual pass in another
       node->setFirstChild(repNode->getFirstChild());
-      node->setTTrep(rep);
-      rep->push_back(node);
+      node->setTTitem(repNode->getTTitem());
       node->setValue(repNode->getValue());
+      rep->push_back(node);
       //node->setVisits(repNode->getVisits());
-      repNode->updateTTbrothers();
 
     }else{
       //position is not in tt yet -> store it 
       rep = new NodeList();
       rep->push_back(node);
-      node->setTTrep(rep);
+      node->setTTitem(new TTitem(rep));
       tt_->insertItem(afterStepSignature,
                     board->getPlayerToMove(), 
                     rep, 
                     node->getDepthIdentifier());
+      //initial update
+      node->updateTTbrothers(node->getValue() * node->getVisits(), node->getVisits());
     }
     node = node->getSibling();
   }

@@ -156,6 +156,32 @@ class TWsteps: public TWstepsMap
 
 typedef set<Node*> NodeSet;
 
+
+/**
+ * One item of tt tables.
+ *
+ * Contains shared statistics
+ * and link to the node list.
+ */
+class TTitem 
+{
+  public: 
+    TTitem(NodeList*); 
+
+    NodeList* getNodes() const;
+  private:
+    TTitem(); 
+
+    /*Shared number of visits for tt brothers.*/
+    int visits_;
+    /*Shared average value for tt brothers.*/
+    float value_;
+    /**TT brothers.*/
+    NodeList* nodes_;
+
+    friend class Node;
+};
+
 /**
  * Node in the Uct tree. 
  */
@@ -272,7 +298,7 @@ class Node
      *
      * Performed after node update.
      */
-    void  updateTTbrothers();
+    void  updateTTbrothers(float sample=0, int size=0);
 
     /**
      * Update after playout. 
@@ -308,8 +334,8 @@ class Node
     void  setFirstChild(Node *);
     Node* getSibling() const;
     void  setSibling(Node*);
-    NodeList* getTTrep() const;
-    void setTTrep(NodeList * node);
+    TTitem* getTTitem() const;
+    void setTTitem(TTitem * node);
     Step  getStep() const;
     TWstep*  getTWstep() const;
     player_t getPlayer() const;
@@ -371,8 +397,8 @@ class Node
     /**Master visits from last sync.*/
     int         masterVisits_;
 
-    /**Transposition tables representant*/
-    NodeList*       ttRep_;
+    /**Transposition tables item.*/
+    TTitem*       ttItem_;
 
     Node*       sibling_;
     Node*       firstChild_;  

@@ -178,6 +178,9 @@ class Node;
 
 typedef list<Node*> NodeList;
 
+//forward declaration
+class ttItem;
+
 //typedef map<u64, Node*> TTpair;
 //typedef map<u64, Node*> TTmap;
 
