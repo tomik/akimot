@@ -16,6 +16,8 @@ ERROR = -1
 
 AKIMOT_CMD = 'bots/akimot -c bots/default.cfg -l'
 
+from board_widget import MODE_PLAY, MODE_REPLAY
+
 class Tagui(QtGui.QMainWindow):
 
     def __init__(self, parent=None):
@@ -28,17 +30,28 @@ class Tagui(QtGui.QMainWindow):
 
         self.engines = {}
         self.pos, _ = self.get_pos(0)
+        self.mode = None
 
-        #self.load_record('example_record')
+        self.load_position('example_pos.ari')
 
     def on_actionLoadGame_triggered(self,checked=None):
         if checked is None: return 
         self.load_record()
 
+    def on_actionLoadPosition_triggered(self,checked=None):
+        if checked is None: return 
+        self.load_position()
+
+    def on_actionSavePosition_triggered(self,checked=None):
+        if checked is None: return 
+        self.save_position()
+
     def on_actionNewGame_triggered(self,checked=None):
         if checked is None: return 
         self.board.update_pos(self.make_empty_pos())
         self.record.clear()
+        self.board.mode = MODE_PLAY
+        
 
     def on_actionExit_triggered(self,checked=None):
         quit()
@@ -53,6 +66,43 @@ class Tagui(QtGui.QMainWindow):
             self.record.addItems(open(fn).readlines())
             self.record.setSelectionMode(self.record.SingleSelection)
             self.record.setCurrentRow(0)
+            self.board.mode = MODE_REPLAY
+
+    def load_position(self, fn=None):
+        if not fn:
+            fd = QtGui.QFileDialog(self)
+            fn = fd.getOpenFileName()
+        if isfile(fn):
+            self.record.clear()
+            _, self.pos = board.parse_long_pos(open(fn).readlines())
+            self.board.update_pos(self.pos)
+            self.board.mode = MODE_PLAY
+
+    def save_position(self, fn=None):
+        if not self.pos:
+            return 
+
+        print self.pos.to_short_str()
+        
+        if not fn:
+            dialog = QtGui.QFileDialog(self)
+            fn = dialog.getSaveFileName()
+            
+            fd = open(fn, 'w')
+            fd.write(self.pos.to_long_str())
+            fd.close()
+
+    def add_engine(self, name, cmd):
+        self.engines[name] = EngineController(StdioEngine(cmd, None))
+        
+    def on_button_back_clicked(self, checked=None):
+        if checked is None: return
+        row = self.record.currentRow() 
+        assert row > 0, "cannot go back"
+        self.record.setCurrentRow(row - 1)
+        
+    def on_button_forward_clicked(self, checked=None):
+        if checked is None: return
 
     def add_engine(self, name, cmd):
         self.engines[name] = EngineController(StdioEngine(cmd, None))

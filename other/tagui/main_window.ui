@@ -8,8 +8,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>900</width>
-    <height>600</height>
+    <width>894</width>
+    <height>592</height>
    </rect>
   </property>
   <property name="sizePolicy" >
@@ -99,16 +99,16 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_2" >
              <item>
-              <widget class="QPushButton" name="button_forward" >
+              <widget class="QPushButton" name="button_back" >
                <property name="text" >
-                <string>Forward</string>
+                <string>Back</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="button_back" >
+              <widget class="QPushButton" name="button_forward" >
                <property name="text" >
-                <string>Back</string>
+                <string>Forward</string>
                </property>
               </widget>
              </item>
@@ -131,7 +131,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>900</width>
+     <width>894</width>
      <height>27</height>
     </rect>
    </property>
@@ -139,7 +139,8 @@
     <property name="title" >
      <string>File</string>
     </property>
-    <addaction name="actionNewGame" />
+    <addaction name="actionLoadPosition" />
+    <addaction name="actionSavePosition" />
     <addaction name="actionLoadGame" />
     <addaction name="separator" />
     <addaction name="actionExit" />
@@ -148,7 +149,7 @@
   </widget>
   <action name="actionLoadGame" >
    <property name="text" >
-    <string>load</string>
+    <string>L&amp;oad record</string>
    </property>
   </action>
   <action name="actionNewGame" >
@@ -158,7 +159,7 @@
   </action>
   <action name="actionExit" >
    <property name="text" >
-    <string>exit</string>
+    <string>E&amp;xit</string>
    </property>
   </action>
   <action name="actionPlayer_x_player" >
@@ -174,6 +175,16 @@
   <action name="actionNew_bot" >
    <property name="text" >
     <string>new bot</string>
+   </property>
+  </action>
+  <action name="actionLoadPosition" >
+   <property name="text" >
+    <string>&amp;Load position</string>
+   </property>
+  </action>
+  <action name="actionSavePosition" >
+   <property name="text" >
+    <string>&amp;Save position</string>
    </property>
   </action>
  </widget>

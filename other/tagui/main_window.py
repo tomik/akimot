@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main_window.ui'
 #
-# Created: Thu Mar 19 23:46:46 2009
+# Created: Sun May 31 00:18:30 2009
 #      by: PyQt4 UI code generator 4.4.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,7 +13,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowModality(QtCore.Qt.WindowModal)
-        MainWindow.resize(900, 600)
+        MainWindow.resize(894, 592)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -73,12 +73,12 @@ class Ui_MainWindow(object):
         self.widget_4.setObjectName("widget_4")
         self.horizontalLayout_2 = QtGui.QHBoxLayout(self.widget_4)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.button_forward = QtGui.QPushButton(self.widget_4)
-        self.button_forward.setObjectName("button_forward")
-        self.horizontalLayout_2.addWidget(self.button_forward)
         self.button_back = QtGui.QPushButton(self.widget_4)
         self.button_back.setObjectName("button_back")
         self.horizontalLayout_2.addWidget(self.button_back)
+        self.button_forward = QtGui.QPushButton(self.widget_4)
+        self.button_forward.setObjectName("button_forward")
+        self.horizontalLayout_2.addWidget(self.button_forward)
         self.verticalLayout.addWidget(self.widget_4)
         self.hboxlayout.addWidget(self.widget_3)
         self.verticalLayout_2.addWidget(self.widget_2)
@@ -87,7 +87,7 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 900, 27))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 894, 27))
         self.menubar.setObjectName("menubar")
         self.menuGame = QtGui.QMenu(self.menubar)
         self.menuGame.setObjectName("menuGame")
@@ -104,7 +104,12 @@ class Ui_MainWindow(object):
         self.actionComputer_color.setObjectName("actionComputer_color")
         self.actionNew_bot = QtGui.QAction(MainWindow)
         self.actionNew_bot.setObjectName("actionNew_bot")
-        self.menuGame.addAction(self.actionNewGame)
+        self.actionLoadPosition = QtGui.QAction(MainWindow)
+        self.actionLoadPosition.setObjectName("actionLoadPosition")
+        self.actionSavePosition = QtGui.QAction(MainWindow)
+        self.actionSavePosition.setObjectName("actionSavePosition")
+        self.menuGame.addAction(self.actionLoadPosition)
+        self.menuGame.addAction(self.actionSavePosition)
         self.menuGame.addAction(self.actionLoadGame)
         self.menuGame.addSeparator()
         self.menuGame.addAction(self.actionExit)
@@ -115,14 +120,16 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "TaGui", None, QtGui.QApplication.UnicodeUTF8))
-        self.button_forward.setText(QtGui.QApplication.translate("MainWindow", "Forward", None, QtGui.QApplication.UnicodeUTF8))
         self.button_back.setText(QtGui.QApplication.translate("MainWindow", "Back", None, QtGui.QApplication.UnicodeUTF8))
+        self.button_forward.setText(QtGui.QApplication.translate("MainWindow", "Forward", None, QtGui.QApplication.UnicodeUTF8))
         self.menuGame.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionLoadGame.setText(QtGui.QApplication.translate("MainWindow", "load", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoadGame.setText(QtGui.QApplication.translate("MainWindow", "L&oad record", None, QtGui.QApplication.UnicodeUTF8))
         self.actionNewGame.setText(QtGui.QApplication.translate("MainWindow", "new", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionExit.setText(QtGui.QApplication.translate("MainWindow", "exit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionExit.setText(QtGui.QApplication.translate("MainWindow", "E&xit", None, QtGui.QApplication.UnicodeUTF8))
         self.actionPlayer_x_player.setText(QtGui.QApplication.translate("MainWindow", "player x player", None, QtGui.QApplication.UnicodeUTF8))
         self.actionComputer_color.setText(QtGui.QApplication.translate("MainWindow", "computer color", None, QtGui.QApplication.UnicodeUTF8))
         self.actionNew_bot.setText(QtGui.QApplication.translate("MainWindow", "new bot", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionLoadPosition.setText(QtGui.QApplication.translate("MainWindow", "&Load position", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionSavePosition.setText(QtGui.QApplication.translate("MainWindow", "&Save position", None, QtGui.QApplication.UnicodeUTF8))
 
 from board_widget import BoardWidget
