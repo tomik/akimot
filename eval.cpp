@@ -403,6 +403,10 @@ int Eval::evaluate(const Board* b) const
       tot[player] += vals_->elephantBlockadePenalty;
       logDDebug("elephant blockade penalty %4d for %s being blocked", 
          vals_->elephantBlockadePenalty, Soldier(player, piece, pos).toString().c_str());
+      //double the penalty in the beginning
+      if (gs == GS_BEGIN) {
+        tot[player] += vals_->elephantBlockadePenalty;
+      }
     }
     
      
