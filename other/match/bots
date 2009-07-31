@@ -25,10 +25,19 @@ bomb2005CC	/home/arimaa/web/arimaa/bots/bot_Bomb2005CC	getMove
 a  		      ./bot_akimot  	akimot -c default.cfg -g
 a1		      ./bot_akimot		akimot -c a1.cfg -g 
 a2		      ./bot_akimot		akimot -c a2.cfg -g 
-
-fairy_1s       ./bot_fairy  fairy_1s
+a4		      ./bot_akimot		akimot -c a4.cfg -g 
+a8		      ./bot_akimot		akimot -c a8.cfg -g 
+a16		      ./bot_akimot		akimot -c a16.cfg -g 
+a32		      ./bot_akimot		akimot -c a32.cfg -g 
 
 fairy_3s       ./bot_fairy  fairy_3s
+
+fairy_1s       ./bot_fairy  fairy_1s
+fairy_2s       ./bot_fairy  fairy_2s
+fairy_4s       ./bot_fairy  fairy_4s
+fairy_8s       ./bot_fairy  fairy_8s
+fairy_16s       ./bot_fairy  fairy_16s
+fairy_32s       ./bot_fairy  fairy_32s
 
 # pure random bot
 r0		./bot_r0		r0 -b -r [seed]

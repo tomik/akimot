@@ -318,6 +318,10 @@ void Node::cCacheUpdate(float exploreCoeff)
 
 void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float exploreCoeff) const
 {
+  if (act->getMaster() && glob.grand()->get01() < 0.1){
+    act->syncMaster();
+  }
+
   assert(act);
   float actUrgency = act->exploreFormula(exploreCoeff);
 
@@ -570,9 +574,6 @@ void Node::update(float sample)
   }
   squareSum_ += (sample - old_value) * (sample - value_);
 
-  if (getMaster() && glob.grand()->get01() < 0.2){
-    syncMaster();
-  }
   //updating brothers comes after potential sync! 
   updateTTbrothers(sample, 1);
 }

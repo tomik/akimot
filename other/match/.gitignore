@@ -7,3 +7,4 @@ matches
 *.pyo
 as.cfg
 tournament.cfg
+bot_fairy/fairy_*s

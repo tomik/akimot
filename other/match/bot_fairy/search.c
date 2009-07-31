@@ -170,7 +170,7 @@ int SEARCH_Start_Search(board_t *bp, move_t ml[4], test_data_t *tp)
         }
         #else
         {
-            remaining_time=(long long int)3*(long long int)CLOCKS_PER_SEC; // 2 minutes per move
+            remaining_time=(long long int)32*(long long int)CLOCKS_PER_SEC; // 2 minutes per move
         }
         #endif
         number_of_steps=4;
