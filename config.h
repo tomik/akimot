@@ -44,6 +44,8 @@ typedef list<CfgItem > CfgItemList;
 typedef CfgItemList::iterator CfgItemListIter;
 
 class Values; 
+class EvaluationValues; 
+class StepKnowledgeValues; 
 
 /**
  * Program configuration. 
@@ -97,7 +99,8 @@ class Cfg
     inline int searchThreadsNum() { return searchThreadsNum_; }
     inline string evalCfg() { return evalCfg_; }
 
-    inline Values* evaluationValues() {return vals_;}
+    inline EvaluationValues* evaluationValues() {return evaluationValues_;}
+    inline StepKnowledgeValues* stepKnowledgeValues() {return stepKnowledgeValues_;}
 
   private:
     CfgItemList items_;
@@ -149,7 +152,8 @@ class Cfg
     /**Filename to take the evaluation configuration from.*/
     string evalCfg_;
 
-    Values * vals_;
+    EvaluationValues * evaluationValues_;
+    StepKnowledgeValues * stepKnowledgeValues_;
 };
 
 enum optionType_e { OT_STRING, OT_BOOL_POS, OT_BOOL_NEG, OT_INT };

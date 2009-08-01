@@ -1,6 +1,7 @@
 #include "eval.h"
 
 extern string implicit_eval_cfg;
+extern string implicit_sk_cfg;
 
 //---------------------------------------------------------------------
 //  section ValueItem
@@ -22,99 +23,6 @@ bool ValueItem::isSingleValue() const
 //  section Values
 //---------------------------------------------------------------------- 
 
-Values::Values(){
-  init();
-  loadFromString(implicit_eval_cfg);
-  mirrorPiecePositions();
-}
-
-//--------------------------------------------------------------------- 
-
-Values::Values(string config) { 
-  init();
-  loadFromString(config);
-  mirrorPiecePositions();
-}
-
-//--------------------------------------------------------------------- 
-
-void Values::init(){ 
-  values.clear();
-  values.push_back(ValueItem("piece_values", IT_INT_AR, (void*)&pieceValue, PIECE_NUM + 1));
-  values.push_back(ValueItem("rabbit_penalty", IT_INT_AR, (void*)&rabbitPenalty, RABBITS_NUM + 1));
-  values.push_back(ValueItem("frozen_penalty_ratio", IT_FLOAT, (void*)&frozenPenaltyRatio, SINGLE_VALUE));
-  values.push_back(ValueItem("trap_sole_val", IT_INT, (void*)&trapSoleVal, SINGLE_VALUE));
-  values.push_back(ValueItem("trap_more_than_one_val", IT_INT, (void*)&trapMoreThanOneVal, SINGLE_VALUE));
-  values.push_back(ValueItem("trap_safe_val", IT_INT, (void*)&trapSafeVal, SINGLE_VALUE));
-  values.push_back(ValueItem("trap_active_val", IT_INT, (void*)&trapActiveVal, SINGLE_VALUE));
-  values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
-  values.push_back(ValueItem("active_trap_blocked_penalty", IT_INT, (void*)&activeTrapBlockedPenalty, SINGLE_VALUE));
-  values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
-  values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
-  values.push_back(ValueItem("camel_hostage_penalty", IT_INT, (void*)&camelHostagePenalty, SINGLE_VALUE));
-  values.push_back(ValueItem("elephant_blockade_penalty", IT_INT, (void*)&elephantBlockadePenalty, SINGLE_VALUE));
-  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][ELEPHANT], BIT_LEN));
-  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][ELEPHANT], BIT_LEN));
-  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][ELEPHANT], BIT_LEN));
-  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAMEL], BIT_LEN));
-  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAMEL], BIT_LEN));
-  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAMEL], BIT_LEN));
-  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][HORSE], BIT_LEN));
-  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][HORSE], BIT_LEN));
-  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][HORSE], BIT_LEN));
-  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][DOG], BIT_LEN));
-  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][DOG], BIT_LEN));
-  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][DOG], BIT_LEN));
-  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAT], BIT_LEN));
-  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAT], BIT_LEN));
-  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAT], BIT_LEN));
-  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][RABBIT], BIT_LEN));
-  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][RABBIT], BIT_LEN));
-  values.push_back(ValueItem("rabbit_late_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][RABBIT], BIT_LEN));
-
-}
-
-//--------------------------------------------------------------------- 
-
-void Values::baseMirrorIndexes(int& player, int& index) 
-{
-  int c = index % 8; 
-  int r = index / 8;
-
-  if (c >= 4) {
-    c = 7 - c;
-  }
-
-  if (player == GOLD) {
-    r = 7 - r; 
-    player = SILVER;
-  }
-
-  index = 8 * r + c;
-  
-}
-
-//--------------------------------------------------------------------- 
-
-void Values::mirrorPiecePositions()
-{
-
-  for (int gs = 0; gs < GS_NUM; gs++){
-    for (int i = 0; i < 2; i++){
-      for (int j = 0; j < PIECE_NUM + 1; j++){
-        for (int k = 0; k < BIT_LEN; k++ ){
-          int basepl = i; 
-          int baseindex = k;
-          baseMirrorIndexes(basepl, baseindex);
-          piecePos[gs][i][j][k] = piecePos[gs][basepl][j][baseindex];
-        }
-      }
-    }
-  }
-}
-
-
-//--------------------------------------------------------------------- 
 
 bool Values::loadFromString(string config) { 
   
@@ -199,6 +107,137 @@ string Values::toString() const
 
   return ss.str();
 }
+//---------------------------------------------------------------------
+//  section StepKnowledgeValues
+//---------------------------------------------------------------------- 
+
+StepKnowledgeValues::StepKnowledgeValues(){
+  this->init();
+  loadFromString(implicit_sk_cfg);
+}
+
+//--------------------------------------------------------------------- 
+
+StepKnowledgeValues::StepKnowledgeValues(string config) { 
+  this->init();
+  loadFromString(config);
+}
+
+//--------------------------------------------------------------------- 
+
+void StepKnowledgeValues::init(){ 
+  values.clear();
+  values.push_back(ValueItem("pass_penalty", IT_FLOAT, (void*)&passPenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("elephant_step_val", IT_FLOAT, (void*)&elephantStepVal, SINGLE_VALUE));
+  values.push_back(ValueItem("push_pull_val", IT_FLOAT, (void*)&pushPullVal, SINGLE_VALUE));
+  values.push_back(ValueItem("leave_buddy_in_trap_penalty", IT_FLOAT, (void*)&leaveBuddyInTrapPenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("suicide_penalty", IT_FLOAT, (void*)&suicidePenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("step_in_dangerous_trap_penalty", IT_FLOAT, (void*)&stepInDangerousTrapPenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("push_pull_to_trap_val", IT_FLOAT, (void*)&pushPullToTrapVal, SINGLE_VALUE));
+  values.push_back(ValueItem("kill_val", IT_FLOAT, (void*)&killVal, SINGLE_VALUE));
+  values.push_back(ValueItem("rabbit_step_begin_val", IT_FLOAT, (void*)&rabbitStepBeginVal, SINGLE_VALUE));
+  values.push_back(ValueItem("rabbit_step_middle_val", IT_FLOAT, (void*)&rabbitStepMiddleVal, SINGLE_VALUE));
+  values.push_back(ValueItem("rabbit_step_late_val", IT_FLOAT, (void*)&rabbitStepLateVal, SINGLE_VALUE));
+  values.push_back(ValueItem("locality_val", IT_FLOAT, (void*)&localityVal, SINGLE_VALUE));
+  values.push_back(ValueItem("locality_reach", IT_INT, (void*)&localityReach, SINGLE_VALUE));
+} 
+
+//---------------------------------------------------------------------
+//  section EvaluationValues
+//---------------------------------------------------------------------- 
+
+
+EvaluationValues::EvaluationValues(){
+  this->init();
+  loadFromString(implicit_eval_cfg);
+  mirrorPiecePositions();
+}
+
+//--------------------------------------------------------------------- 
+
+EvaluationValues::EvaluationValues(string config) { 
+  this->init();
+  loadFromString(config);
+  mirrorPiecePositions();
+}
+
+//--------------------------------------------------------------------- 
+
+void EvaluationValues::init(){ 
+  values.clear();
+  values.push_back(ValueItem("piece_values", IT_INT_AR, (void*)&pieceValue, PIECE_NUM + 1));
+  values.push_back(ValueItem("rabbit_penalty", IT_INT_AR, (void*)&rabbitPenalty, RABBITS_NUM + 1));
+  values.push_back(ValueItem("frozen_penalty_ratio", IT_FLOAT, (void*)&frozenPenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_sole_val", IT_INT, (void*)&trapSoleVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_more_than_one_val", IT_INT, (void*)&trapMoreThanOneVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_safe_val", IT_INT, (void*)&trapSafeVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_active_val", IT_INT, (void*)&trapActiveVal, SINGLE_VALUE));
+  values.push_back(ValueItem("trap_pot_val", IT_INT, (void*)&trapPotVal, SINGLE_VALUE));
+  values.push_back(ValueItem("active_trap_blocked_penalty", IT_INT, (void*)&activeTrapBlockedPenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("frame_penalty_ratio", IT_FLOAT, (void*)&framePenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("pinned_penalty_ratio", IT_FLOAT, (void*)&pinnedPenaltyRatio, SINGLE_VALUE));
+  values.push_back(ValueItem("camel_hostage_penalty", IT_INT, (void*)&camelHostagePenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("elephant_blockade_penalty", IT_INT, (void*)&elephantBlockadePenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("elephant_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][ELEPHANT], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("camel_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAMEL], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("horse_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][HORSE], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("dog_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][DOG], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("cat_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][CAT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_BEGIN][SILVER][RABBIT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_position", IT_INT_AR, (void*)&piecePos[GS_MIDDLE][SILVER][RABBIT], BIT_LEN));
+  values.push_back(ValueItem("rabbit_late_position", IT_INT_AR, (void*)&piecePos[GS_LATE][SILVER][RABBIT], BIT_LEN));
+
+}
+
+//--------------------------------------------------------------------- 
+
+void EvaluationValues::baseMirrorIndexes(int& player, int& index) 
+{
+  int c = index % 8; 
+  int r = index / 8;
+
+  if (c >= 4) {
+    c = 7 - c;
+  }
+
+  if (player == GOLD) {
+    r = 7 - r; 
+    player = SILVER;
+  }
+
+  index = 8 * r + c;
+  
+}
+
+//--------------------------------------------------------------------- 
+
+void EvaluationValues::mirrorPiecePositions()
+{
+
+  for (int gs = 0; gs < GS_NUM; gs++){
+    for (int i = 0; i < 2; i++){
+      for (int j = 0; j < PIECE_NUM + 1; j++){
+        for (int k = 0; k < BIT_LEN; k++ ){
+          int basepl = i; 
+          int baseindex = k;
+          baseMirrorIndexes(basepl, baseindex);
+          piecePos[gs][i][j][k] = piecePos[gs][basepl][j][baseindex];
+        }
+      }
+    }
+  }
+}
+
 
 //---------------------------------------------------------------------
 //  section Eval
@@ -244,7 +283,8 @@ Eval::Eval(const Board* board)
 void Eval::init() 
 {
   evalTT_ = new EvalTT();
-  vals_ = new Values(*cfg.evaluationValues());
+  vals_ = new EvaluationValues(*cfg.evaluationValues());
+  skvals_ = new StepKnowledgeValues(*cfg.stepKnowledgeValues());
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
 }
 
@@ -601,25 +641,17 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   float eval = 0; 
 
   if (step.isPass()){
-    eval -= 0.5 * (STEPS_IN_MOVE - b->stepCount_);
+    eval += skvals_->passPenalty * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
 
   assert(step.pieceMoved());
   //assert(IS_PLAYER(b[step.from_]));
   
-  //we don't like inverse steps 
-  //TODO ... inverse step is reasonable when something dies in the trap
-  /*
-  if (step.inversed(lastStep_)){
-    eval -= 5;
-    return eval;
-  }
-  */
-
   if (step.piece_ == ELEPHANT ) {
-    eval += 0.1;
+    eval += skvals_->elephantStepVal; 
   }
+
 /*
   switch (step.piece_) { 
     case ELEPHANT :   eval += 0.15;
@@ -640,7 +672,7 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     }
     //otherwise push/pulls are encouraged
     else{
-      eval += 0.1; 
+      eval += skvals_->pushPullVal; 
     }
   } 
 
@@ -650,26 +682,26 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     if (! IS_TRAP(step.to_) && 
         ((step.player_ == GOLD && ROW(step.from_) >= 4) ||
         (step.player_ == SILVER && ROW(step.from_) <= 5))){
-      eval -= 1;
+      eval += skvals_->leaveBuddyInTrapPenalty; 
     }
     else{
-      eval -= 5;   
+      eval += skvals_->suicidePenalty;
     }
   }
 
   //step into potentially dangerous trap
   if ( IS_TRAP(step.to_) && bits::bitCount(bits::neighborsOne(step.to_) & b->getBitboard()[step.player_][0]) <= 2){
-    eval -= 0.5;
+    eval += skvals_->stepInDangerousTrapPenalty;
   }
 
   //push opp to trap is good 
   if (step.isPushPull() && IS_TRAP(step.oppTo_)){
-    eval += 0.2;
+    eval += skvals_->pushPullToTrapVal; 
   }
   
   //check opp-kill
   if (step.isPushPull() && b->checkKillForward(step.oppFrom_, step.oppTo_)){
-    eval += 5;   
+    eval += skvals_->killVal;
   }
 
   //rabbit movements 
@@ -677,11 +709,11 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   gameStage_e gs = determineGameStage(b->getBitboard());
   if (step.piece_ == RABBIT){
     switch (gs) { 
-      case GS_BEGIN: eval += -1.2;
+      case GS_BEGIN: eval += skvals_->rabbitStepBeginVal; 
                 break;
-      case GS_MIDDLE: eval += -0.2; 
+      case GS_MIDDLE: eval += skvals_->rabbitStepMiddleVal; 
                 break;
-      case GS_LATE: eval += 0.2; 
+      case GS_LATE: eval += skvals_->rabbitStepLateVal;
                 break;
     }
   }
@@ -690,7 +722,8 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
   if (cfg.localPlayout() && 
       b->lastStep().stepType_ != STEP_NULL){
     int d = SQUARE_DISTANCE(b->lastStep().to_, step.from_);
-    eval += d <= 3 ? (3 - d) * 0.1 : 0;
+    eval += d <= skvals_->localityReach ?  
+                 (skvals_->localityReach - d) * skvals_->localityVal : 0;
   }
 
   return eval;
@@ -710,6 +743,36 @@ string Eval::trapTypeToStr(trapType_e trapType)
 
 //--------------------------------------------------------------------- 
 //--------------------------------------------------------------------- 
+
+//implicit step knowledge
+string implicit_sk_cfg   = " \
+\
+pass_penalty = -0.5 \
+\
+elephant_step_val = 0.1 \
+\
+push_pull_val = 0.1 \
+\
+leave_buddy_in_trap_penalty = -1 \
+\
+suicide_penalty = -5 \
+\
+step_in_dangerous_trap_penalty = -0.5 \
+\
+push_pull_to_trap_val = 0.2 \
+\
+kill_val = 5 \
+\
+rabbit_step_begin_val = -1.2 \
+\
+rabbit_step_middle_val = -0.2 \
+\
+rabbit_step_late_val = 0.2 \
+\
+locality_val = 0.1 \
+\
+locality_reach = 3 \
+";
 
 //implicit evaluation 
 string implicit_eval_cfg   = " \

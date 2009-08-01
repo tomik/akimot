@@ -29,9 +29,11 @@ enum trapType_e { TT_UNSAFE, TT_HALF_SAFE, TT_SAFE, TT_ACTIVE};
 class Eval;
 class Values;
 
-/**One evaluation element.
+/**
+ * One evaluation element.
  *
- * Loaded from configuration file.*/
+ * Loaded from configuration file.
+ */
 class ValueItem { 
   public: 
     ValueItem() {};
@@ -49,36 +51,60 @@ class ValueItem {
 
 typedef list <ValueItem> ValueList;
 
+/**
+ * Base class for values holding. 
+ */
 class Values 
 {
   public:
-    /**
-     * Loads values from given string. 
-     *
-     * Values are loaded according to valuesList.
-     */
-    Values(string config);
 
-    /**
-     * Init from implicit values.
-     */
-    Values();
+    virtual ~Values(){};
 
     /**
      * Actual init called from constructors;
      */
-    void init();
+    virtual void init() = 0;
+
+    //virtual ~Values(); 
 
     /**
      * Dump to string.
      */
     string toString() const;
     
-  private: 
+  protected: 
+    ValueList values;
+
     /**
      * Load from file.
      */
     bool loadFromString(string);
+
+};
+
+
+/**
+ * Values for "constants" in evaluation.
+ */
+class EvaluationValues:public Values
+{
+  public: 
+    /**
+     * Loads values from given string. 
+     *
+     * Values are loaded according to valuesList.
+     */
+    EvaluationValues(string config);
+
+    /**
+     * Init from implicit values.
+     */
+    EvaluationValues();
+
+    void init();
+
+  private:
+    friend class Eval;
 
     /**
      * Mirroring. 
@@ -92,9 +118,6 @@ class Values
      * For mirroring.
      */
     static void baseMirrorIndexes(int & player, int & coord);
-
-    ValueList values;
-    friend class Eval;
 
     /**Static piece values.*/
     int pieceValue[PIECE_NUM + 1];
@@ -120,7 +143,35 @@ class Values
 
     /**Piece positioning evaluation.*/
     int piecePos[GS_NUM][2][PIECE_NUM + 1][BIT_LEN];
+};
 
+/**
+ * Values for "constants" in step knowledge.
+ */
+class StepKnowledgeValues: public Values{
+  public:
+    StepKnowledgeValues(string config);
+
+    StepKnowledgeValues();
+
+    void init();
+
+  private:
+    float passPenalty;
+    float elephantStepVal;
+    float pushPullVal;
+    float leaveBuddyInTrapPenalty;
+    float suicidePenalty;
+    float stepInDangerousTrapPenalty;
+    float pushPullToTrapVal;
+    float killVal;
+    float rabbitStepBeginVal;
+    float rabbitStepMiddleVal;
+    float rabbitStepLateVal;
+    float localityVal;
+    int localityReach;
+    
+    friend class Eval;
 };
 
 /**
@@ -184,7 +235,8 @@ class Eval
 
     EvalTT * evalTT_;
 
-    Values * vals_;
+    EvaluationValues * vals_;
+    StepKnowledgeValues * skvals_;
 
     /**Maximal evaluation given as constant depending on used evaluation method.*/
     double eval_max_;

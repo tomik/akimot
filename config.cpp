@@ -116,7 +116,8 @@ Cfg::Cfg()
   items_.push_back(CfgItem("knowledge_tournament_size", IT_INT, (void*)&knowledgeTournamentSize_,"3"));
   items_.push_back(CfgItem("search_threads_num", IT_INT, (void*)&searchThreadsNum_,"1"));
   //items_.push_back(CfgItem("evaluation_config", IT_STR, (void*)&evalCfg_,""));
-  vals_ = NULL; 
+  evaluationValues_ = NULL; 
+  stepKnowledgeValues_ = NULL; 
 }
 
 //--------------------------------------------------------------------- 
@@ -155,8 +156,9 @@ void Cfg::loadFromFile(string fn)
 
       //dispatch the section content
       if (name == "[evaluation_values]"){
-        vals_ = new Values(sectionContent);
-      }else if (name == "[step_knowledge]"){
+        evaluationValues_ = new EvaluationValues(sectionContent);
+      }else if (name == "[step_knowledge_values]"){
+        stepKnowledgeValues_ = new StepKnowledgeValues(sectionContent);
       }else { 
         loadFromSection(sectionContent);
       }
@@ -169,9 +171,13 @@ void Cfg::loadFromFile(string fn)
 
   }
 
-  if (! vals_) {
+  if (! evaluationValues_) {
     logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
-    vals_ = new Values();
+    evaluationValues_ = new EvaluationValues();
+  }
+  if (! stepKnowledgeValues_) {
+    logWarning("Wrong step knowledge configuration ... falling to implicit evaluation.");
+    stepKnowledgeValues_ = new StepKnowledgeValues();
   }
 }
 
