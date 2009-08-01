@@ -93,14 +93,6 @@ class Values
      */
     static void baseMirrorIndexes(int & player, int & coord);
 
-    /**
-     * Token -> item mapping. 
-     *
-     * Goes through tokens and tries to find given one.
-     * @return True if found, false otherwise.
-     */
-    bool getItemForToken(string token, ValueItem& valueItem) const;
-
     ValueList values;
     friend class Eval;
 
@@ -194,8 +186,6 @@ class Eval
 
     Values * vals_;
 
-    /**Base evaluation ... for relative evaluation.*/
-    double base_eval_;
     /**Maximal evaluation given as constant depending on used evaluation method.*/
     double eval_max_;
 

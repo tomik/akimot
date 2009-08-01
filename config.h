@@ -59,9 +59,14 @@ class Cfg
     Cfg();
 
     /**
-     * Loads items from file.
+     * Parses the sections and sends them to appropriate loaders.
      */
     void loadFromFile(string fn);
+
+    /**
+     * Section loader for cfg class.
+     */
+    void loadFromSection(string content);
 
     /**
      * Checks whether every item has been set.

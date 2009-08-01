@@ -200,21 +200,6 @@ string Values::toString() const
   return ss.str();
 }
 
-//--------------------------------------------------------------------- 
-
-bool Values::getItemForToken(string token, ValueItem& valueItem) const
-{ 
-
-  for (ValueList::const_iterator it = values.begin(); it != values.end(); it++){
-    
-    if ((*it).name_ == token) {
-      valueItem = (*it);
-      return true;
-    }
-  }
-  return false;
-}
-
 //---------------------------------------------------------------------
 //  section Eval
 //---------------------------------------------------------------------- 
@@ -251,7 +236,6 @@ Eval::Eval()
 Eval::Eval(const Board* board) 
 {
   init();
-  //base_eval_ = cfg.useBestEval() ? evaluate(board) : evaluateDailey(board);
   
 }
 
@@ -261,7 +245,6 @@ void Eval::init()
 {
   evalTT_ = new EvalTT();
   vals_ = new Values(*cfg.evaluationValues());
-  base_eval_ = 0;
   eval_max_ = cfg.useBestEval() ? EVAL_MAX : EVAL_MAX_DAILEY;
 }
 
@@ -270,6 +253,7 @@ void Eval::init()
 float Eval::evaluateInPercent(const Board* b) const
 {
   /*
+  //using tt right before the evaluation - too little hits
   if (evalTT_->hasItem(b->getSignature())){
     float p = 0; 
     evalTT_->loadItem(b->getSignature(), p); 
@@ -285,7 +269,6 @@ float Eval::evaluateInPercent(const Board* b) const
   float p; 
 
   evaluation = cfg.useBestEval() ? evaluate(b) : evaluateDailey(b);
-  //evaluation -= base_eval_;
   p = log_sig(double(6)/eval_max_, evaluation);
   logDDebug("%f ~ %f ", evaluation, p);
 

@@ -69,6 +69,7 @@ bool fillItemFromString(void* item, itemType_e type, string value, int index){
       ((int *)(item))[index] = str2int(value);
       break;
     default:
+      assert(false);
       return false;
       break;
   }
@@ -123,43 +124,72 @@ Cfg::Cfg()
 void Cfg::loadFromFile(string fn)
 {
   FileRead* f = new FileRead(fn);
-  string name, value;
+  string name;
   f->ignoreLines(CFG_COMMENT);
   stringstream ss; 
+  string sectionContent;
+
   if (! f->good()){
     logError("Cannot open configuration file.");
     exit(1);
   } 
+
   ss.str(replaceAllChars(f->read(), CFG_SEP, ' '));
   while (ss.good()){
     ss >> name;
     if (name[0] == '[' && name[name.length() - 1] == ']'){
       //it is a section
-      //different sections => different handling
-      if (name == "[evaluation_values]"){
-        string rest = getStreamRest(ss);
-        uint index = rest.length();
-        for (uint i = 0; i < rest.length(); i++){
-          if (rest[i] == '['){
-            index = i;
-            break;
-          }
-        }
-        vals_ = new Values(rest.substr(0, index));
-        ss.str("");
-        if (index < rest.length()){
-          ss.str(rest.substr(index));
+      string rest = getStreamRest(ss);
+      uint index = rest.length();
+      for (uint i = 0; i < rest.length(); i++){
+        if (rest[i] == '['){
+          index = i;
+          break;
         }
       }
-      continue;
+      sectionContent = rest.substr(0, index);
+      //handle empty section
+      if (! trim(sectionContent).length()){
+        continue;
+      }
+
+      //dispatch the section content
+      if (name == "[evaluation_values]"){
+        vals_ = new Values(sectionContent);
+      }else if (name == "[step_knowledge]"){
+      }else { 
+        loadFromSection(sectionContent);
+      }
+
+      ss.str("");
+      if (index < rest.length()){
+        ss.str(rest.substr(index));
+      }
     }
+
+  }
+
+  if (! vals_) {
+    logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
+    vals_ = new Values();
+  }
+}
+
+//--------------------------------------------------------------------- 
+
+void Cfg::loadFromSection(string content)
+{
+  string value, name;
+  stringstream ss(content);
+
+  while (ss.good()){
+    ss >> name;
     ss >> value; 
     bool found = false;
     for (CfgItemListIter it = items_.begin(); it != items_.end(); it++){
       if (it->name_ == name) {
         it->set_ = true;
         if (! fillItemFromString(it->item_, it->type_, value)){
-            assert(false);
             logError("Unknown option type.");
             exit(1);
         }
@@ -170,11 +200,6 @@ void Cfg::loadFromFile(string fn)
       logError("Unknown option %s.", name.c_str());
       exit(1);
     }
-  }
-
-  if (! vals_) {
-    logWarning("Wrong evaluation configuration ... falling to implicit evaluation.");
-    vals_ = new Values();
   }
 }
 
