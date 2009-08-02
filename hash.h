@@ -1,3 +1,10 @@
+/**
+ * @file hash.h
+ *
+ * @brief Hashing mechanisms.
+ * @full Implements hashing support for transposition tables, third repetition check, etc.
+ */
+
 #pragma once
 
 #include "utils.h"

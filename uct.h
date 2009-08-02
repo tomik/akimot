@@ -2,6 +2,7 @@
  * @file uct.h
  *
  * @brief Uct algorithm and playouts management. 
+ * @full Implementation of UCT nodes, UCT tree, the core UCT algorithm and playouts mechanisms.
  */
 
 #pragma once 

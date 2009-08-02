@@ -2,6 +2,8 @@
  * @file eval.h
  *
  * @brief Knowledge management and evaluation.
+ * @full Static evaluation function is defined here together with evaluation mapping to winning probability. 
+ * Also contains step evaluation by knowledge.
  */
 
 

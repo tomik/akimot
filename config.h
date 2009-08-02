@@ -1,7 +1,8 @@
 /**
  * @file config.h
  *
- * Command line configuration.
+ * Configuration
+ * @full Handles command line configuration and configuration files parsing.
  */
 
 #pragma once

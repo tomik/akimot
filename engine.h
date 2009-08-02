@@ -2,6 +2,7 @@
  * @file engine.h
  *
  * Search engine interface and time management.
+ * @full Particular searching methods are spawned from here. Includes threads management and results summary after the search.
  */
 
 #pragma once

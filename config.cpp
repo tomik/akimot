@@ -1,11 +1,4 @@
 
-/** 
- *  @file config.cpp
- *  @brief Configuration managemenent.
- *  @full Parsing arguments from command-line and storing them into 
- *    run-wide variables in class Config.
- */
-
 #include "config.h"
 
 //for values

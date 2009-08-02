@@ -1,3 +1,10 @@
+/**
+ * @file utils.h
+ *
+ * @brief Supportive functions.
+ * @full Includes logger, conversion functions, etc.
+ */
+
 #pragma once
 
 #include <cassert>

@@ -1,3 +1,16 @@
+/** 
+ * @file benchmark.h
+ * Benchmarking tool.
+ *
+ * Performs following benchmarks: 
+ * \li board copying 
+ * \li evaluation 
+ * \li playout speed 
+ * \li old board playout speed
+ * \li uct traversing 
+ * \li complete uct search
+ */
+
 #pragma once
 
 #include "utils.h"
@@ -33,7 +46,6 @@ class Benchmark
 
 		void benchmarkEval(); 
 		void benchmarkCopyBoard(); 
-		void benchmarkQuickGoalCheck(); 
 		void benchmarkPlayout(); 
 		void benchmarkOldPlayout(); 
 		void benchmarkUct(); 

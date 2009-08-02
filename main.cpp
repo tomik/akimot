@@ -4,6 +4,21 @@
 #include "engine.h"
 #include "benchmark.h"
 #include "aei.h"
+ 
+/*! \mainpage Akimot reference manual
+ *
+ * \section intro_sec Introduction
+ *
+ * Welcome to Akimot's reference manual. The purpose of this manual is to provide a helper for akimot developers. 
+ * If you are completely new to the project, we suggest to start with the files overview giving you the good idea of project's organisation ... 
+ * 
+ * This manual might be useful in particular cases to quickly understands relations among classes or to get short descriptions of methods/variables. 
+ * It is not meant as an exhaustive documentation though. We believe the best way to gain the sound understanding of certain project parts is
+ * following: gain basic information about the target from this manual and then dive into the code - we have strived for legibility of code and 
+ * documented the more complicated parts.
+ *
+ * We hope you will find this reference manual useful and that it will help you with your work on the akimot project.
+ */
 
 
 int main(int argc, char *argv[]) 

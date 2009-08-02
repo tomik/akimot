@@ -1,10 +1,4 @@
 
-/** 
- *  @file board.cpp
- *  @brief Board implementation. 
- *  @full Integer board, able to evaluate itself, compute it's hash, etc. 
- */
-
 #include "board.h"
 #include "eval.h"  //for evaluateStep
 
@@ -1090,7 +1084,6 @@ u64 bits::neighbors( u64 target )
   x |= (target & NOT_A_FILE) >> 1;
   x |= (target /*& NOT_1_RANK*/) << 8;
   x |= (target /*& NOT_8_RANK*/) >> 8;
-  //TODO ..... not_*_rank not neccessary ? 
 
   return(x);
 }
@@ -1665,13 +1658,13 @@ int Board::reachability(int from, int to, player_t player, int limit, int used, 
 void Board::genStepsOne(coord_t coord, player_t player, 
                             StepArray& steps, int& stepsNum) const { 
   if (bits::getBit(calcMovable(player), coord)){
-    u64 victims[7];
+    u64 victims[7] = {0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL};
     calcWeaker(player, victims);
 
     assert(getPlayer(coord) == player); 
     piece_t piece = getPiece(coord, player);
-    //TODO calling two functions here instead of one might make it (much) slower 
     genStepsOneTuned(coord, player, piece, steps, stepsNum, victims[piece]);
+    return;
   }
 }
 
@@ -2204,7 +2197,6 @@ void Board::findMCmoveAndMake()
 {
 
   if (bitboard_[toMove_][0] == 0){
-    //TODO handle case when stepCount_ == 0 and player MUST move ? 
     makeStepTryCommit(Step(STEP_PASS, toMove_));
     return;
   }
@@ -2291,7 +2283,7 @@ void Board::init(bool newGame)
 
   //clear bitboards
   for (int i = 0; i < 2; i++)
-    for (int j = 0; j < 8; j++){
+    for (int j = 0; j < 7; j++){
       bitboard_[i][j] = 0ULL;
     }
 
@@ -2597,7 +2589,6 @@ u64 Board::getPreMoveSignature() const
 
 player_t Board::getPlayerToMoveAfterStep(const Step& step) const
 { 
-  //TODO what about resing step ? 
   assert( step.isPass() || step.isPushPull() || step.isSingleStep());
   player_t player = toMove_;
 

@@ -1,3 +1,12 @@
+/**
+ * @file old_board.h
+ *
+ * @brief Former board representation.
+ * @full Board representation using the integer board mechanism. This module is obsolete but still used in test suite to 
+ * verify functionality of current board module.
+ */
+
+
 #pragma once 
 
 #include "board.h"

@@ -1,7 +1,8 @@
 /**
  * @file timer.h
  *
- * Timer class declaration. 
+ * @brief Timer class declaration. 
+ * @full Timer mechanism is used for timing the time allocated to search.
  */
 
 #pragma once

@@ -2,7 +2,7 @@
  * @file aei.h
  * Arimaa engine interface.
  *
- * Some details.
+ * Definition of AEI commands and their dispatching.
  */
 
 #pragma once

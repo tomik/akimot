@@ -1,8 +1,3 @@
-/** 
- *  @file engine.cpp
- *  @brief Searching engine. 
- *  @full Implementation of UCT and supporting components.
- */
 
 #include "engine.h"
 

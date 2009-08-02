@@ -67,37 +67,6 @@ void Benchmark::benchmarkCopyBoard()
 
 //--------------------------------------------------------------------- 
 
-void Benchmark::benchmarkQuickGoalCheck() 
-{
-    /*
-  float timeTotal;
-  timer.start();
-
-  
-  Board *playBoard = new Board();
-
-  //Uses custom test - specifically created to be 
-  //difficult for quickgoalcheck
-  playBoard->initNewGame(); 
-  playBoard->initFromPosition(NEGATIVE_GOAL_CHECK_PATH);
-
-  int i = 0;
-  while (! timer.timeUp()){
-    i++;
-    playBoard->quickGoalCheck();
-  }
-
-  delete playBoard;
-
-  timer.stop();
-	timeTotal = timer.elapsed(); 
-  logRaw("Quick Goal Check performance: \n  %d checks\n  %3.2f seconds\n  %d cps\n", 
-            i, timeTotal, int ( float(i) / timeTotal));
-    */
-}
-
-//--------------------------------------------------------------------- 
-
 void Benchmark::benchmarkOldPlayout() 
 {
 
@@ -228,7 +197,6 @@ void Benchmark::benchmarkAll()
   benchmarkCopyBoard();
   benchmarkEval();
   benchmarkOldPlayout();
-  benchmarkQuickGoalCheck();
   benchmarkPlayout();
   benchmarkUct();
   benchmarkSearch();

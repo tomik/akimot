@@ -2,9 +2,6 @@
 # [urgency, category] item 
 
 === Actual ===
-[5, uct] refactor inverse step filter to use signatures 
-         add inverse step filter into filter repetitions
-[5, config/eval] refactor configuration file parsing
 [4, uct] check if more weight to the piece position in evaluation helps
 [4, uct] refactor knowledge in step (add pulling rabbits/weak figures in the beginning, ...)
 [4, uct] issues with virtual passes and tt tables (children sharing) 
@@ -14,6 +11,9 @@
 [2, board] stronger (function) refactoring 
 
   === Done  ===
+  [5, config/eval] refactor configuration file parsing
+  [5, uct] refactor inverse step filter to use signatures 
+           add inverse step filter into filter repetitions
   [5, gen] implement hashing and step correctness check in uct 
   [5, gen] prepare for matchOffline with other bots ( add configuration from file/options ) 
   [3, uct] node which cannot expand must be deleted straightaway

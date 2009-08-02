@@ -1,7 +1,3 @@
-/** 
- *  @file uct.cpp
- *  @brief Uct algorithm implemenation.
- */
 
 #include "engine.h"
 #include "uct.h"

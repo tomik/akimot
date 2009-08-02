@@ -1,7 +1,7 @@
 /** 
  *  @file board.h
  *
- *  @brief Board interface.
+ *  @brief Board representation.
  *  @full Board representation with all its nuiances is defined here. 
  *  Main pillar is class Board itself representing board and its manipulation 
  *  along with move generation, verification and playing.
@@ -25,14 +25,13 @@ using std::bitset;
 #include "hash.h"
 #include "config.h"
 
-//max number of pieces per player 
+/**max number of pieces per player*/
 #define MAX_PIECES  16      
 #define MAX_STEPS  80
 
 #define STEPS_IN_MOVE 4
 
 typedef unsigned long long u64;
-//zobrist base table for signature creating 
 
 #define IS_PLAYER(player) (player == GOLD || player == SILVER)
 #define IS_PIECE(piece) ( piece > 0 && piece <= 6)
@@ -630,7 +629,17 @@ class MoveAdvisor
     int used_;
 };
     
-
+/**
+ * Board representation.
+ *
+ * One of the pillars of the whole program. Defines mechanisms for:
+ * \li position load 
+ * \li step generation, step/move playing/unplaying
+ * \li signatures generation, verificaiton
+ * \li search extensions
+ * \li repetitions handling and other mics
+ *
+ */
 class Board
 {
 
