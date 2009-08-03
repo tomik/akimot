@@ -90,7 +90,7 @@ Cfg::Cfg()
   items_.push_back(CfgItem("use_best_eval", IT_BOOL, (void*)&useBestEval_,"1"));
   items_.push_back(CfgItem("extensions_in_eval", IT_BOOL, (void*)&extensionsInEval_,"0"));
   items_.push_back(CfgItem("uct_transposition_tables", IT_BOOL, (void*)&uct_tt_,"1"));
-  items_.push_back(CfgItem("fpu", IT_FLOAT, (void*)&fpu_,"1.1"));
+  items_.push_back(CfgItem("virtual_visits", IT_INT, (void*)&vv_,"5"));
   items_.push_back(CfgItem("ucb_tuned", IT_BOOL, (void*)&ucbTuned_,"0"));
   items_.push_back(CfgItem("dynamic_exploration", IT_BOOL, (void*)&dynamicExploration_,"0"));
   items_.push_back(CfgItem("children_cache", IT_BOOL, (void*)&childrenCache_,"0"));

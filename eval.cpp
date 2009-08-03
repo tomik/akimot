@@ -128,7 +128,10 @@ StepKnowledgeValues::StepKnowledgeValues(string config) {
 void StepKnowledgeValues::init(){ 
   values.clear();
   values.push_back(ValueItem("pass_penalty", IT_FLOAT, (void*)&passPenalty, SINGLE_VALUE));
+  values.push_back(ValueItem("inverse_step_penalty", IT_FLOAT, (void*)&inverseStepPenalty, SINGLE_VALUE));
   values.push_back(ValueItem("elephant_step_val", IT_FLOAT, (void*)&elephantStepVal, SINGLE_VALUE));
+  values.push_back(ValueItem("camel_step_val", IT_FLOAT, (void*)&camelStepVal, SINGLE_VALUE));
+  values.push_back(ValueItem("horse_step_val", IT_FLOAT, (void*)&horseStepVal, SINGLE_VALUE));
   values.push_back(ValueItem("push_pull_val", IT_FLOAT, (void*)&pushPullVal, SINGLE_VALUE));
   values.push_back(ValueItem("leave_buddy_in_trap_penalty", IT_FLOAT, (void*)&leaveBuddyInTrapPenalty, SINGLE_VALUE));
   values.push_back(ValueItem("suicide_penalty", IT_FLOAT, (void*)&suicidePenalty, SINGLE_VALUE));
@@ -644,25 +647,26 @@ float Eval::evaluateStep(const Board* b, const Step& step) const
     eval += skvals_->passPenalty * (STEPS_IN_MOVE - b->stepCount_);
     return eval;
   }
-
   assert(step.pieceMoved());
-  //assert(IS_PLAYER(b[step.from_]));
-  
-  if (step.piece_ == ELEPHANT ) {
-    eval += skvals_->elephantStepVal; 
+
+  if (step.inversed(b->lastStep_)){
+    eval += skvals_->inverseStepPenalty;
+    //return eval;
   }
 
-/*
+  
+  if (step.piece_ == ELEPHANT ) {
+  }
+
   switch (step.piece_) { 
-    case ELEPHANT :   eval += 0.15;
+    case ELEPHANT :   eval += skvals_->elephantStepVal; 
                       break;
-    case CAMEL :   eval += 0.1;
+    case CAMEL :      eval += skvals_->camelStepVal; 
                       break;
-    case HORSE :   eval += 0.1;
+    case HORSE :      eval += skvals_->horseStepVal; 
                       break;
     default : break;
   }
-  */
 
   if (step.isPushPull()){
     //push opponent to the goal :( not impossible ? )
@@ -749,7 +753,13 @@ string implicit_sk_cfg   = " \
 \
 pass_penalty = -0.5 \
 \
+inverse_step_penalty = 0 \
+\
 elephant_step_val = 0.1 \
+\
+horse_step_val = 0.1 \
+\
+camel_step_val = 0.1 \
 \
 push_pull_val = 0.1 \
 \

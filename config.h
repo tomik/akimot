@@ -80,7 +80,7 @@ class Cfg
     inline bool useBestEval() { return useBestEval_; }
     inline bool extensionsInEval() { return extensionsInEval_; }
     inline bool uct_tt() { return uct_tt_; }
-    inline float fpu() { return fpu_; }
+    inline int vv() { return vv_; }
     inline bool ucbTuned() { return ucbTuned_; }
     inline bool dynamicExploration() { return dynamicExploration_; }
     inline bool childrenCache() { return childrenCache_; }
@@ -114,8 +114,8 @@ class Cfg
     bool  extensionsInEval_;
     /** Uct transpotion tables. */
     bool uct_tt_;
-    /**FPU value*/
-    float fpu_;
+    /**Virtual visits value*/
+    int vv_;
     /**Use ucb tuned formula.*/
     bool ucbTuned_;
     /**Dynamic exploration rate..*/

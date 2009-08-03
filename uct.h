@@ -24,6 +24,7 @@ using std::make_pair;
 #define CHILDREN_CACHE_SIZE 5
 #define CCACHE_START_THRESHOLD 50 
 #define EVAL_AFTER_LENGTH (cfg.playoutLen())
+#define FPU 0.9
 
 #define NODE_VICTORY(node_type) (node_type == NODE_MAX ? 2 : -1 )
 #define WINNER_TO_VALUE(winner) (winner == GOLD ? 1 : -1 )
@@ -31,6 +32,7 @@ using std::make_pair;
 enum playoutStatus_e {PLAYOUT_OK, PLAYOUT_TOO_LONG, PLAYOUT_EVAL}; 
 
 class Engine;
+class Uct;
 
 /**
  * GOLD is always MAX, Silver Min, no matter who is in the root. 
@@ -536,7 +538,7 @@ class Tree
     /**
      * Nodes pruned getter. 
      */
-    int getNodesPruned();
+    int getNodesPrunedNum();
 
     /**
      * Nodes expanded getter.
@@ -569,6 +571,7 @@ class Tree
 
 
   private:
+    friend class Uct;
     /**
      * Simple constructor.
      *
@@ -602,7 +605,7 @@ class Tree
     /**Nodes in the tree.*/
     int   nodesNum_;
     /**Number of pruned nodes in tt.*/
-    int nodesPruned_;
+    int nodesPrunedNum_;
     /**Map of tree wide steps. 
      *
      * Every step with its value (average of all values in the tree) 

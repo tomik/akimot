@@ -169,7 +169,7 @@ Node::Node(TWstep* twStep, float heur)
   firstChild_ = NULL;
   sibling_    = NULL;
   father_     = NULL;  
-  visits_     = (cfg.fpu() == 0) ? 5 : 0;
+  visits_     = cfg.vv();
   value_      = 0; 
   squareSum_  = 0;
   heur_       = heur; 
@@ -332,7 +332,7 @@ void Node::uctOneChild(Node* act, Node* & best, float & bestUrgency, float explo
 float Node::exploreFormula(float exploreCoeff) const
 {
  if (visits_ == 0)
-   return cfg.fpu();
+   return FPU;
   
 
  return (cfg.ucbTuned() ? ucbTuned(exploreCoeff) : ucb(exploreCoeff))
@@ -1071,9 +1071,9 @@ int Tree::getNodesNum()
 
 //--------------------------------------------------------------------- 
 
-int Tree::getNodesPruned() 
+int Tree::getNodesPrunedNum() 
 {
-  return nodesPruned_;
+  return nodesPrunedNum_;
 }
 
 //--------------------------------------------------------------------- 
@@ -1126,7 +1126,7 @@ void Tree::updateTT(Node* father, const Board* board)
                      node->getDepthIdentifier())){
       assert(rep != NULL);
       repNode = rep->front(); 
-      nodesPruned_++;
+      nodesPrunedNum_++;
 
       //TODO there are issues in children sharing in connection with virtual passes 
       //what is a virtual pass in one node doesn't have to be a virtual pass in another
@@ -1171,7 +1171,7 @@ void Tree::init()
   historyTop = 0;
   nodesExpandedNum_ = 0;
   nodesNum_ = 0;
-  nodesPruned_ = 0;
+  nodesPrunedNum_ = 0;
 }
 
 //--------------------------------------------------------------------- 
@@ -1236,12 +1236,21 @@ void Uct::updateStatistics(Uct* ucts[], int uctsNum)
 {
   int pl = 0;
   int ud = 0;
+  int nodesExpanded = 0;
+  int nodesPruned = 0;
+  int nodes = 0;
   for (int i = 0; i < uctsNum; i++){
     pl += ucts[i]->getPlayoutsNum();
     ud += ucts[i]->uctDescends_;
+    nodes += ucts[i]->getTree()->getNodesNum();
+    nodesExpanded += ucts[i]->getTree()->getNodesExpandedNum();
+    nodesPruned += ucts[i]->getTree()->getNodesPrunedNum();
   }
   playouts_ = pl;
   uctDescends_ = ud;
+  tree_->nodesNum_ = nodes/float(uctsNum);
+  tree_->nodesExpandedNum_ = nodesExpanded/float(uctsNum);
+  tree_->nodesPrunedNum_ = nodesPruned/float(uctsNum);
 }
 
 //---------------------------------------------------------------------
@@ -1393,7 +1402,7 @@ string Uct::getStats(float seconds) const
         << "  " << int(playouts_ / seconds) << " playouts per second" << endl
         << "  " << tree_->getNodesNum() << " nodes in the tree" << endl 
         << "  " << tree_->getNodesExpandedNum() << " nodes expanded" << endl 
-        << "  " << tree_->getNodesPruned() << " nodes pruned" << endl 
+        << "  " << tree_->getNodesPrunedNum() << " nodes pruned" << endl 
         << "  " << uctDescends_/float(playouts_) << " average descends in playout" << endl 
         << "  " << "best move: " << getBestMoveRepr() << endl 
         << "  " << "best move visits: " << getBestMoveVisits() << endl 

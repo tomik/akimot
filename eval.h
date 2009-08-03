@@ -160,7 +160,10 @@ class StepKnowledgeValues: public Values{
 
   private:
     float passPenalty;
+    float inverseStepPenalty;
     float elephantStepVal;
+    float camelStepVal;
+    float horseStepVal;
     float pushPullVal;
     float leaveBuddyInTrapPenalty;
     float suicidePenalty;
