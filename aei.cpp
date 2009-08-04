@@ -175,7 +175,7 @@ void Aei::init()
   records_.push_back(AeiRecord(STR_QUIT, AS_ALL, AS_SAME, AA_QUIT));
   records_.push_back(AeiRecord(STR_NEW_GAME, AS_MAIN, AS_SAME, AA_NEW_GAME));
   records_.push_back(AeiRecord(STR_SET_POSITION, AS_MAIN, AS_SAME, AA_SET_POSITION));
-  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_MAIN, AS_SAME, AA_SET_POSITION_FILE));
+  records_.push_back(AeiRecord(STR_SET_POSITION_FILE, AS_MAIN, AS_SAME, AA_SET_POSITION_FILE, AC_EXT));
   records_.push_back(AeiRecord(STR_SET_OPTION, AS_ALL, AS_SAME, AA_SET_OPTION));
   records_.push_back(AeiRecord(STR_GO, AS_MAIN, AS_SEARCH, AA_GO));
   records_.push_back(AeiRecord(STR_GO_NO_THREAD, AS_MAIN, AS_SAME, AA_GO_NO_THREAD, AC_EXT));
@@ -190,11 +190,11 @@ void Aei::init()
   //tree dump
   records_.push_back(AeiRecord(STR_TREE_DUMP, AS_MAIN, AS_SAME, AA_TREE_DUMP, AC_EXT));
   //goal check
-  records_.push_back(AeiRecord(STR_GOAL_CHECK, AS_MAIN, AS_MAIN, AA_GOAL_CHECK));
+  records_.push_back(AeiRecord(STR_GOAL_CHECK, AS_MAIN, AS_MAIN, AA_GOAL_CHECK, AC_EXT));
   //trap check
-  records_.push_back(AeiRecord(STR_TRAP_CHECK, AS_MAIN, AS_MAIN, AA_TRAP_CHECK));
+  records_.push_back(AeiRecord(STR_TRAP_CHECK, AS_MAIN, AS_MAIN, AA_TRAP_CHECK, AC_EXT));
   //evaluation
-  records_.push_back(AeiRecord(STR_EVAL, AS_MAIN, AS_MAIN, AA_EVAL));
+  records_.push_back(AeiRecord(STR_EVAL, AS_MAIN, AS_MAIN, AA_EVAL, AC_EXT));
 
   timeControls_.push_back(timeControlPair(STR_TC_MOVE, TC_MOVE));
   timeControls_.push_back(timeControlPair(STR_TC_RESERVE, TC_RESERVE));

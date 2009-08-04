@@ -1,2 +1,2 @@
 #!/bin/bash
-./akimot -l -a init
+./akimot -e -a init

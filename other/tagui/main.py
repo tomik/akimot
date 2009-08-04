@@ -32,7 +32,7 @@ class Tagui(QtGui.QMainWindow):
         self.pos, _ = self.get_pos(0)
         self.mode = None
 
-        self.load_position('example_pos.ari')
+        #self.load_position('example_pos.ari')
 
     def on_actionLoadGame_triggered(self,checked=None):
         if checked is None: return 
@@ -74,22 +74,27 @@ class Tagui(QtGui.QMainWindow):
             fn = fd.getOpenFileName()
         if isfile(fn):
             self.record.clear()
-            _, self.pos = board.parse_long_pos(open(fn).readlines())
+            lines = open(fn).readlines()
+            lines[0] = lines[0].replace('s', 'b').replace('g', 'w')
+            _, self.pos = board.parse_long_pos(lines)
             self.board.update_pos(self.pos)
             self.board.mode = MODE_PLAY
 
     def save_position(self, fn=None):
         if not self.pos:
             return 
-
-        print self.pos.to_short_str()
         
         if not fn:
             dialog = QtGui.QFileDialog(self)
             fn = dialog.getSaveFileName()
             
             fd = open(fn, 'w')
+
+            row = int(self.record.currentRow())/2 or 0
+            row += 1
+            fd.write("%s%s\n" % (row, ['w', 'b'][self.pos.color]))
             fd.write(self.pos.to_long_str())
+            fd.write("\n")
             fd.close()
 
     def add_engine(self, name, cmd):
@@ -126,11 +131,13 @@ class Tagui(QtGui.QMainWindow):
 
     def on_record_currentRowChanged(self):
         row = self.record.currentRow()
+        if row + 1 == self.record.count():
+            return
         if row - self.record.last_row == 1: 
             self.start_move_animation(row)
             self.record_update()
             return
-        self.pos, last = self.get_pos(row)
+        self.pos, _ = self.get_pos(row)
         self.board.update_pos(self.pos)
         self.record_update()
 
@@ -168,8 +175,9 @@ class Tagui(QtGui.QMainWindow):
         return pos, moves[-1]
 
     def start_move_animation(self, move_num):
-        self.pos, last_move = self.get_pos(move_num, separate_last_move=True)
-        self.board.update_pos(self.pos)
+        self.pos, _ = self.get_pos(move_num)
+        pos, last_move = self.get_pos(move_num, separate_last_move=True)
+        self.board.update_pos(pos)
         if last_move: 
             steps = board.parse_move(last_move)
             self.board.start_move_animation(steps)

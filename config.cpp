@@ -228,7 +228,7 @@ Options::Options()
   fnCfg_ = OptionString("c","cfg","Configuration file (substitute for default.cfg).", OT_STRING, "");
   fnAeiInit_ = OptionString("a","aeiinit","Aei init file.", OT_STRING, "");
   benchmarkMode_ = OptionBool("b","benchmark","Toggle benchmark mode.",OT_BOOL_POS, false);
-  localMode_ = OptionBool("l","local","Use AEI extended set (mostly for debugging).",OT_BOOL_POS, false);
+  localMode_ = OptionBool("e","extended","Use AEI extended set (for development purposes).",OT_BOOL_POS, false);
   getMoveMode_ = OptionBool("g","getmove","Toggle getMove mode.",OT_BOOL_POS, false);
   help_ = OptionBool("h", "help", "Print this help.", OT_BOOL_POS, false);
 
