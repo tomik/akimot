@@ -341,13 +341,13 @@ bool Eval::blocked(player_t player, piece_t piece, coord_t coord, const Board* b
 {
   
   u64 nbg  = bits::neighborsOne(coord); 
-  u64 mine = nbg & b->bitboard_[player][0];
+  //u64 mine = nbg & b->bitboard_[player][0];
   u64 opps = nbg & b->bitboard_[OPP(player)][0];
   u64 all  = b->bitboard_[GOLD][0] | b->bitboard_[SILVER][0];
   //unguarded traps
   u64 dieTrap = nbg & (TRAPS ^ (TRAPS & bits::neighbors(b->bitboard_[player][0] ^ BIT_ON(coord))));
   //TODO safe trap ... but blocked anyway ? 
-  if (nbg ^ ((mine | opps | dieTrap) & nbg)) {
+  if (nbg ^ ((/*mine |*/ opps | dieTrap) & nbg)) {
     return false;
   }
   u64 mustBlock = bits::neighbors(opps & (b->weaker(OPP(player), piece) ^ dieTrap));
@@ -431,7 +431,7 @@ int Eval::evaluate(const Board* b) const
          vals_->elephantBlockadePenalty, Soldier(player, piece, pos).toString().c_str());
       //double the penalty in the beginning
       if (gs == GS_BEGIN) {
-        tot[player] += vals_->elephantBlockadePenalty;
+        tot[player] += 2 * vals_->elephantBlockadePenalty;
       }
     }
     
