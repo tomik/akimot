@@ -162,6 +162,20 @@ Node::Node()
 
 //---------------------------------------------------------------------
 
+Node::~Node()
+{
+  delete cCache_;
+  //representant deletes the ttitem
+  if (ttItem_ && ttItem_->nodes_ && ttItem_->nodes_->front() == this){
+    delete ttItem_->nodes_;
+    delete ttItem_;
+  }
+   
+}
+
+
+//---------------------------------------------------------------------
+
 Node::Node(TWstep* twStep, float heur)
 {
   pthread_mutex_init(&mutex, NULL);
@@ -1261,7 +1275,7 @@ void Uct::searchTree(const Board* refBoard, const Engine* engine)
   while (! engine->checkSearchStop()){
     doPlayout(board);
   }
-  delete(board);
+  delete board;
 
   //this slows down a lot (final tree might be big) 
   //and is virtually useless since syncing is continuous

@@ -172,6 +172,8 @@ void Cfg::loadFromFile(string fn)
     logWarning("Wrong step knowledge configuration ... falling to implicit evaluation.");
     stepKnowledgeValues_ = new StepKnowledgeValues();
   }
+
+  delete f;
 }
 
 //--------------------------------------------------------------------- 

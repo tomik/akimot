@@ -193,6 +193,8 @@ class Node
   public:
     Node();
 
+    ~Node();
+
     /**
      * Constructor with step and heuristic 
      */

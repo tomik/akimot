@@ -283,6 +283,15 @@ Eval::Eval(const Board* board)
 
 //--------------------------------------------------------------------- 
 
+Eval::~Eval()
+{
+  delete evalTT_;
+  delete vals_;
+  delete skvals_;
+}
+
+//--------------------------------------------------------------------- 
+
 void Eval::init() 
 {
   evalTT_ = new EvalTT();

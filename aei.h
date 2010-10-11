@@ -154,7 +154,6 @@ class Aei
      */
     static void* SearchInThreadWrapper(void *instance);
 
-
     /**
      * Stop search.
      *

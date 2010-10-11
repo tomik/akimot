@@ -190,6 +190,8 @@ class Eval
 	public:
     Eval();
 
+    ~Eval();
+
     /**
      * Inits base evaluation as well.
      */
